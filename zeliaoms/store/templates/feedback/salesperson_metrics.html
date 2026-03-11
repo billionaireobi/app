@@ -1,0 +1,229 @@
+{% extends "partials/base.html" %}
+{% load static %}
+
+{% block content %}
+<head>
+  <meta charset="UTF-8">
+  <title>Salesperson Feedback Metrics</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background:#e8ecf4; }
+    .metric-card { background:#fff; border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,.07); }
+    .metric-card:hover { box-shadow:0 6px 24px rgba(0,0,0,.12); }
+    .avatar { width:44px; height:44px; border-radius:50%; background:#6366f1;
+              display:flex; align-items:center; justify-content:center;
+              color:#fff; font-weight:700; font-size:1rem; flex-shrink:0; }
+    .stat-pill { font-size:.75rem; padding:3px 10px; border-radius:20px; font-weight:600; display:inline-block; }
+    .pill-quality      { background:#dcfce7; color:#166534; }
+    .pill-pricing      { background:#fef9c3; color:#854d0e; }
+    .pill-payments     { background:#dbeafe; color:#1e40af; }
+    .pill-delivery     { background:#ede9fe; color:#5b21b6; }
+    .star-fill  { color:#f59e0b; }
+    .star-empty { color:#d1d5db; }
+    .rating-bar-wrap { height:6px; background:#e2e8f0; border-radius:4px; overflow:hidden; }
+    .rating-bar      { height:100%; border-radius:4px; background:#f59e0b; }
+    .overall-strip { background: linear-gradient(135deg,#6366f1 0%,#818cf8 100%);
+                     border-radius:14px; color:#fff; }
+    .sp-row { cursor:pointer; }
+    .sp-row.open .chevron { transform:rotate(90deg); }
+    .chevron { transition:.2s; display:inline-block; }
+    .recent-list { border-top:1px solid #f1f5f9; }
+    .fb-type-dot { width:8px; height:8px; border-radius:50%; display:inline-block; flex-shrink:0; }
+  </style>
+</head>
+
+<div class="container py-4">
+
+  <!-- Page header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="bi bi-bar-chart-line-fill text-primary me-2"></i>Feedback Metrics by Salesperson</h4>
+      <small class="text-muted">Overall picture of customer feedback across the team</small>
+    </div>
+    <a href="{% url 'feedback_list' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-list-ul me-1"></i>All Feedbacks
+    </a>
+  </div>
+
+  <!-- Overall summary strip -->
+  <div class="overall-strip p-4 mb-4">
+    <div class="row g-3 text-center">
+      <div class="col-6 col-md-3">
+        <div class="fw-bold fs-2">{{ overall.total }}</div>
+        <div class="opacity-75 small">Total Feedbacks</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="fw-bold fs-2">{{ overall.avg_rating }}<span class="fs-6 opacity-75">/5</span></div>
+        <div class="opacity-75 small">Avg Rating</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="fw-bold fs-2">{{ rows|length }}</div>
+        <div class="opacity-75 small">Salespersons</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="d-flex gap-2 justify-content-center flex-wrap mt-1">
+          <span class="badge bg-white text-dark">Quality: {{ overall.quality }}</span>
+          <span class="badge bg-white text-dark">Pricing: {{ overall.pricing }}</span>
+          <span class="badge bg-white text-dark">Payments: {{ overall.payments }}</span>
+          <span class="badge bg-white text-dark">Delivery: {{ overall.delivery_time }}</span>
+        </div>
+        <div class="opacity-75 small mt-1">By Category</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No data -->
+  {% if not rows %}
+    <div class="text-center py-5">
+      <i class="bi bi-inbox" style="font-size:3rem;color:#94a3b8;"></i>
+      <p class="text-muted mt-2">No feedback recorded yet.</p>
+    </div>
+  {% endif %}
+
+  <!-- Per-salesperson cards -->
+  {% for row in rows %}
+  <div class="metric-card mb-3">
+
+    <!-- Collapsed header (always visible) -->
+    <div class="p-3 d-flex flex-wrap gap-3 align-items-center sp-row" data-idx="{{ forloop.counter }}">
+      <!-- Avatar -->
+      <div class="avatar">
+        {{ row.salesperson.first_name|first|upper }}{{ row.salesperson.last_name|first|upper }}
+      </div>
+
+      <!-- Name + counts -->
+      <div class="flex-grow-1">
+        <div class="fw-bold">{{ row.salesperson.get_full_name|default:row.salesperson.username }}</div>
+        <div class="d-flex gap-2 flex-wrap mt-1">
+          <span class="stat-pill pill-quality"><i class="bi bi-patch-check-fill me-1"></i>Quality: {{ row.quality }}</span>
+          <span class="stat-pill pill-pricing"><i class="bi bi-tag-fill me-1"></i>Pricing: {{ row.pricing }}</span>
+          <span class="stat-pill pill-payments"><i class="bi bi-credit-card-fill me-1"></i>Payments: {{ row.payments }}</span>
+          <span class="stat-pill pill-delivery"><i class="bi bi-truck me-1"></i>Delivery: {{ row.delivery_time }}</span>
+        </div>
+      </div>
+
+      <!-- Rating + total -->
+      <div class="text-end" style="min-width:80px;">
+        <div class="fw-bold fs-5 text-warning">{{ row.avg_rating }}<span class="text-muted fs-6">/5</span></div>
+        <small class="text-muted">{{ row.total }} feedback{{ row.total|pluralize }}</small>
+      </div>
+
+      <!-- Star visual -->
+      <div class="d-none d-md-block" style="min-width:90px;">
+        {% for i in "12345" %}
+          <i class="bi bi-star-fill {% if forloop.counter <= row.avg_rating|floatformat:"0" %}star-fill{% else %}star-empty{% endif %}" style="font-size:.85rem;"></i>
+        {% endfor %}
+      </div>
+
+      <!-- Expand chevron -->
+      <i class="bi bi-chevron-right chevron text-muted"></i>
+    </div>
+
+    <!-- Expandable detail (hidden by default) -->
+    <div class="sp-detail px-3 pb-3" id="detail-{{ forloop.counter }}" style="display:none;">
+
+      <!-- Rating distribution bars -->
+      <div class="row g-2 mb-3">
+        <div class="col-12">
+          <div class="small text-muted fw-semibold mb-2">Rating Distribution</div>
+          <!-- 5 stars -->
+          {% with pct=row.rating_5|default:0 %}
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span style="width:28px; font-size:.75rem; text-align:right;">5 ★</span>
+            <div class="rating-bar-wrap flex-grow-1">
+              <div class="rating-bar" style="width:{% if row.total %}{% widthratio row.rating_5 row.total 100 %}{% else %}0{% endif %}%;"></div>
+            </div>
+            <span style="width:20px; font-size:.75rem;">{{ row.rating_5 }}</span>
+          </div>
+          {% endwith %}
+          <!-- 4 stars -->
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span style="width:28px; font-size:.75rem; text-align:right;">4 ★</span>
+            <div class="rating-bar-wrap flex-grow-1">
+              <div class="rating-bar" style="width:{% if row.total %}{% widthratio row.rating_4 row.total 100 %}{% else %}0{% endif %}%; background:#a3e635;"></div>
+            </div>
+            <span style="width:20px; font-size:.75rem;">{{ row.rating_4 }}</span>
+          </div>
+          <!-- 3 stars -->
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span style="width:28px; font-size:.75rem; text-align:right;">3 ★</span>
+            <div class="rating-bar-wrap flex-grow-1">
+              <div class="rating-bar" style="width:{% if row.total %}{% widthratio row.rating_3 row.total 100 %}{% else %}0{% endif %}%; background:#60a5fa;"></div>
+            </div>
+            <span style="width:20px; font-size:.75rem;">{{ row.rating_3 }}</span>
+          </div>
+          <!-- 2 stars -->
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span style="width:28px; font-size:.75rem; text-align:right;">2 ★</span>
+            <div class="rating-bar-wrap flex-grow-1">
+              <div class="rating-bar" style="width:{% if row.total %}{% widthratio row.rating_2 row.total 100 %}{% else %}0{% endif %}%; background:#fb923c;"></div>
+            </div>
+            <span style="width:20px; font-size:.75rem;">{{ row.rating_2 }}</span>
+          </div>
+          <!-- 1 star -->
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span style="width:28px; font-size:.75rem; text-align:right;">1 ★</span>
+            <div class="rating-bar-wrap flex-grow-1">
+              <div class="rating-bar" style="width:{% if row.total %}{% widthratio row.rating_1 row.total 100 %}{% else %}0{% endif %}%; background:#f87171;"></div>
+            </div>
+            <span style="width:20px; font-size:.75rem;">{{ row.rating_1 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent feedbacks -->
+      {% if row.recent %}
+      <div class="recent-list pt-2">
+        <div class="small text-muted fw-semibold mb-2">Recent Feedbacks</div>
+        {% for fb in row.recent %}
+        <div class="d-flex align-items-start gap-2 py-2 border-bottom">
+          <span class="fb-type-dot mt-1
+            {% if fb.feedback_type == 'quality' %}bg-success
+            {% elif fb.feedback_type == 'pricing' %}bg-warning
+            {% elif fb.feedback_type == 'payments' %}bg-primary
+            {% else %}bg-purple{% endif %}"
+            style="{% if fb.feedback_type == 'delivery_time' %}background:#8b5cf6!important;{% endif %}">
+          </span>
+          <div class="flex-grow-1">
+            <span class="fw-semibold small">{{ fb.shop_name }}</span>
+            <span class="text-muted small ms-2">{{ fb.get_feedback_type_display }}</span>
+            <div class="small text-secondary">{{ fb.comment|truncatechars:120 }}</div>
+          </div>
+          <div class="text-end flex-shrink-0">
+            <div class="small text-warning">
+              {% for i in "12345" %}
+                <i class="bi bi-star{% if forloop.counter <= fb.rating %}-fill{% endif %}" style="font-size:.65rem;"></i>
+              {% endfor %}
+            </div>
+            <a href="{% url 'feedback_detail' fb.pk %}" class="badge bg-light text-dark border text-decoration-none" style="font-size:.7rem;">View</a>
+          </div>
+        </div>
+        {% endfor %}
+        <div class="mt-2">
+          <a href="{% url 'feedback_list' %}?salesperson={{ row.salesperson.id }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-list-ul me-1"></i>All {{ row.total }} feedback{{ row.total|pluralize }}
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+    </div><!-- end sp-detail -->
+  </div><!-- end metric-card -->
+  {% endfor %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.querySelectorAll('.sp-row').forEach(function(row) {
+  row.addEventListener('click', function() {
+    const idx    = this.dataset.idx;
+    const detail = document.getElementById('detail-' + idx);
+    const isOpen = detail.style.display !== 'none';
+    detail.style.display = isOpen ? 'none' : 'block';
+    this.classList.toggle('open', !isOpen);
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends 'partials/base.html' %}
+{% load static %}
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="Description" content="Bootstrap Responsive Admin Web Dashboard HTML5 Template">
+    <meta name="keywords" content="admin, dashboard, responsive, bootstrap">
+    <link rel="icon" href="{% static 'assets/images/mcdave/logo.png' %}" type="image/x-icon">
+
+    <!-- Bootstrap & CSS -->
+    <link id="style" href="{% static 'assets/libs/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'assets/css/styles.min.css' %}" rel="stylesheet">
+    <link href="{% static 'assets/css/icons.css' %}" rel="stylesheet">
+    <link href="{% static 'assets/libs/node-waves/waves.min.css' %}" rel="stylesheet">
+    <link href="{% static 'assets/libs/simplebar/simplebar.min.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'assets/libs/flatpickr/flatpickr.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/libs/@simonwep/pickr/themes/nano.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/libs/choices.js/public/assets/styles/choices.min.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/css/iziToast.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<!-- Page Header -->
+<div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+    <h1 class="page-title fw-semibold fs-18 mb-0">{{ product.name }}</h1>
+    <div class="ms-md-1 ms-0">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                {% if is_admin %}
+                <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+                {% else %}
+                <li class="breadcrumb-item"><a href="{% url 'salesperson_dashboard' %}">Dashboard</a></li>
+                {% endif %}
+                <li class="breadcrumb-item"><a href="{% url 'products' %}">Products</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Details</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Main Product Details -->
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card custom-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Product Details</h5>
+                {% if is_admin %}
+                <div class="d-flex gap-2">
+                    <a href="{% url 'productupdate' product.id %}" class="btn btn-primary btn-sm">
+                        <i class="ri-edit-line me-1"></i>Edit Product
+                    </a>
+                    <a href="{% url 'delete_product' product.id %}" class="btn btn-danger btn-sm">
+                        <i class="ri-delete-bin-line me-1"></i>Delete Product
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        {% if product.image %}
+                            <!-- Clickable image trigger modal -->
+                            <a href="#" data-bs-toggle="modal" data-bs-target="#imageModal">
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid rounded shadow-sm" style="max-width: 200px; cursor: pointer;">
+                            </a>
+                        {% else %}
+                            <img src="{% static 'assets/images/placeholder.jpg' %}" alt="No Image" class="img-fluid rounded" style="max-width: 200px;">
+                        {% endif %}
+                    </div>
+                    <div class="col-md-8">
+                        <dl class="row">
+                            <dt class="col-sm-4">Name</dt>
+                            <dd class="col-sm-8">{{ product.name }}</dd>
+                            <dt class="col-sm-4">Barcode</dt>
+                            <dd class="col-sm-8">{{ product.barcode }}</dd>
+                            <dt class="col-sm-4">Category</dt>
+                            <dd class="col-sm-8">{{ product.category.name }}</dd>
+                            <dt class="col-sm-4">Description</dt>
+                            <dd class="col-sm-8">{{ product.description|default:"No description" }}</dd>
+                            <dt class="col-sm-4">Status</dt>
+                            <dd class="col-sm-8">
+                                {% if product.status == 'available' %}
+                                    <span class="badge bg-success">Available</span>
+                                {% elif product.status == 'not_available' %}
+                                    <span class="badge bg-danger">Not Available</span>
+                                {% elif product.status == 'limited' %}
+                                    <span class="badge bg-warning">Limited Deal</span>
+                                {% elif product.status == 'offer' %}
+                                    <span class="badge bg-primary">In Offer</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ product.status }}</span>
+                                {% endif %}
+                            </dd>
+                            
+                            {% if user.is_superuser or user.userprofile.is_admin %}
+                            <dt class="col-sm-4">Factory Price</dt>
+                            <dd class="col-sm-8">KES {{ product.factory_price|floatformat:2 }}</dd>
+                            <dt class="col-sm-4">Distributor Price</dt>
+                            <dd class="col-sm-8">KES {{ product.distributor_price|floatformat:2 }}</dd>
+                            <dt class="col-sm-4">Wholesale Price</dt>
+                            <dd class="col-sm-8">KES {{ product.wholesale_price|floatformat:2 }}</dd>
+                            <dt class="col-sm-4">Towns Price</dt>
+                            <dd class="col-sm-8">KES {{ product.offshore_price|floatformat:2 }}</dd>
+                            <dt class="col-sm-4">Retail Price</dt>
+                            <dd class="col-sm-8">KES {{ product.retail_price|floatformat:2 }}</dd>
+                            {% else %}
+                            <dt class="col-sm-4">Wholesale Price</dt>
+                            <dd class="col-sm-8">KES {{ product.wholesale_price|floatformat:2 }}</dd>
+                            {% endif %}
+                            <dt class="col-sm-4">Mcdave Stock</dt>
+                            <dd class="col-sm-8">{{ product.mcdave_stock }}</dd>
+                            <dt class="col-sm-4">Mombasa Stock</dt>
+                            <dd class="col-sm-8">{{ product.kisii_stock }}</dd>
+                            <dt class="col-sm-4">offshore Stock</dt>
+                            <dd class="col-sm-8">{{ product.offshore_stock }}</dd>
+                            <!--<dt class="col-sm-4">Sales</dt>-->
+                            <!--<dd class="col-sm-8">{{ product.sales_count }}</dd>-->
+                            <!--<dt class="col-sm-4">Revenue</dt>-->
+                            <!--<dd class="col-sm-8">KES {{ product.revenue|floatformat:2|default:"0.00" }}</dd>-->
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Responsive Image Modal -->
+{% if product.image %}
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0">
+      <div class="modal-body text-center p-2">
+        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid rounded" style="max-height: 80vh; width: auto;">
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/js/iziToast.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="{% static 'assets/libs/@popperjs/core/umd/popper.min.js' %}"></script>
+<script src="{% static 'assets/libs/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'assets/js/defaultmenu.min.js' %}"></script>
+<script src="{% static 'assets/libs/node-waves/waves.min.js' %}"></script>
+<script src="{% static 'assets/js/sticky.js' %}"></script>
+<script src="{% static 'assets/libs/@simonwep/pickr/pickr.es5.min.js' %}"></script>
+<script src="{% static 'assets/libs/apexcharts/apexcharts.min.js' %}"></script>
+<script src="{% static 'assets/libs/moment/moment.js' %}"></script>
+<script src="{% static 'assets/libs/simplebar/simplebar.min.js' %}"></script>
+<script src="{% static 'assets/js/simplebar.js' %}"></script>
+<script src="{% static 'assets/js/custom.js' %}"></script>
+{% endblock %}

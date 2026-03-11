@@ -1,0 +1,176 @@
+{% extends "partials/base.html" %}
+{% load static %}
+
+{% block content %}
+<head>
+  <meta charset="UTF-8">
+  <title>Beat Overview</title>
+  <style>
+    body { background:#e8ecf4; }
+    .ov-card { background:#fff; border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,.07); }
+    .stat-strip { background:linear-gradient(135deg,#6366f1,#818cf8); border-radius:14px; color:#fff; }
+    .outcome-dot { width:10px;height:10px;border-radius:50%;display:inline-block;flex-shrink:0; }
+    .avatar { width:36px;height:36px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:.85rem;flex-shrink:0; }
+  </style>
+</head>
+
+<div class="container py-4">
+
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow text-primary me-2"></i>Daily Beat Overview</h4>
+      <small class="text-muted">{{ page_obj.paginator.count }} visit{{ page_obj.paginator.count|pluralize }}</small>
+    </div>
+  </div>
+
+  <!-- Filter bar -->
+  <div style="background:#fff;border-radius:14px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:14px 18px;margin-bottom:16px;">
+    <form method="get" class="row g-2 align-items-end">
+      <!-- Single date (quick) -->
+      <div class="col-sm-6 col-md-2">
+        <label class="form-label small fw-semibold mb-1">Date</label>
+        <input type="date" name="date" value="{{ filter_date|date:'Y-m-d' }}" class="form-control form-control-sm">
+      </div>
+      <!-- Date range -->
+      <div class="col-sm-6 col-md-2">
+        <label class="form-label small fw-semibold mb-1">From</label>
+        <input type="date" name="date_from" value="{{ date_from }}" class="form-control form-control-sm">
+      </div>
+      <div class="col-sm-6 col-md-2">
+        <label class="form-label small fw-semibold mb-1">To</label>
+        <input type="date" name="date_to" value="{{ date_to }}" class="form-control form-control-sm">
+      </div>
+      <!-- Rep -->
+      <div class="col-sm-6 col-md-2">
+        <label class="form-label small fw-semibold mb-1">Rep</label>
+        <select name="sp" class="form-select form-select-sm">
+          <option value="">All reps</option>
+          {% for sp in salespersons %}
+          <option value="{{ sp.id }}" {% if sp_filter == sp.id|stringformat:"s" %}selected{% endif %}>{{ sp.get_full_name|default:sp.username }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <!-- Outcome -->
+      <div class="col-sm-6 col-md-2">
+        <label class="form-label small fw-semibold mb-1">Outcome</label>
+        <select name="outcome" class="form-select form-select-sm">
+          <option value="">All outcomes</option>
+          {% for val, label in outcome_choices %}
+          <option value="{{ val }}" {% if outcome_filter == val %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-auto d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filter</button>
+        <a href="{% url 'beat_overview' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Summary cards per rep -->
+  {% if not summary %}
+    <div class="ov-card p-5 text-center">
+      <i class="bi bi-inbox" style="font-size:3rem;color:#94a3b8;"></i>
+      <p class="text-muted mt-2">No visits recorded for {{ filter_date|date:"d M Y" }}.</p>
+    </div>
+  {% else %}
+  <div class="row g-3 mb-4">
+    {% for s in summary %}
+    <div class="col-md-4">
+      <div class="ov-card p-3">
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <div class="avatar">{{ s.salesperson.first_name|first|upper }}{{ s.salesperson.last_name|first|upper }}</div>
+          <div>
+            <div class="fw-bold small">{{ s.salesperson.get_full_name|default:s.salesperson.username }}</div>
+          </div>
+        </div>
+        <div class="row g-2 text-center">
+          <div class="col-4">
+            <div class="fw-bold text-primary">{{ s.total }}</div>
+            <div class="text-muted" style="font-size:.72rem;">Total</div>
+          </div>
+          <div class="col-4">
+            <div class="fw-bold text-success">{{ s.order_placed }}</div>
+            <div class="text-muted" style="font-size:.72rem;">Orders</div>
+          </div>
+          <div class="col-4">
+            <div class="fw-bold text-danger">{{ s.no_contact }}</div>
+            <div class="text-muted" style="font-size:.72rem;">No Contact</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Visit log table -->
+  <div class="ov-card">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Salesperson</th><th>Customer</th><th>Date</th><th>Outcome</th><th>Notes</th><th>GPS</th><th>Time</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for v in visits %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="avatar" style="width:30px;height:30px;font-size:.75rem;">{{ v.salesperson.first_name|first|upper }}</div>
+                <span class="small fw-semibold">{{ v.salesperson.get_full_name|default:v.salesperson.username }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="fw-semibold small">{{ v.customer.first_name }} {{ v.customer.last_name }}</div>
+              <div class="text-muted" style="font-size:.72rem;">{{ v.customer.phone_number|default:"—" }}</div>
+            </td>
+            <td class="small text-muted">{{ v.visit_date|date:"d M Y" }}</td>
+            <td>
+              {% if v.outcome == 'order_placed' %}<span class="badge bg-success">Order Placed</span>
+              {% elif v.outcome == 'follow_up' %}<span class="badge bg-warning text-dark">Follow-Up</span>
+              {% elif v.outcome == 'no_contact' %}<span class="badge bg-danger">No Contact</span>
+              {% elif v.outcome == 'info_gathered' %}<span class="badge bg-primary">Info Gathered</span>
+              {% else %}<span class="badge bg-secondary">{{ v.get_outcome_display }}</span>
+              {% endif %}
+            </td>
+            <td class="small text-secondary">{{ v.notes|default:"—"|truncatechars:60 }}</td>
+            <td>
+              {% if v.latitude %}
+              <a href="https://www.google.com/maps?q={{ v.latitude }},{{ v.longitude }}" target="_blank"
+                 class="badge bg-light text-success border text-decoration-none">
+                <i class="bi bi-geo-alt-fill me-1"></i>Map
+              </a>
+              {% else %}<span class="text-muted small">—</span>{% endif %}
+            </td>
+            <td class="small text-muted">{{ v.created_at|date:"H:i" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <div class="px-3 py-3 border-top">
+      <nav>
+        <ul class="pagination justify-content-center flex-wrap gap-1 mb-0">
+          {% if page_obj.has_previous %}
+          <li class="page-item"><a class="page-link rounded" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}"><i class="bi bi-chevron-left"></i></a></li>
+          {% endif %}
+          {% for p in page_obj.paginator.page_range %}
+            {% if p == page_obj.number %}<li class="page-item active"><span class="page-link rounded">{{ p }}</span></li>
+            {% elif p >= page_obj.number|add:"-2" and p <= page_obj.number|add:"2" %}<li class="page-item"><a class="page-link rounded" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ p }}">{{ p }}</a></li>
+            {% endif %}
+          {% endfor %}
+          {% if page_obj.has_next %}
+          <li class="page-item"><a class="page-link rounded" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}"><i class="bi bi-chevron-right"></i></a></li>
+          {% endif %}
+        </ul>
+        <p class="text-center text-muted small mt-2 mb-0">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} | {{ page_obj.paginator.count }} visits</p>
+      </nav>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

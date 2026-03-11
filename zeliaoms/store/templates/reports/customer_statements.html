@@ -1,0 +1,770 @@
+{% extends "partials/base.html" %}
+{% load static %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="light" data-menu-styles="dark" data-toggled="close">
+<head>
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Customer Statements - McDave Sales</title>
+
+    <link rel="icon" href="{% static 'assets/images/mcdave/logo.png' %}" type="image/x-icon">
+    <script src="{% static 'assets/libs/choices.js/public/assets/scripts/choices.min.js' %}"></script>
+    <script src="{% static 'assets/js/main.js' %}"></script>
+    <link id="style" href="{% static 'assets/libs/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'assets/css/styles.min.css' %}" rel="stylesheet">
+    <link href="{% static 'assets/css/icons.css' %}" rel="stylesheet">
+    <link href="{% static 'assets/libs/node-waves/waves.min.css' %}" rel="stylesheet">
+    <link href="{% static 'assets/libs/simplebar/simplebar.min.css' %}" rel="stylesheet">
+    
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/css/iziToast.css" />
+    
+    <style>
+        .select2-container--bootstrap-5 .select2-selection {
+            min-height: 38px;
+        }
+        .select2-container {
+            width: 100% !important;
+        }
+        
+        .statement-card {
+            border-left: 4px solid #3182ce;
+            transition: all 0.3s ease;
+        }
+        
+        .statement-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .summary-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .combined-summary-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-item {
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding: 12px 0;
+        }
+        
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+        
+        .summary-label {
+            font-size: 13px;
+            opacity: 0.9;
+            font-weight: 500;
+        }
+        
+        .summary-value {
+            font-size: 20px;
+            font-weight: 700;
+            margin-top: 5px;
+        }
+        
+        .customer-section {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            background: white;
+        }
+        
+        .customer-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .order-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: white;
+            transition: all 0.2s;
+        }
+        
+        .order-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .order-header {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4299e1;
+        }
+        
+        .badge-paid {
+            background: #48bb78;
+        }
+        
+        .badge-pending {
+            background: #ed8936;
+        }
+        
+        .badge-partial {
+            background: #ecc94b;
+        }
+        
+        .product-item {
+            padding: 10px;
+            border-bottom: 1px solid #f1f1f1;
+        }
+        
+        .product-item:last-child {
+            border-bottom: none;
+        }
+        
+        .product-item:hover {
+            background: #fafafa;
+        }
+        
+        .balance-positive {
+            color: #e53e3e;
+            font-weight: 700;
+        }
+        
+        .balance-zero {
+            color: #48bb78;
+            font-weight: 700;
+        }
+        
+        .no-customer-selected {
+            text-align: center;
+            padding: 60px 20px;
+            color: #a0aec0;
+        }
+        
+        .no-customer-selected i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            height: 100%;
+        }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            color: #718096;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .store-breakdown-card {
+            background: #f7fafc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .store-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .store-badge.mcdave {
+            background: #bee3f8;
+            color: #2c5282;
+        }
+        
+        .store-badge.kisii {
+            background: #fbd38d;
+            color: #7c2d12;
+        }
+        
+        .store-badge.offshore {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .multi-customer-indicator {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Page Header -->
+    <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+        <h1 class="page-title fw-semibold fs-18 mb-0">
+            <i class="ri-file-list-3-line me-2"></i>Customer Statements
+            {% if has_multiple_customers %}
+            <span class="multi-customer-indicator">
+                <i class="ri-group-line me-1"></i>{{ selected_customers|length }} Customers Selected
+            </span>
+            {% endif %}
+        </h1>
+        <div class="ms-md-1 ms-0">
+            <nav>
+                <ol class="breadcrumb mb-0">
+                    {% if request.user.is_superuser %}
+                    <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+                    {% else %}
+                    <li class="breadcrumb-item"><a href="{% url 'salesperson_dashboard' %}">Dashboard</a></li>
+                    {% endif %}
+                    <li class="breadcrumb-item active" aria-current="page">Customer Statements</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-12">
+            <div class="card custom-card statement-card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0 text-white">
+                        <i class="ri-filter-3-line me-2"></i>Generate Customer Statement
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="GET" id="statementForm">
+                        <div class="row">
+                            <!-- Customer Selection - MULTIPLE -->
+                            <div class="col-md-12 mb-3">
+                                <label for="customers" class="form-label fw-semibold">
+                                    <i class="ri-user-line me-1"></i>Select Customer(s) <span class="text-danger">*</span>
+                                    <small class="text-muted">(Hold Ctrl/Cmd to select multiple)</small>
+                                </label>
+                                <select name="customers" id="customers" class="form-select" multiple required>
+                                    {% for customer in customers %}
+                                        <option value="{{ customer.id }}" 
+                                                {% if customer.id|stringformat:"s" in selected_customer_ids %}selected{% endif %}>
+                                            {{ customer.first_name }} {{ customer.last_name|default:"" }} 
+                                            {% if customer.phone_number %}({{ customer.phone_number }}){% endif %}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted mt-1 d-block">
+                                    <i class="ri-information-line"></i> 
+                                    Select multiple customers to compare their statements across different stores
+                                </small>
+                            </div>
+                            
+                            <!-- Filters Row -->
+                            <div class="col-md-4 mb-3">
+                                <label for="store" class="form-label fw-semibold">
+                                    <i class="ri-store-line me-1"></i>Filter by Store
+                                </label>
+                                <select name="store" id="store" class="form-select">
+                                    <option value="">All Stores</option>
+                                    {% for value, label in store_choices %}
+                                        <option value="{{ value }}" {% if request.GET.store == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Payment Status Filter -->
+                            <div class="col-md-4 mb-3">
+                                <label for="paid_status" class="form-label fw-semibold">
+                                    <i class="ri-money-dollar-circle-line me-1"></i>Payment Status
+                                </label>
+                                <select name="paid_status" id="paid_status" class="form-select">
+                                    <option value="">All Statuses</option>
+                                    {% for value, label in paid_status_choices %}
+                                        <option value="{{ value }}" {% if request.GET.paid_status == value %}selected{% endif %}>
+                                            {{ label }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Date Range -->
+                            <div class="col-md-2 mb-3">
+                                <label for="start_date" class="form-label fw-semibold">
+                                    <i class="ri-calendar-line me-1"></i>Start Date
+                                </label>
+                                <input type="date" name="start_date" id="start_date" 
+                                       class="form-control" value="{{ request.GET.start_date }}">
+                            </div>
+                            
+                            <div class="col-md-2 mb-3">
+                                <label for="end_date" class="form-label fw-semibold">
+                                    <i class="ri-calendar-check-line me-1"></i>End Date
+                                </label>
+                                <input type="date" name="end_date" id="end_date" 
+                                       class="form-control" value="{{ request.GET.end_date }}">
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div class="mt-3 d-flex gap-2 flex-wrap">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="ri-search-line me-1"></i> Generate Statement
+                            </button>
+                            {% if selected_customers %}
+                            <button type="submit" name="download" value="pdf" class="btn btn-success">
+                                <i class="ri-file-pdf-line me-1"></i> Download PDF
+                            </button>
+                            {% endif %}
+                            <button type="button" id="clearFilters" class="btn btn-secondary">
+                                <i class="ri-refresh-line me-1"></i> Reset
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if selected_customers %}
+    
+    <!-- Combined Summary (for multiple customers) -->
+    {% if has_multiple_customers %}
+    <div class="row mt-4">
+        <div class="col-xl-12">
+            <div class="card custom-card">
+                <div class="card-header" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <h5 class="card-title mb-0 text-white">
+                        <i class="ri-group-line me-2"></i>Combined Summary - All Selected Customers
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="combined-summary-box">
+                        <h6 class="text-white mb-3">
+                            <i class="ri-funds-line me-2"></i>Aggregate Financial Summary
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-2 col-6">
+                                <div class="summary-item">
+                                    <div class="summary-label">Total Customers</div>
+                                    <div class="summary-value">{{ selected_customers|length }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="summary-item">
+                                    <div class="summary-label">Total Orders</div>
+                                    <div class="summary-value">{{ combined_summary.total_orders }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="summary-item">
+                                    <div class="summary-label">Completed</div>
+                                    <div class="summary-value text-success">{{ combined_summary.completed_orders }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="summary-item">
+                                    <div class="summary-label">Total Amount</div>
+                                    <div class="summary-value">Ksh {{ combined_summary.total_spent|floatformat:2 }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="summary-item">
+                                    <div class="summary-label">Total Paid</div>
+                                    <div class="summary-value">Ksh {{ combined_summary.total_paid|floatformat:2 }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-6">
+                                <div class="summary-item">
+                                    <div class="summary-label">Balance</div>
+                                    <div class="summary-value {% if combined_summary.total_balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                                        Ksh {{ combined_summary.total_balance|floatformat:2 }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Individual Customer Sections -->
+    {% for customer_data in all_customer_data %}
+    <div class="customer-section">
+        <!-- Customer Header -->
+        <div class="customer-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="ri-user-line me-2"></i>
+                    {{ customer_data.customer.first_name }} {{ customer_data.customer.last_name|default:"" }}
+                </h5>
+                <span class="badge bg-light text-dark">
+                    {{ customer_data.summary.total_orders }} Order{{ customer_data.summary.total_orders|pluralize }}
+                </span>
+            </div>
+        </div>
+        
+        <!-- Customer Info & Summary -->
+        <div class="row">
+            <!-- Customer Details -->
+            <div class="col-lg-4 mb-3">
+                <h6 class="fw-semibold text-muted mb-3">Customer Information</h6>
+                <table class="table table-sm">
+                    <tr>
+                        <td class="fw-semibold">Phone:</td>
+                        <td>{{ customer_data.customer.phone_number|default:"N/A" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Email:</td>
+                        <td>{{ customer_data.customer.email|default:"N/A" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Category:</td>
+                        <td>
+                            <span class="badge bg-info">
+                                {{ customer_data.customer.get_default_category_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="fw-semibold">Customer Since:</td>
+                        <td>{{ customer_data.summary.customer_since|date:"M d, Y"|default:"N/A" }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Account Statistics -->
+            <div class="col-lg-8">
+                <h6 class="fw-semibold text-muted mb-3">Account Statistics</h6>
+                <div class="row">
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-primary-transparent text-primary">
+                                <i class="ri-shopping-cart-line"></i>
+                            </div>
+                            <div class="stat-value">{{ customer_data.summary.total_orders }}</div>
+                            <div class="stat-label">Total Orders</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-success-transparent text-success">
+                                <i class="ri-checkbox-circle-line"></i>
+                            </div>
+                            <div class="stat-value">{{ customer_data.summary.completed_orders }}</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-warning-transparent text-warning">
+                                <i class="ri-time-line"></i>
+                            </div>
+                            <div class="stat-value">{{ customer_data.summary.pending_orders }}</div>
+                            <div class="stat-label">Pending</div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3 col-6 mb-3">
+                        <div class="stat-card">
+                            <div class="stat-icon bg-info-transparent text-info">
+                                <i class="ri-hourglass-line"></i>
+                            </div>
+                            <div class="stat-value">{{ customer_data.summary.partially_paid_orders }}</div>
+                            <div class="stat-label">Partial</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Store Breakdown -->
+        {% if customer_data.summary.store_breakdown %}
+        <div class="store-breakdown-card">
+            <h6 class="fw-semibold mb-3">
+                <i class="ri-store-line me-2"></i>Orders by Store
+            </h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Store</th>
+                            <th class="text-center">Orders</th>
+                            <th class="text-end">Total Amount</th>
+                            <th class="text-end">Amount Paid</th>
+                            <th class="text-end">Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for store in customer_data.summary.store_breakdown %}
+                        <tr>
+                            <td>
+                                <span class="store-badge {{ store.store_code }}">
+                                    {{ store.store_name }}
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-light text-dark">{{ store.order_count }}</span>
+                            </td>
+                            <td class="text-end">Ksh {{ store.total_amount|floatformat:2 }}</td>
+                            <td class="text-end text-success">Ksh {{ store.amount_paid|floatformat:2 }}</td>
+                            <td class="text-end {% if store.balance > 0 %}text-danger{% else %}text-success{% endif %} fw-semibold">
+                                Ksh {{ store.balance|floatformat:2 }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Financial Summary -->
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="summary-box">
+                    <h6 class="text-white mb-3">
+                        <i class="ri-funds-line me-2"></i>Financial Summary
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-3 col-6">
+                            <div class="summary-item">
+                                <div class="summary-label">Total Amount</div>
+                                <div class="summary-value">Ksh {{ customer_data.summary.total_spent|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="summary-item">
+                                <div class="summary-label">Total Paid</div>
+                                <div class="summary-value">Ksh {{ customer_data.summary.total_paid|floatformat:2 }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="summary-item">
+                                <div class="summary-label">Outstanding Balance</div>
+                                <div class="summary-value">
+                                    Ksh {{ customer_data.summary.total_balance|floatformat:2 }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="summary-item">
+                                <div class="summary-label">Last Order</div>
+                                <div class="summary-value" style="font-size: 16px;">
+                                    {{ customer_data.summary.last_order_date|date:"M d, Y"|default:"N/A" }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Order History -->
+        <div class="mt-4">
+            <h6 class="fw-semibold mb-3">
+                <i class="ri-file-list-3-line me-2"></i>Order History
+            </h6>
+            {% if customer_data.order_details %}
+                {% for detail in customer_data.order_details %}
+                <div class="order-card">
+                    <!-- Order Header -->
+                    <div class="order-header">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap">
+                            <div>
+                                <h6 class="mb-1 fw-bold">
+                                    Order #Mc{{ detail.order.id }}Z
+                                </h6>
+                                <small class="text-muted">
+                                    <i class="ri-calendar-line me-1"></i>
+                                    {{ detail.order.order_date|date:"F d, Y - h:i A" }}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge 
+                                    {% if detail.order.paid_status == 'completed' %}badge-paid
+                                    {% elif detail.order.paid_status == 'pending' %}badge-pending
+                                    {% else %}badge-partial{% endif %}">
+                                    {{ detail.order.get_paid_status_display }}
+                                </span>
+                                <div class="mt-1">
+                                    <span class="store-badge {{ detail.order.store }}">
+                                        {{ detail.order.get_store_display }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Items -->
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="5%">#</th>
+                                    <th width="40%">Product</th>
+                                    <th width="10%" class="text-center">Qty</th>
+                                    <th width="15%" class="text-end">Unit Price</th>
+                                    <th width="10%" class="text-end">Variance</th>
+                                    <th width="20%" class="text-end">Line Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in detail.items %}
+                                <tr class="product-item">
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>
+                                        <span class="fw-semibold">{{ item.product_name }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-dark">{{ item.quantity }}</span>
+                                    </td>
+                                    <td class="text-end">Ksh {{ item.unit_price|floatformat:2 }}</td>
+                                    <td class="text-end">
+                                        {% if item.variance != 0 %}
+                                            <span class="{% if item.variance > 0 %}text-success{% else %}text-danger{% endif %}">
+                                                Ksh {{ item.variance|floatformat:2 }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end fw-semibold">Ksh {{ item.line_total|floatformat:2 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="5" class="text-end fw-bold">Order Total:</td>
+                                    <td class="text-end fw-bold fs-6">Ksh {{ detail.order.total_amount|floatformat:2 }}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="5" class="text-end fw-semibold">Amount Paid:</td>
+                                    <td class="text-end fw-semibold text-success">Ksh {{ detail.order.amount_paid|floatformat:2 }}</td>
+                                </tr>
+                                <tr class="{% if detail.balance > 0 %}table-danger{% else %}table-success{% endif %}">
+                                    <td colspan="5" class="text-end fw-bold">Balance Due:</td>
+                                    <td class="text-end fw-bold fs-6 
+                                        {% if detail.balance > 0 %}balance-positive{% else %}balance-zero{% endif %}">
+                                        Ksh {{ detail.balance|floatformat:2 }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="ri-inbox-line" style="font-size: 36px; opacity: 0.5;"></i>
+                    <p class="mt-2">No orders found for this customer with the selected filters.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+    
+    {% else %}
+    <!-- No Customer Selected -->
+    <div class="row mt-4">
+        <div class="col-xl-12">
+            <div class="card custom-card">
+                <div class="card-body">
+                    <div class="no-customer-selected">
+                        <i class="ri-user-search-line"></i>
+                        <h4>Select Customer(s)</h4>
+                        <p>Choose one or more customers from the dropdown above to view their account statements.</p>
+                        <p class="text-muted small">
+                            <i class="ri-lightbulb-line"></i> 
+                            Tip: Select multiple customers to compare their order histories across different stores
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{% static 'assets/libs/@popperjs/core/umd/popper.min.js' %}"></script>
+    <script src="{% static 'assets/libs/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="{% static 'assets/js/defaultmenu.min.js' %}"></script>
+    <script src="{% static 'assets/libs/node-waves/waves.min.js' %}"></script>
+    <script src="{% static 'assets/js/sticky.js' %}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/js/iziToast.min.js"></script>
+    <script src="{% static 'assets/libs/simplebar/simplebar.min.js' %}"></script>
+    <script src="{% static 'assets/js/custom.js' %}"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Initialize Select2 for customer dropdown with MULTIPLE selection
+            $('#customers').select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Search and select customer(s)...',
+                allowClear: true,
+                width: '100%',
+                closeOnSelect: false,  // Keep dropdown open for multiple selections
+            });
+            
+            // Clear filters button
+            $('#clearFilters').on('click', function() {
+                window.location.href = window.location.pathname;
+            });
+            
+            // Show toast if customer statement generated
+            {% if selected_customers %}
+            iziToast.success({
+                title: 'Success',
+                message: 'Customer statement{% if has_multiple_customers %}s{% endif %} generated successfully!',
+                position: 'topRight'
+            });
+            {% endif %}
+        });
+    </script>
+</body>
+</html>
+{% endblock %}

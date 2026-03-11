@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirm Your Email</title>
+    <style>
+        @keyframes slideInFromTop {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInFromBottom {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInFromLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInFromRight {
+            from {
+                opacity: 0;
+                transform: translateX(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes zoomIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes rotateIn {
+            from {
+                opacity: 0;
+                transform: rotate(-10deg) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: rotate(0deg) scale(1);
+            }
+        }
+
+        @keyframes breathe {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.03);
+            }
+        }
+
+        @keyframes wiggle {
+            0%, 100% {
+                transform: rotate(0deg);
+            }
+            25% {
+                transform: rotate(-2deg);
+            }
+            75% {
+                transform: rotate(2deg);
+            }
+        }
+
+        @keyframes colorShift {
+            0% {
+                background: linear-gradient(135deg, #ff9a56, #ff6b9d);
+            }
+            33% {
+                background: linear-gradient(135deg, #c471f5, #fa71cd);
+            }
+            66% {
+                background: linear-gradient(135deg, #4facfe, #00f2fe);
+            }
+            100% {
+                background: linear-gradient(135deg, #ff9a56, #ff6b9d);
+            }
+        }
+
+        @keyframes drawLine {
+            from {
+                width: 0;
+            }
+            to {
+                width: 100%;
+            }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {
+                transform: translateY(0);
+            }
+            40% {
+                transform: translateY(-15px);
+            }
+            60% {
+                transform: translateY(-8px);
+            }
+        }
+
+        body {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: colorShift 15s ease infinite;
+        }
+
+        .email-container {
+            animation: slideInFromTop 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .modern-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 
+                0 25px 50px rgba(0, 0, 0, 0.15),
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+        }
+
+        .header-badge {
+            animation: rotateIn 1s ease-out 0.3s both;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: inline-block;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .main-title {
+            animation: slideInFromLeft 1s ease-out 0.5s both;
+            color: #2d3748;
+            font-size: 36px;
+            font-weight: 700;
+            margin: 20px 0 10px 0;
+            line-height: 1.2;
+        }
+
+        .username-style {
+            color: #667eea;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+            animation: breathe 3s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        .subtitle {
+            animation: slideInFromRight 1s ease-out 0.7s both;
+            color: #718096;
+            font-size: 18px;
+            margin: 0;
+            font-weight: 400;
+        }
+
+        .info-section {
+            animation: zoomIn 1s ease-out 0.9s both;
+            background: linear-gradient(135deg, #f7fafc, #edf2f7);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 30px 0;
+            border-left: 5px solid #667eea;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .info-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            animation: drawLine 2s ease-out 1.2s both;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .feature-item {
+            animation: slideInFromBottom 0.8s ease-out both;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feature-item:nth-child(1) { animation-delay: 1s; }
+        .feature-item:nth-child(2) { animation-delay: 1.1s; }
+        .feature-item:nth-child(3) { animation-delay: 1.2s; }
+        .feature-item:nth-child(4) { animation-delay: 1.3s; }
+
+        .feature-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+            animation: wiggle 2s ease-in-out infinite;
+        }
+
+        .cta-section {
+            animation: slideInFromBottom 1s ease-out 1.4s both;
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .activate-btn {
+            background: linear-gradient(135deg, #ff6b9d, #c471f5);
+            color: white;
+            padding: 18px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: 700;
+            display: inline-block;
+            box-shadow: 0 10px 30px rgba(255, 107, 157, 0.4);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        .activate-btn:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(255, 107, 157, 0.6);
+        }
+
+        .activate-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.7s ease;
+        }
+
+        .activate-btn:hover::before {
+            left: 100%;
+        }
+
+        .countdown-timer {
+            animation: zoomIn 1s ease-out 1.6s both;
+            background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+            color: #2d3436;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 700;
+            display: inline-block;
+            margin: 15px 0;
+            box-shadow: 0 5px 15px rgba(253, 203, 110, 0.4);
+        }
+
+        .link-section {
+            animation: slideInFromLeft 1s ease-out 1.8s both;
+            background: linear-gradient(135deg, #e8f4fd, #c3f0ca);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 30px 0;
+            border: 2px dashed #4facfe;
+        }
+
+        .copy-link {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: #4facfe;
+            word-break: break-all;
+            border: 1px solid #ddd;
+            margin: 10px 0;
+        }
+
+        .footer-section {
+            animation: slideInFromBottom 1s ease-out 2s both;
+            background: linear-gradient(135deg, #2d3748, #4a5568);
+            color: white;
+            text-align: center;
+            padding: 30px;
+            border-radius: 20px;
+            margin-top: 30px;
+        }
+
+        .brand-highlight {
+            background: linear-gradient(135deg, #ff6b9d, #4facfe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 800;
+            font-size: 20px;
+        }
+
+        .decorative-line {
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #4facfe, #ff6b9d, #4facfe, transparent);
+            margin: 20px 0;
+            border-radius: 2px;
+            animation: drawLine 2s ease-out 2.2s both;
+        }
+
+        @media (max-width: 600px) {
+            .email-container {
+                width: 95% !important;
+                margin: 10px auto !important;
+            }
+
+            .feature-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .main-title {
+                font-size: 28px;
+            }
+
+            .activate-btn {
+                padding: 16px 32px;
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; min-height: 100vh;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 auto; min-height: 100vh;">
+        <tr>
+            <td align="center" style="padding: 40px 20px;">
+                <table width="600" cellpadding="0" cellspacing="0" class="email-container modern-card" style="margin: 0 auto; padding: 0; border-radius: 25px; overflow: hidden;">
+                    
+                    <!-- Header Section -->
+                    <tr>
+                        <td style="padding: 50px 40px 30px 40px; text-align: center;">
+                            <div class="header-badge">🎉 Account Activation</div>
+                            <h1 class="main-title">
+                                Welcome <span class="username-style">Home</span>!
+                            </h1>
+                            <p class="subtitle">
+                                You're moments away from joining our amazing community
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Info Section -->
+                    <tr>
+                        <td style="padding: 0 40px;">
+                            <div class="info-section">
+                                <h3 style="color: #2d3748; margin: 0 0 20px 0; font-size: 22px; font-weight: 600;">
+                                    🚀 Let's Get You Started
+                                </h3>
+                                <p style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                                    Thank you for signing up! To complete your registration and unlock all the amazing features, please verify your email address.
+                                </p>
+                                
+                                <div class="feature-grid">
+                                    <div class="feature-item">
+                                        <div class="feature-icon">🔐</div>
+                                        <div style="font-weight: 600; color: #2d3748; margin-bottom: 5px;">Secure</div>
+                                        <div style="font-size: 14px; color: #718096;">End-to-end encryption</div>
+                                    </div>
+                                    <div class="feature-item">
+                                        <div class="feature-icon">⚡</div>
+                                        <div style="font-weight: 600; color: #2d3748; margin-bottom: 5px;">Fast</div>
+                                        <div style="font-size: 14px; color: #718096;">Instant activation</div>
+                                    </div>
+                                    <div class="feature-item">
+                                        <div class="feature-icon">🎯</div>
+                                        <div style="font-weight: 600; color: #2d3748; margin-bottom: 5px;">Simple</div>
+                                        <div style="font-size: 14px; color: #718096;">One-click process</div>
+                                    </div>
+                                    <div class="feature-item">
+                                        <div class="feature-icon">🛡️</div>
+                                        <div style="font-weight: 600; color: #2d3748; margin-bottom: 5px;">Protected</div>
+                                        <div style="font-size: 14px; color: #718096;">Your data is safe</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- CTA Section -->
+                    <tr>
+                        <td class="cta-section">
+                            <div class="countdown-timer">
+                                ⏰ Link expires in 5 minutes
+                            </div>
+                            <br>
+                            <a href="http://{{ domain }}{% url 'activate' uidb64=uid token=token %}" 
+                               class="activate-btn">
+                                ✨ Activate My Account Now
+                            </a>
+                            <p style="color: #718096; font-size: 14px; margin: 20px 0 0 0;">
+                                Click the button above to verify your email instantly
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Alternative Link -->
+                    <tr>
+                        <td style="padding: 0 40px;">
+                            <div class="link-section">
+                                <h4 style="color: #2d3748; margin: 0 0 15px 0; font-size: 16px;">
+                                    🔗 Having trouble? Use this direct link:
+                                </h4>
+                                <div class="copy-link">
+                                    http://{{ domain }}{% url 'activate' uidb64=uid token=token %}
+                                </div>
+                                <p style="color: #4a5568; font-size: 13px; margin: 10px 0 0 0; text-align: center;">
+                                    Copy and paste this URL into your browser
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 0 40px 40px 40px;">
+                            <div class="footer-section">
+                                <div class="decorative-line"></div>
+                                <h3 class="brand-highlight">@McDave</h3>
+                                <p style="margin: 15px 0 0 0; font-size: 14px; opacity: 0.9;">
+                                    Building amazing experiences, one user at a time 🌟
+                                </p>
+                                <p style="margin: 10px 0 0 0; font-size: 12px; opacity: 0.7;">
+                                    Need help? Just reply to this email - we're here for you!
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

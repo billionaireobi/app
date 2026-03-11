@@ -1,0 +1,51 @@
+{% extends 'partials/base.html' %}
+{% block content %}
+<div class="container mt-5">
+    <h2>Quotations</h2>
+    <a href="{% url 'create_quote' %}" class="btn btn-primary mb-3">Create New Quote</a>
+
+    <table id="quotesTable" class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Customer</th>
+                <th>Status</th>
+                <th>Total Amount</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for quote in quotes %}
+                <tr>
+                    <td>#McQ{{ quote.id }}Z</td>
+                    <td>{{ quote.customer.get_full_name }}</td>
+                    <td>{{ quote.get_status_display }}</td>
+                    <td>Ksh {{ quote.total_amount }}</td>
+                    <td>
+                        <a href="{% url 'quote_detail' quote.id %}" class="btn btn-info btn-sm">View</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    $('#quotesTable').DataTable({
+        "pageLength": 5,
+        "lengthMenu": [ [5, 20, 50, 100, -1], [5, 20, 50, 100, "All"] ],
+        "order": [[0, "desc"]]  // default sort by first column (ID) descending
+    });
+});
+</script>
+{% endblock %}

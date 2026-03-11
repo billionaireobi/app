@@ -1,0 +1,25 @@
+{# templates/users/role.html #}
+{% extends 'partials/base.html' %}
+{% block title %}Change Role – {{ user_obj.username }}{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Change Role for <strong>{{ user_obj.username }}</strong></h2>
+
+<form method="post">
+  {% csrf_token %}
+  <div class="mb-3" style="max-width: 400px;">
+    <label for="department" class="form-label">Department (Role)</label>
+    <select name="department" id="department" class="form-select" required>
+      <option value="">-- Select Department --</option>
+      {% for value, label in user_obj.userprofile.DEPARTMENT_CHOICES %}
+        <option value="{{ value }}" {% if user_obj.userprofile.department == value %}selected{% endif %}>
+          {{ label }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <button type="submit" class="btn btn-primary">Update Role</button>
+  <a href="{% url 'user_list' %}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

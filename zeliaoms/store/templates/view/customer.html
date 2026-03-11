@@ -1,0 +1,643 @@
+{% extends "partials/base.html" %}
+{% load static %}
+{% block content %}
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>{{ customer.first_name }} — Customer Profile</title>
+    <link rel="icon" href="{% static 'assets/images/mcdave/logo.png' %}" type="image/x-icon">
+    <!--<link href="{% static 'assets/libs/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/css/styles.min.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/css/icons.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/libs/node-waves/waves.min.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/libs/simplebar/simplebar.min.css' %}" rel="stylesheet">-->
+    <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/css/iziToast.css" />-->
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --ink:    #0f172a;
+            --ink2:   #334155;
+            --muted:  #64748b;
+            --rule:   #e2e8f0;
+            --bg:     #f8fafc;
+            --card:   #ffffff;
+            --accent: #0f766e;   /* teal — refined, serious */
+            --accent2:#0d9488;
+            --accent-light: #f0fdfa;
+            --red:    #dc2626;
+            --green:  #16a34a;
+            --amber:  #d97706;
+            --blue:   #2563eb;
+            --radius: 12px;
+        }
+
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); }
+
+        /* ── breadcrumb / header ── */
+        .page-header-breadcrumb { margin-bottom: 0 !important; }
+
+        /* ── hero banner ── */
+        .customer-hero {
+            background: linear-gradient(135deg, #0f172a 0%, #134e4a 60%, #0f766e 100%);
+            border-radius: var(--radius);
+            padding: 32px 36px;
+            margin-bottom: 24px;
+            position: relative;
+            overflow: hidden;
+            animation: fadeSlide .45s ease both;
+        }
+        .customer-hero::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            pointer-events: none; 
+        }
+        .hero-avatar {
+            width: 68px; height: 68px; border-radius: 50%;
+            background: rgba(255,255,255,.15);
+            border: 2px solid rgba(255,255,255,.3);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'DM Serif Display', serif;
+            font-size: 26px; color: #fff; flex-shrink: 0;
+        }
+        .hero-name {
+            font-family: 'DM Serif Display', serif;
+            font-size: 26px; color: #fff; margin: 0; line-height: 1.2;
+        }
+        .hero-sub { color: rgba(255,255,255,.65); font-size: 13px; margin-top: 4px; }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 5px 12px; border-radius: 20px; font-size: 11px;
+            font-weight: 600; letter-spacing: .5px; text-transform: uppercase;
+        }
+        .hero-badge.factory     { background: rgba(220,38,38,.2);  color: #fca5a5; }
+        .hero-badge.distributor { background: rgba(217,119,6,.2);  color: #fcd34d; }
+        .hero-badge.wholesale   { background: rgba(37,99,235,.2);  color: #93c5fd; }
+        .hero-badge.towns       { background: rgba(22,163,74,.2);  color: #86efac; }
+        .hero-badge.retail      { background: rgba(255,255,255,.15); color: rgba(255,255,255,.8); }
+
+        .hero-metrics { display: flex; gap: 32px; flex-wrap: wrap; }
+        .hero-metric-val { font-size: 22px; font-weight: 700; color: #fff; line-height: 1; }
+        .hero-metric-lbl { font-size: 11px; color: rgba(255,255,255,.55); text-transform: uppercase; letter-spacing: .4px; margin-top: 2px; }
+
+        /* ── section cards ── */
+        .section-card {
+            background: var(--card); border-radius: var(--radius);
+            border: 1px solid var(--rule);
+            margin-bottom: 20px;
+            animation: fadeSlide .45s ease both;
+        }
+        .section-card:nth-child(2) { animation-delay: .05s; }
+        .section-card:nth-child(3) { animation-delay: .10s; }
+        .section-card:nth-child(4) { animation-delay: .15s; }
+
+        .section-head {
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--rule);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .section-head h6 {
+            margin: 0; font-size: 13px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .6px; color: var(--ink2);
+            display: flex; align-items: center; gap: 8px;
+        }
+        .section-head h6 i { color: var(--accent); font-size: 16px; }
+        .section-body { padding: 20px 22px; }
+
+        /* ── info grid ── */
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+        .info-item {}
+        .info-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--muted); margin-bottom: 4px; }
+        .info-value { font-size: 14px; color: var(--ink); font-weight: 500; }
+        .info-value.empty { color: var(--muted); font-style: italic; font-weight: 400; }
+
+        /* ── stat pills row ── */
+        .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+        @media(max-width:768px) { .stat-row { grid-template-columns: repeat(2,1fr); } }
+        .stat-pill {
+            background: var(--card); border: 1px solid var(--rule);
+            border-radius: 10px; padding: 16px 18px;
+            position: relative; overflow: hidden;
+        }
+        .stat-pill::after { content:''; position:absolute; bottom:0;left:0;right:0;height:3px; }
+        .stat-pill.teal::after   { background: var(--accent2); }
+        .stat-pill.green::after  { background: var(--green); }
+        .stat-pill.red::after    { background: var(--red); }
+        .stat-pill.blue::after   { background: var(--blue); }
+        .stat-pill-val { font-size: 20px; font-weight: 800; color: var(--ink); line-height: 1; margin-bottom: 4px; }
+        .stat-pill-lbl { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+
+        /* ── orders table ── */
+        .orders-table { margin: 0; }
+        .orders-table thead th {
+            background: #f8fafc; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .5px;
+            color: var(--muted); padding: 10px 14px;
+            border-bottom: 2px solid var(--rule); white-space: nowrap;
+        }
+        .orders-table tbody td {
+            padding: 11px 14px; vertical-align: middle;
+            border-bottom: 1px solid #f8fafc; font-size: 13px;
+        }
+        .orders-table tbody tr:last-child td { border-bottom: none; }
+        .orders-table tbody tr:hover { background: #fafcff; }
+
+        /* ── payments table ── */
+        .pay-table { margin: 0; }
+        .pay-table thead th {
+            background: #f8fafc; font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .5px;
+            color: var(--muted); padding: 10px 14px;
+            border-bottom: 2px solid var(--rule);
+        }
+        .pay-table tbody td {
+            padding: 10px 14px; vertical-align: middle;
+            border-bottom: 1px solid #f8fafc; font-size: 13px;
+        }
+        .pay-table tbody tr:last-child td { border-bottom: none; }
+
+        /* ── status badges ── */
+        .s-badge {
+            display: inline-block; padding: 3px 10px;
+            border-radius: 20px; font-size: 11px; font-weight: 600;
+        }
+        .s-completed   { background:#dcfce7; color:#15803d; }
+        .s-pending     { background:#fef9c3; color:#a16207; }
+        .s-partial     { background:#dbeafe; color:#1d4ed8; }
+        .s-cancelled   { background:#fee2e2; color:#b91c1c; }
+        .s-returned    { background:#fce7f3; color:#9d174d; }
+
+        /* ── payment method chips ── */
+        .pm-chip { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:5px; font-size:11px; font-weight:600; }
+        .pm-cash     { background:#f0fdf4; color:#166534; }
+        .pm-mpesa    { background:#f0fdf4; color:#065f46; border:1px solid #bbf7d0; }
+        .pm-bank     { background:#eff6ff; color:#1e40af; }
+        .pm-cheque   { background:#fefce8; color:#854d0e; }
+        .pm-card     { background:#faf5ff; color:#6b21a8; }
+
+        /* ── balance indicator ── */
+        .bal-due   { color: var(--red); font-weight: 700; }
+        .bal-clear { color: var(--green); font-weight: 600; }
+
+        /* ── empty states ── */
+        .empty { text-align:center; padding:40px 20px; color: var(--muted); }
+        .empty i { font-size:44px; opacity:.25; display:block; margin-bottom:10px; }
+
+        /* ── tabs ── */
+        .cust-tabs .nav-link {
+            font-size: 13px; font-weight: 600; color: var(--muted);
+            border: none; border-bottom: 3px solid transparent;
+            padding: 10px 16px; border-radius: 0;
+            background: transparent;
+        }
+        .cust-tabs .nav-link.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .cust-tabs .nav-link:hover:not(.active) { color: var(--ink2); }
+
+        /* ── animations ── */
+        @keyframes fadeSlide {
+            from { opacity:0; transform: translateY(12px); }
+            to   { opacity:1; transform: translateY(0); }
+        }
+
+        .btn-accent { background: var(--accent); color: #fff; border: none; }
+        .btn-accent:hover { background: var(--accent2); color: #fff; }
+    </style>
+</head>
+<body>
+
+    <!-- Breadcrumb -->
+    <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+        <h1 class="page-title fw-semibold fs-18 mb-0">Customer Profile</h1>
+        <nav><ol class="breadcrumb mb-0">
+            {% if is_admin %}
+            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+            {% else %}
+            <li class="breadcrumb-item"><a href="{% url 'salesperson_dashboard' %}">Dashboard</a></li>
+            {% endif %}
+            <li class="breadcrumb-item"><a href="{% url 'customers_list' %}">Customers</a></li>
+            <li class="breadcrumb-item active">{{ customer.first_name }}</li>
+        </ol></nav>
+    </div>
+
+    <!-- Hero Banner -->
+    <div class="customer-hero">
+        <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+            <div class="hero-avatar">{{ customer.first_name|slice:":1"|upper }}</div>
+            <div>
+                <h2 class="hero-name">{{ customer.first_name }} {% if customer.last_name %}<span style="opacity:.7">{{ customer.last_name }}</span>{% endif %}</h2>
+                <div class="hero-sub d-flex align-items-center gap-3 mt-1">
+                    {% if customer.phone_number %}
+                    <span><i class="ri-phone-line me-1"></i>{{ customer.phone_number }}</span>
+                    {% endif %}
+                   
+                    {% if customer.address %}
+                    <span><i class="ri-map-pin-line me-1"></i>{{ customer.address }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="ms-auto d-flex gap-2 flex-wrap">
+                <span class="hero-badge {{ customer.default_category|lower }}">
+                    <i class="ri-price-tag-3-line"></i>{{ customer.get_default_category_display }}
+                </span>
+                <a href="{% url 'edit_customer' customer.id %}" class="btn btn-sm" style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);">
+                    <i class="ri-edit-line me-1"></i>Edit
+                </a>
+                <a href="{% url 'customer_statements' %}?customers={{ customer.id }}" class="btn btn-sm btn-accent">
+                    <i class="ri-file-list-3-line me-1"></i>Statement
+                </a>
+            </div>
+        </div>
+
+        <!-- Hero metrics -->
+        <div class="hero-metrics">
+            <div>
+                <div class="hero-metric-val">{{ total_orders }}</div>
+                <div class="hero-metric-lbl">Total Orders</div>
+            </div>
+            <div>
+                <div class="hero-metric-val">Ksh {{ total_spent|floatformat:0 }}</div>
+                <div class="hero-metric-lbl">Total Spent</div>
+            </div>
+            <div>
+                <div class="hero-metric-val">Ksh {{ total_paid|floatformat:0 }}</div>
+                <div class="hero-metric-lbl">Total Paid</div>
+            </div>
+            <div>
+                <div class="hero-metric-val {% if balance > 0 %}" style="color:#fca5a5;{% else %}" style="color:#86efac;{% endif %}">
+                    Ksh {{ balance|floatformat:0 }}
+                </div>
+                <div class="hero-metric-lbl">Balance Due</div>
+            </div>
+            <div>
+                <div class="hero-metric-val">{{ customer.created_at|date:"M Y" }}</div>
+                <div class="hero-metric-lbl">Customer Since</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left: Info + Stats -->
+        <div class="col-xl-4 col-lg-5">
+
+            <!-- Customer Info -->
+            <div class="section-card">
+                <div class="section-head">
+                    <h6><i class="ri-user-3-line"></i> Contact Details</h6>
+                </div>
+                <div class="section-body">
+                    <div class="info-grid" style="grid-template-columns: 1fr;">
+                        <div class="info-item">
+                            <div class="info-label">Shop / Business Name</div>
+                            <div class="info-value">{{ customer.first_name }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Contact Person</div>
+                            <div class="info-value {% if not customer.last_name %}empty{% endif %}">
+                                {{ customer.last_name|default:"Not provided" }}
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Phone</div>
+                            <div class="info-value {% if not customer.phone_number %}empty{% endif %}">
+                                {% if customer.phone_number %}
+                                <a href="tel:{{ customer.phone_number }}" class="text-decoration-none" style="color:var(--accent)">
+                                    <i class="ri-phone-line me-1"></i>{{ customer.phone_number }}
+                                </a>
+                                {% else %}Not provided{% endif %}
+                            </div>
+                        </div>
+                        <!--<div class="info-item">-->
+                        <!--    <div class="info-label">Email</div>-->
+                        <!--    <div class="info-value {% if not customer.email %}empty{% endif %}">-->
+                        <!--        {% if customer.email %}-->
+                        <!--        <a href="mailto:{{ customer.email }}" class="text-decoration-none" style="color:var(--accent)">-->
+                        <!--            <i class="ri-mail-line me-1"></i>{{ customer.email }}-->
+                        <!--        </a>-->
+                        <!--        {% else %}Not provided{% endif %}-->
+                        <!--    </div>-->
+                        <!--</div>-->
+                        <div class="info-item">
+                            <div class="info-label">Location / Address</div>
+                            <div class="info-value {% if not customer.address %}empty{% endif %}">
+                                {{ customer.address|default:"Not provided" }}
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Category</div>
+                            <div class="info-value">{{ customer.get_default_category_display }}</div>
+                        </div>
+                        <!--<div class="info-item">-->
+                        <!--    <div class="info-label">Assigned Salesperson</div>-->
+                        <!--    <div class="info-value {% if not customer.sales_person %}empty{% endif %}">-->
+                        <!--        {% if customer.sales_person %}-->
+                        <!--            <i class="ri-user-star-line me-1" style="color:var(--accent)"></i>-->
+                        <!--            {{ customer.sales_person.get_full_name|default:customer.sales_person.username }}-->
+                        <!--        {% else %}Not assigned{% endif %}-->
+                        <!--    </div>-->
+                        <!--</div>-->
+                        <div class="info-item">
+                            <div class="info-label">Customer Since</div>
+                            <div class="info-value">{{ customer.created_at|date:"F j, Y" }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Last Updated</div>
+                            <div class="info-value">{{ customer.updated_at|date:"F j, Y" }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Financial Summary -->
+            <div class="section-card">
+                <div class="section-head">
+                    <h6><i class="ri-pie-chart-line"></i> Financial Summary</h6>
+                </div>
+                <div class="section-body" style="padding:16px 18px;">
+                    <!-- Visual balance bar -->
+                    {% if total_spent > 0 %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small class="text-muted fw-semibold">Paid vs Outstanding</small>
+                            <small class="text-muted">{{ paid_pct|floatformat:0 }}% paid</small>
+                        </div>
+                        <div class="progress" style="height:8px; border-radius:4px;">
+                            <div class="progress-bar" style="width:{{ paid_pct }}%; background:var(--accent); border-radius:4px;"></div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <table class="table table-sm mb-0" style="font-size:13px;">
+                        <tbody>
+                            <tr>
+                                <td class="text-muted border-0 ps-0">Total Invoiced</td>
+                                <td class="text-end fw-bold border-0 pe-0">Ksh {{ total_spent|floatformat:2 }}</td>
+                            </tr>
+                            <tr>
+                                <td class="text-muted ps-0" style="color:var(--green)!important">
+                                    <i class="ri-checkbox-circle-line me-1" style="color:var(--green)"></i>Total Paid
+                                </td>
+                                <td class="text-end fw-bold pe-0" style="color:var(--green)">Ksh {{ total_paid|floatformat:2 }}</td>
+                            </tr>
+                            <tr style="border-top:2px solid var(--rule);">
+                                <td class="ps-0 fw-bold pt-2 {% if balance > 0 %}bal-due{% else %}bal-clear{% endif %}">
+                                    {% if balance > 0 %}
+                                    <i class="ri-alert-line me-1"></i>Balance Due
+                                    {% else %}
+                                    <i class="ri-check-double-line me-1"></i>Fully Settled
+                                    {% endif %}
+                                </td>
+                                <td class="text-end fw-bold pe-0 pt-2 {% if balance > 0 %}bal-due{% else %}bal-clear{% endif %}">
+                                    Ksh {{ balance|floatformat:2 }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="section-card">
+                <div class="section-head"><h6><i class="ri-flashlight-line"></i> Quick Actions</h6></div>
+                <div class="section-body d-grid gap-2">
+                    <a href="{% url 'create_order' %}?customer={{ customer.id }}" class="btn btn-accent btn-sm">
+                        <i class="ri-add-circle-line me-1"></i> New Order for this Customer
+                    </a>
+                    <a href="{% url 'customer_statements' %}?customers={{ customer.id }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="ri-file-list-3-line me-1"></i> View Statement
+                    </a>
+                    <a href="{% url 'edit_customer' customer.id %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="ri-edit-line me-1"></i> Edit Customer
+                    </a>
+                    <a href="{% url 'delete_customer' customer.id %}" class="btn btn-sm btn-outline-danger">
+                        <i class="ri-delete-bin-line me-1"></i> Delete Customer
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right: Orders + Payments tabs -->
+        <div class="col-xl-8 col-lg-7">
+            <div class="section-card">
+                <!-- Tabs -->
+                <ul class="nav cust-tabs border-bottom px-2" id="custTabs">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-orders">
+                            <i class="ri-shopping-bag-line me-1"></i>Orders
+                            <span class="badge bg-primary ms-1 rounded-pill" style="font-size:10px;">{{ total_orders }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-payments">
+                            <i class="ri-secure-payment-line me-1"></i>Payments
+                            <span class="badge bg-success ms-1 rounded-pill" style="font-size:10px;">{{ total_payment_count }}</span>
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-items">
+                            <i class="ri-list-check-2 me-1"></i>Top Products
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- ─── ORDERS TAB ─── -->
+                    <div class="tab-pane fade show active" id="tab-orders">
+                        {% if orders %}
+                        <div class="table-responsive">
+                            <table class="table orders-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Date</th>
+                                        <th>Store</th>
+                                        <th class="text-center">Items</th>
+                                        <th class="text-end">Amount</th>
+                                        <th class="text-end">Paid</th>
+                                        <th class="text-end">Balance</th>
+                                        <th>Payment</th>
+                                        <th>Delivery</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for order in orders %}
+                                    <tr>
+                                        <td class="text-muted" style="font-size:12px;">#{{ order.id }}</td>
+                                        <td style="font-size:12px; white-space:nowrap;">{{ order.order_date|date:"M d, Y" }}</td>
+                                        <td style="font-size:12px;">
+                                            {% if order.store == 'mcdave' %}McDave
+                                            {% elif order.store == 'kisii' %}Mombasa
+                                            {% else %}Offshore{% endif %}
+                                        </td>
+                                        <td class="text-center fw-bold">{{ order.order_items.count }}</td>
+                                        <td class="text-end fw-semibold">Ksh {{ order.total_amount|floatformat:2 }}</td>
+                                        <td class="text-end" style="color:var(--green); font-weight:600;">Ksh {{ order.amount_paid|floatformat:2 }}</td>
+                                        <td class="text-end {% if order.get_balance > 0 %}bal-due{% else %}bal-clear{% endif %}">
+                                            Ksh {{ order.get_balance|floatformat:2 }}
+                                        </td>
+                                        <td>
+                                            <span class="s-badge
+                                                {% if order.paid_status == 'completed' %}s-completed
+                                                {% elif order.paid_status == 'partially_paid' %}s-partial
+                                                {% elif order.paid_status == 'cancelled' %}s-cancelled
+                                                {% else %}s-pending{% endif %}">
+                                                {{ order.get_paid_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="s-badge
+                                                {% if order.delivery_status == 'completed' %}s-completed
+                                                {% elif order.delivery_status == 'returned' %}s-returned
+                                                {% elif order.delivery_status == 'cancelled' %}s-cancelled
+                                                {% else %}s-pending{% endif %}">
+                                                {{ order.get_delivery_status_display }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <a href="{% url 'order_detail' order.id %}" class="btn btn-xs btn-outline-secondary" style="padding:3px 8px;font-size:11px;">
+                                                <i class="ri-eye-line"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr style="background:#f8fafc; font-weight:700; font-size:13px;">
+                                        <td colspan="4" class="text-end ps-3" style="border-top:2px solid var(--rule);">Totals</td>
+                                        <td class="text-end" style="border-top:2px solid var(--rule);">Ksh {{ total_spent|floatformat:2 }}</td>
+                                        <td class="text-end" style="color:var(--green); border-top:2px solid var(--rule);">Ksh {{ total_paid|floatformat:2 }}</td>
+                                        <td class="text-end {% if balance > 0 %}bal-due{% else %}bal-clear{% endif %}" style="border-top:2px solid var(--rule);">Ksh {{ balance|floatformat:2 }}</td>
+                                        <td colspan="3" style="border-top:2px solid var(--rule);"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty">
+                            <i class="ri-shopping-bag-line"></i>
+                            <p class="mb-0 fw-semibold">No orders yet</p>
+                            <p class="text-muted small">This customer hasn't placed any orders.</p>
+                            <a href="{% url 'create_order' %}?customer={{ customer.id }}" class="btn btn-accent btn-sm mt-2">
+                                <i class="ri-add-line me-1"></i>Create First Order
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- ─── PAYMENTS TAB ─── -->
+                    <div class="tab-pane fade" id="tab-payments">
+                        {% if payments %}
+                        <div class="table-responsive">
+                            <table class="table pay-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Order #</th>
+                                        <th>Method</th>
+                                        <th>Reference</th>
+                                        <th class="text-end">Amount</th>
+                                        <th>Recorded By</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in payments %}
+                                    <tr>
+                                        <td style="font-size:12px; white-space:nowrap;">{{ p.payment_date|date:"M d, Y H:i" }}</td>
+                                        <td>
+                                            <a href="{% url 'order_detail' p.order.id %}" class="text-decoration-none" style="color:var(--accent);font-size:12px;">
+                                                #{{ p.order.id }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span class="pm-chip pm-{{ p.payment_method }}">
+                                                {% if p.payment_method == 'cash' %}<i class="ri-money-dollar-circle-line"></i>
+                                                {% elif p.payment_method == 'mpesa' %}<i class="ri-smartphone-line"></i>
+                                                {% elif p.payment_method == 'bank_transfer' %}<i class="ri-bank-line"></i>
+                                                {% elif p.payment_method == 'cheque' %}<i class="ri-file-paper-line"></i>
+                                                {% elif p.payment_method == 'card' %}<i class="ri-bank-card-line"></i>
+                                                {% endif %}
+                                                {{ p.get_payment_method_display }}
+                                            </span>
+                                        </td>
+                                        <td style="font-size:12px; color:var(--muted);">{{ p.reference_number|default:"—" }}</td>
+                                        <td class="text-end fw-bold" style="color:var(--green);">Ksh {{ p.amount|floatformat:2 }}</td>
+                                        <td style="font-size:12px;">
+                                            {% if p.recorded_by %}{{ p.recorded_by.get_full_name|default:p.recorded_by.username }}{% else %}—{% endif %}
+                                        </td>
+                                        <td style="font-size:12px; color:var(--muted);">{{ p.notes|default:"—"|truncatechars:30 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr style="background:#f8fafc; font-weight:700;">
+                                        <td colspan="4" class="text-end" style="border-top:2px solid var(--rule);">Total Received</td>
+                                        <td class="text-end" style="color:var(--green); border-top:2px solid var(--rule);">Ksh {{ total_paid|floatformat:2 }}</td>
+                                        <td colspan="2" style="border-top:2px solid var(--rule);"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty">
+                            <i class="ri-secure-payment-line"></i>
+                            <p class="mb-0 fw-semibold">No payments recorded</p>
+                            <p class="text-muted small">No payment history found for this customer.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- ─── TOP PRODUCTS TAB ─── -->
+                    <div class="tab-pane fade" id="tab-items">
+                        {% if top_products %}
+                        <div class="table-responsive">
+                            <table class="table pay-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Product</th>
+                                        <th class="text-center">Times Ordered</th>
+                                        <th class="text-center">Total Qty</th>
+                                        <th class="text-end">Total Spent</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for p in top_products %}
+                                    <tr>
+                                        <td class="text-muted" style="font-size:12px;">{{ forloop.counter }}</td>
+                                        <td class="fw-semibold">{{ p.product__name }}</td>
+                                        <td class="text-center">{{ p.times_ordered }}</td>
+                                        <td class="text-center fw-bold">{{ p.total_qty }}</td>
+                                        <td class="text-end fw-bold" style="color:var(--ink2);">Ksh {{ p.total_value|floatformat:2 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty">
+                            <i class="ri-box-3-line"></i>
+                            <p class="mb-0 fw-semibold">No product data yet</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+    <!--<script src="{% static 'assets/libs/bootstrap/js/bootstrap.bundle.min.js' %}"></script>-->
+    <!--<script src="{% static 'assets/js/defaultmenu.min.js' %}"></script>-->
+    <!--<script src="{% static 'assets/libs/node-waves/waves.min.js' %}"></script>-->
+    <!--<script src="{% static 'assets/js/sticky.js' %}"></script>-->
+    <!--<script src="{% static 'assets/libs/simplebar/simplebar.min.js' %}"></script>-->
+    <!--<script src="{% static 'assets/js/custom.js' %}"></script>-->
+
+</body>
+</html>
+{% endblock %}

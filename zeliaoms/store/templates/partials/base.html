@@ -1,0 +1,740 @@
+{% load static%}
+
+   
+
+            <html lang="en" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="light" data-menu-styles="dark" data-toggled="close">
+
+            <head>
+
+                <!-- Meta Data -->
+                <meta charset="UTF-8">
+                <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>
+                <meta http-equiv="X-UA-Compatible" content="IE=edge">
+                <title>{% block title%}{% endblock %}</title>
+                <meta name="Description" content="Bootstrap Responsive Admin Web Dashboard HTML5 Template">
+                
+                <meta name="keywords" content="admin,admin dashboard,admin panel,admin template,bootstrap,clean,dashboard,flat,jquery,modern,responsive,premium admin templates,responsive admin,ui,ui kit.">
+                
+            <!-- Favicon -->
+            <link rel="icon" href="{% static 'assets/images/mcdave/logo.png'%}" type="image/x-icon">
+                
+            <!-- Choices JS -->
+            <script src="{% static 'assets/libs/choices.js/public/assets/scripts/choices.min.js'%}"></script>
+
+            <!-- Main Theme Js -->
+            <script src="{% static 'assets/js/main.js'%}"></script>
+            
+            <!-- Bootstrap Css -->
+            <link id="style" href="{% static 'assets/libs/bootstrap/css/bootstrap.min.css'%}" rel="stylesheet" >
+
+            <!-- Style Css -->
+            <link href="{% static 'assets/css/styles.min.css'%}" rel="stylesheet" >
+
+            <!-- Icons Css -->
+            <link href="{% static 'assets/css/icons.css'%}" rel="stylesheet" >
+
+            <!-- Node Waves Css -->
+            <link href="{% static 'assets/libs/node-waves/waves.min.css'%}" rel="stylesheet" > 
+              
+            <!-- Simplebar Css -->
+            <link href="{% static 'assets/libs/simplebar/simplebar.min.css'%}" rel="stylesheet" >
+            
+            <!-- Color Picker Css -->
+            <link rel="stylesheet" href="{% static 'assets/libs/flatpickr/flatpickr.min.css'%}">
+            <link rel="stylesheet" href="{% static 'assets/libs/@simonwep/pickr/themes/nano.min.css'%}">
+
+            <!-- Choices Css -->
+            <link rel="stylesheet" href="{% static 'assets/libs/choices.js/public/assets/styles/choices.min.css'%}">
+
+                {% comment %} toast css {% endcomment %}
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/css/iziToast.css" integrity="sha512-DIW4FkYTOxjCqRt7oS9BFO+nVOwDL4bzukDyDtMO7crjUZhwpyrWBFroq+IqRe6VnJkTpRAS6nhDvf0w+wHmxg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                
+            </head>
+
+            <body>
+            {% comment %} switcher {% endcomment %}
+           {% include "partials/switcher.html" %}
+            <div class="page">
+                {% comment %} header & aside {% endcomment %}
+                {% include "partials/header.html" %}
+                {% include "partials/asidebar.html" %}
+            <!-- Start::app-content -->
+            <div class="main-content app-content">
+                <div class="container-fluid">
+                    {% if messages %}
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function () {
+                            {% for message in messages %}
+                            iziToast.success({
+                                title: 'Success:',
+                                animateInside: true,
+                                message: "{{ message|escapejs }}",
+                                position: 'topRight',
+                            });
+                            {% endfor %}
+                        });
+                    </script>
+                    {% endif %}
+
+                    {% block content%}
+
+                    {% endblock%}
+                    
+                </div>
+                </div>
+            <!-- End::app-content -->
+            {% include "partials/footer.html" %}
+            {% comment %} footer {% endcomment %}
+            </div>
+
+                
+            <div class="scrollToTop">
+                <span class="arrow"><i class="ri-arrow-up-s-fill fs-20"></i></span>
+            </div>
+            <div id="responsive-overlay"></div>
+            
+            
+            <!--chatbot icon-->
+            
+            <!-- Floating Zelia Assistant Chat Widget -->
+            {% if user.is_authenticated %}
+            <style>
+                .zelia-chat-fab {
+                    position: fixed;
+                    bottom: 24px;
+                    right: 24px;
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 50%;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    cursor: pointer;
+                    box-shadow: 0 4px 20px rgba(102, 126, 234, 0.4);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 9999;
+                    transition: all 0.3s ease;
+                }
+                .zelia-chat-fab:hover {
+                    transform: scale(1.1);
+                    box-shadow: 0 6px 25px rgba(102, 126, 234, 0.5);
+                }
+                .zelia-chat-fab i {
+                    font-size: 28px;
+                }
+                .zelia-chat-fab .notification-dot {
+                    position: absolute;
+                    top: 4px;
+                    right: 4px;
+                    width: 12px;
+                    height: 12px;
+                    background: #38ef7d;
+                    border-radius: 50%;
+                    border: 2px solid white;
+                }
+
+                .zelia-chat-widget {
+                    position: fixed;
+                    bottom: 100px;
+                    right: 24px;
+                    width: 380px;
+                    height: 500px;
+                    background: white;
+                    border-radius: 16px;
+                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+                    display: none;
+                    flex-direction: column;
+                    z-index: 9998;
+                    overflow: hidden;
+                }
+                .zelia-chat-widget.active {
+                    display: flex;
+                    animation: slideUp 0.3s ease;
+                }
+                @keyframes slideUp {
+                    from { opacity: 0; transform: translateY(20px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                .zelia-chat-header {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 16px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                }
+                .zelia-chat-header-info {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                }
+                .zelia-chat-avatar {
+                    width: 40px;
+                    height: 40px;
+                    background: rgba(255,255,255,0.2);
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .zelia-chat-header h6 {
+                    margin: 0;
+                    font-weight: 600;
+                }
+                .zelia-chat-header small {
+                    opacity: 0.9;
+                    font-size: 12px;
+                }
+                .zelia-chat-close {
+                    background: rgba(255,255,255,0.2);
+                    border: none;
+                    color: white;
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 50%;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: background 0.2s;
+                }
+                .zelia-chat-close:hover {
+                    background: rgba(255,255,255,0.3);
+                }
+
+                .zelia-chat-messages {
+                    flex: 1;
+                    overflow-y: auto;
+                    padding: 16px;
+                    background: #f8f9fa;
+                    max-height: 340px;
+                }
+                .zelia-message {
+                    display: flex;
+                    margin-bottom: 12px;
+                    animation: fadeIn 0.3s ease;
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(8px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .zelia-message.user {
+                    justify-content: flex-end;
+                }
+                .zelia-message-content {
+                    max-width: 80%;
+                    padding: 10px 14px;
+                    border-radius: 12px;
+                    font-size: 14px;
+                    line-height: 1.4;
+                }
+                .zelia-message.bot .zelia-message-content {
+                    background: white;
+                    color: #333;
+                    border: 1px solid #e0e0e0;
+                    border-bottom-left-radius: 4px;
+                }
+                .zelia-message.user .zelia-message-content {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border-bottom-right-radius: 4px;
+                }
+
+                .zelia-chat-input-area {
+                    padding: 12px 16px;
+                    background: white;
+                    border-top: 1px solid #e0e0e0;
+                    display: flex;
+                    gap: 10px;
+                    align-items: center;
+                }
+                .zelia-chat-input {
+                    flex: 1;
+                    border: 2px solid #e0e0e0;
+                    border-radius: 24px;
+                    padding: 10px 16px;
+                    font-size: 14px;
+                    outline: none;
+                    transition: border-color 0.2s;
+                }
+                .zelia-chat-input:focus {
+                    border-color: #667eea;
+                }
+                .zelia-chat-send {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    border: none;
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: transform 0.2s;
+                }
+                .zelia-chat-send:hover {
+                    transform: scale(1.05);
+                }
+                .zelia-chat-send:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+
+                .zelia-typing {
+                    display: none;
+                    padding: 10px 14px;
+                    background: white;
+                    border-radius: 12px;
+                    border: 1px solid #e0e0e0;
+                    width: fit-content;
+                }
+                .zelia-typing.active {
+                    display: flex;
+                    gap: 4px;
+                }
+                .zelia-typing span {
+                    width: 6px;
+                    height: 6px;
+                    background: #667eea;
+                    border-radius: 50%;
+                    animation: bounce 1.4s infinite;
+                }
+                .zelia-typing span:nth-child(2) { animation-delay: 0.2s; }
+                .zelia-typing span:nth-child(3) { animation-delay: 0.4s; }
+                @keyframes bounce {
+                    0%, 60%, 100% { transform: translateY(0); }
+                    30% { transform: translateY(-6px); }
+                }
+
+                .zelia-quick-actions {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 6px;
+                    padding: 8px 16px;
+                    background: #f8f9fa;
+                    border-top: 1px solid #eee;
+                }
+                .zelia-quick-btn {
+                    padding: 6px 12px;
+                    background: white;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 16px;
+                    font-size: 12px;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                }
+                .zelia-quick-btn:hover {
+                    background: #667eea;
+                    color: white;
+                    border-color: #667eea;
+                }
+
+                @media (max-width: 480px) {
+                    .zelia-chat-widget {
+                        width: calc(100% - 48px);
+                        height: 450px;
+                    }
+                }
+            </style>
+
+            <!-- Floating Chat Button -->
+            <button class="zelia-chat-fab" id="zeliaChatFab" title="Chat with Zelia Assistant">
+                <i class="ri-robot-line"></i>
+                <span class="notification-dot"></span>
+            </button>
+
+            <!-- Chat Widget -->
+            <div class="zelia-chat-widget" id="zeliaChatWidget">
+                <div class="zelia-chat-header">
+                    <div class="zelia-chat-header-info">
+                        <div class="zelia-chat-avatar">
+                            <i class="ri-robot-line fs-5"></i>
+                        </div>
+                        <div>
+                            <h6>Zelia Assistant</h6>
+                            <small><i class="ri-checkbox-circle-fill me-1"></i>Online</small>
+                        </div>
+                    </div>
+                    <button class="zelia-chat-close" id="zeliaChatClose">
+                        <i class="ri-close-line"></i>
+                    </button>
+                </div>
+
+                <div class="zelia-chat-messages" id="zeliaChatMessages">
+                    <div class="zelia-message bot">
+                        <div class="zelia-message-content">
+                            Hello! I'm Zelia Assistant. How can I help you today? Ask me about orders, products, stock, or type "help" for more options.
+                        </div>
+                    </div>
+                    <div class="zelia-typing" id="zeliaTyping">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+
+                <div class="zelia-quick-actions">
+                    <button class="zelia-quick-btn" data-msg="my sales this month">My Sales</button>
+                    <button class="zelia-quick-btn" data-msg="orders today">Orders</button>
+                    <button class="zelia-quick-btn" data-msg="analytics this week">Analytics</button>
+                    <button class="zelia-quick-btn" data-msg="Help">Help</button>
+                </div>
+
+                <div class="zelia-chat-input-area">
+                    <input type="text" class="zelia-chat-input" id="zeliaChatInput" placeholder="Type a message..." autocomplete="off">
+                    <button class="zelia-chat-send" id="zeliaChatSend">
+                        <i class="ri-send-plane-fill"></i>
+                    </button>
+                </div>
+            </div>
+
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const fab = document.getElementById('zeliaChatFab');
+                const widget = document.getElementById('zeliaChatWidget');
+                const closeBtn = document.getElementById('zeliaChatClose');
+                const messagesContainer = document.getElementById('zeliaChatMessages');
+                const input = document.getElementById('zeliaChatInput');
+                const sendBtn = document.getElementById('zeliaChatSend');
+                const typing = document.getElementById('zeliaTyping');
+                const quickBtns = document.querySelectorAll('.zelia-quick-btn');
+
+                // Toggle chat widget
+                fab.addEventListener('click', function() {
+                    widget.classList.toggle('active');
+                    if (widget.classList.contains('active')) {
+                        input.focus();
+                        scrollToBottom();
+                    }
+                });
+
+                closeBtn.addEventListener('click', function() {
+                    widget.classList.remove('active');
+                });
+
+                function scrollToBottom() {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+
+                function addMessage(content, sender) {
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = `zelia-message ${sender}`;
+
+                    // Format content with basic markdown
+                    let formatted = content
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br>');
+
+                    msgDiv.innerHTML = `<div class="zelia-message-content">${formatted}</div>`;
+                    typing.before(msgDiv);
+                    scrollToBottom();
+                }
+
+                function showTyping(show) {
+                    typing.classList.toggle('active', show);
+                    if (show) scrollToBottom();
+                }
+
+                async function sendMessage(message) {
+                    if (!message.trim()) return;
+
+                    addMessage(message, 'user');
+                    input.value = '';
+                    sendBtn.disabled = true;
+                    showTyping(true);
+
+                    try {
+                        const response = await fetch('{% url "chatbot_send" %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': '{{ csrf_token }}'
+                            },
+                            body: JSON.stringify({ message: message })
+                        });
+
+                        const data = await response.json();
+                        showTyping(false);
+
+                        if (data.success) {
+                            addMessage(data.response, 'bot');
+                        } else {
+                            addMessage('Sorry, something went wrong. Please try again.', 'bot');
+                        }
+                    } catch (error) {
+                        showTyping(false);
+                        addMessage('Sorry, I couldn\'t connect. Please try again.', 'bot');
+                    }
+
+                    sendBtn.disabled = false;
+                    input.focus();
+                }
+
+                // Send on button click
+                sendBtn.addEventListener('click', function() {
+                    sendMessage(input.value);
+                });
+
+                // Send on Enter
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        sendMessage(input.value);
+                    }
+                });
+
+                // Quick action buttons
+                quickBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        sendMessage(this.dataset.msg);
+                    });
+                });
+            });
+            </script>
+            {% endif %}
+            <!--end chatbot-->
+            
+            {% comment %} toasts {% endcomment %}
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/js/iziToast.min.js" integrity="sha512-Zq9o+E00xhhR/7vJ49mxFNJ0KQw1E1TMWkPTxrWcnpfEFDEXgUiwJHIKit93EW/XxE31HSI5GEOW06G6BF1AtA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            <!-- Popper JS -->
+            <script src="{% static 'assets/libs/@popperjs/core/umd/popper.min.js'%}"></script>
+
+            <!-- Bootstrap JS -->
+            <script src="{% static 'assets/libs/bootstrap/js/bootstrap.bundle.min.js'%}"></script>
+
+            <!-- Defaultmenu JS -->
+            <script src="{% static 'assets/js/defaultmenu.min.js'%}"></script>
+
+            <!-- Node Waves JS-->
+            <script src="{% static 'assets/libs/node-waves/waves.min.js'%}"></script>
+
+            <!-- Sticky JS -->
+            <script src="{% static 'assets/js/sticky.js'%}"></script>
+
+            
+
+            <!-- Color Picker JS -->
+            <script src="{% static 'assets/libs/@simonwep/pickr/pickr.es5.min.js'%}"></script>
+
+
+            <!-- Apex Charts JS -->
+            <script src="{% static 'assets/libs/apexcharts/apexcharts.min.js'%}"></script>
+
+            <!-- Used For Sessions By Device Chart -->
+            <script src="{% static 'assets/libs/moment/moment.js'%}"></script>
+            
+           
+
+   
+            <!-- Custom-Switcher JS -->
+            <script src="{% static 'assets/js/custom-switcher.min.js'%}"></script>
+                
+            {% comment %} toast js {% endcomment %}
+            <!-- Simplebar JS -->
+            <script src="{% static 'assets/libs/simplebar/simplebar.min.js'%}"></script>
+              <script src="{% static 'assets/js/simplebar.js'%}"></script>
+            <!-- Custom JS -->
+            <script src="{% static 'assets/js/custom.js'%}"></script>
+
+            <!-- ── NOTIFICATION BELL SCRIPT ────────────────────────── -->
+            {% if user.is_authenticated %}
+            <style>
+              .notif-item { display:flex; gap:10px; padding:10px 14px; border-bottom:1px solid #f1f5f9;
+                            text-decoration:none; color:inherit; transition:background .15s; }
+              .notif-item:hover { background:#f8fafc; }
+              .notif-item.unread { background:#eff6ff; border-left:3px solid #6366f1; }
+              .notif-item.unread:hover { background:#e0e7ff; }
+              .notif-icon { width:36px; height:36px; border-radius:50%; flex-shrink:0;
+                            display:flex; align-items:center; justify-content:center;
+                            font-size:1.1rem; background:#ede9fe; }
+              .notif-title { font-size:.82rem; font-weight:600; color:#1e293b; margin-bottom:2px; line-height:1.3; }
+              .notif-body  { font-size:.75rem; color:#64748b; line-height:1.3; }
+              .notif-time  { font-size:.7rem; color:#94a3b8; white-space:nowrap; margin-top:2px; }
+              .notif-empty { padding:28px 0; text-align:center; color:#94a3b8; font-size:.85rem; }
+            </style>
+            <script>
+            (function(){
+              const badge    = document.getElementById('notif-badge');
+              const list     = document.getElementById('notif-list');
+              const markBtn  = document.getElementById('mark-all-read-btn');
+              const bell     = document.getElementById('notifBell');
+              const dropdown = document.getElementById('notif-dropdown');
+              if (!badge) return;
+
+              let fetched = false;
+
+              function renderIcon(event_type) {
+                const icons = {
+                  feedback_new:'📋', message_new:'💬', order_created:'🛒',
+                  order_updated:'✏️', order_deleted:'🗑️', beat_visit:'📍',
+                  beat_plan_new:'📅', stock_change:'📦', payment_new:'💰',
+                  login_new:'🔐', general:'🔔'
+                };
+                return icons[event_type] || '🔔';
+              }
+
+              function renderList(notifs) {
+                if (!notifs.length) {
+                  list.innerHTML = '<div class="notif-empty"><i class="bx bx-bell-off" style="font-size:2rem;display:block;margin-bottom:6px;"></i>No notifications yet</div>';
+                  return;
+                }
+                list.innerHTML = notifs.map(n => `
+                  <a href="${n.url || '/notifications/'}" class="notif-item${n.is_read ? '' : ' unread'}"
+                     data-id="${n.id}" onclick="markOne(${n.id})">
+                    <div class="notif-icon">${renderIcon(n.event_type)}</div>
+                    <div class="flex-grow-1 min-width-0">
+                      <div class="notif-title">${escH(n.title)}</div>
+                      ${n.body ? `<div class="notif-body">${escH(n.body.substring(0,80))}${n.body.length>80?'…':''}</div>` : ''}
+                      <div class="notif-time">${n.created_at}</div>
+                    </div>
+                    ${!n.is_read ? '<span style="width:8px;height:8px;border-radius:50%;background:#6366f1;flex-shrink:0;margin-top:6px;"></span>' : ''}
+                  </a>`).join('');
+              }
+
+              function escH(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+              function updateBadge(count) {
+                if (count > 0) {
+                  badge.textContent = count > 99 ? '99+' : count;
+                  badge.style.display = '';
+                } else {
+                  badge.style.display = 'none';
+                }
+              }
+
+              function fetchNotifications() {
+                fetch('{% url "notifications_json" %}')
+                  .then(r => r.json())
+                  .then(data => {
+                    updateBadge(data.unread_count);
+                    if (fetched) return; // only render list on first open
+                    fetched = false; // always re-render when dropdown opens
+                  })
+                  .catch(() => {});
+              }
+
+              function loadDropdown() {
+                list.innerHTML = '<div class="text-center py-4 text-muted small"><i class="bx bx-loader-alt bx-spin me-1"></i>Loading…</div>';
+                fetch('{% url "notifications_json" %}')
+                  .then(r => r.json())
+                  .then(data => {
+                    updateBadge(data.unread_count);
+                    renderList(data.notifications);
+                  })
+                  .catch(() => { list.innerHTML = '<div class="notif-empty">Failed to load.</div>'; });
+              }
+
+              // Load when dropdown opens
+              if (bell) {
+                bell.addEventListener('click', function() {
+                  loadDropdown();
+                });
+              }
+
+              window.markOne = function(id) {
+                fetch('{% url "mark_notifications_read" %}', {
+                  method: 'POST',
+                  headers: {'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/x-www-form-urlencoded'},
+                  body: 'id=' + id
+                }).then(r => r.json()).then(d => updateBadge(d.unread_count));
+              };
+
+              if (markBtn) {
+                markBtn.addEventListener('click', function(e) {
+                  e.preventDefault(); e.stopPropagation();
+                  fetch('{% url "mark_notifications_read" %}', {
+                    method: 'POST',
+                    headers: {'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: ''
+                  }).then(r => r.json()).then(d => {
+                    updateBadge(0);
+                    loadDropdown();
+                  });
+                });
+              }
+
+              // Initial fetch + poll every 30s
+              fetchNotifications();
+              setInterval(fetchNotifications, 30000);
+            })();
+            </script>
+            {% endif %}
+            <!-- ── END NOTIFICATION SCRIPT ─────────────────────────── -->
+
+
+            <!-- ── INACTIVITY AUTO-LOGOUT (30 minutes) ─────────────────────── -->
+            {% if user.is_authenticated %}
+            <script>
+            (function() {
+                var TIMEOUT_MS = 30 * 60 * 1000;  // 30 min
+                var WARN_MS    = 25 * 60 * 1000;  // warn at 25 min (5 min warning)
+                var LOGOUT_URL = '{% url "logoutuser" %}';
+                var timer, warnTimer, countInterval;
+
+                function removeModal() {
+                    var m = document.getElementById('_inactivity_modal');
+                    if (m) m.remove();
+                    clearInterval(countInterval);
+                }
+
+                function resetTimers() {
+                    clearTimeout(timer);
+                    clearTimeout(warnTimer);
+                    removeModal();
+                    warnTimer = setTimeout(showWarning, WARN_MS);
+                    timer     = setTimeout(doLogout,   TIMEOUT_MS);
+                }
+
+                function showWarning() {
+                    if (document.getElementById('_inactivity_modal')) return;
+                    document.body.insertAdjacentHTML('beforeend',
+                        '<div id="_inactivity_modal" style="position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:99990;display:flex;align-items:center;justify-content:center;font-family:sans-serif;">' +
+                            '<div style="background:#1e293b;border:1px solid #334155;border-radius:16px;padding:32px 28px;max-width:360px;width:90%;text-align:center;color:#f1f5f9;box-shadow:0 20px 60px rgba(0,0,0,.6);">' +
+                                '<div style="font-size:2.4rem;margin-bottom:10px;">⏰</div>' +
+                                '<h4 style="margin:0 0 8px;font-size:1.1rem;font-weight:700;">Session Expiring Soon</h4>' +
+                                '<p style="color:#94a3b8;font-size:.88rem;margin:0 0 18px;line-height:1.5;">You will be logged out in <strong id="_inactivity_cd" style="color:#f59e0b;font-size:1rem;">5:00</strong> due to inactivity.</p>' +
+                                '<button id="_inactivity_stay" style="background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:10px 28px;font-weight:700;cursor:pointer;font-size:.95rem;">Stay Logged In</button>' +
+                            '</div>' +
+                        '</div>'
+                    );
+                    document.getElementById('_inactivity_stay').onclick = function() {
+                        resetTimers();
+                        // Ping server to refresh session
+                        fetch(window.location.href, { method: 'HEAD', credentials: 'same-origin' }).catch(function(){});
+                    };
+                    // Countdown
+                    var secs = Math.round((TIMEOUT_MS - WARN_MS) / 1000);
+                    countInterval = setInterval(function() {
+                        secs--;
+                        var el = document.getElementById('_inactivity_cd');
+                        if (!el) { clearInterval(countInterval); return; }
+                        var m = Math.floor(secs / 60), s = secs % 60;
+                        el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+                        if (secs <= 0) clearInterval(countInterval);
+                    }, 1000);
+                }
+
+                function doLogout() {
+                    removeModal();
+                    window.location.href = LOGOUT_URL;
+                }
+
+                // Reset timer on any user interaction
+                ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart', 'click'].forEach(function(ev) {
+                    document.addEventListener(ev, resetTimers, { passive: true });
+                });
+
+                resetTimers();
+            })();
+            </script>
+            {% endif %}
+            <!-- ── END INACTIVITY SCRIPT ─────────────────────────────────── -->
+
+            </body>
+ 
+           
+
+        </html>
+   
+    

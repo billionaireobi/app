@@ -1,0 +1,646 @@
+{% extends "partials/base.html" %}
+{% load static %}
+{% block content %}
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <title>{{ product.name }} — Product Analytics</title>
+    <link rel="icon" href="{% static 'assets/images/mcdave/logo.png' %}" type="image/x-icon">
+    <!--<link href="{% static 'assets/libs/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/css/styles.min.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/css/icons.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/libs/node-waves/waves.min.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/libs/simplebar/simplebar.min.css' %}" rel="stylesheet">-->
+    <!--<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <style>
+        :root {
+            --coal:   #0c0f1a;
+            --ink:    #1a2035;
+            --ink2:   #2d3a5c;
+            --muted:  #64748b;
+            --rule:   #e2e8f0;
+            --bg:     #f4f6fb;
+            --card:   #ffffff;
+            --gold:   #f59e0b;
+            --teal:   #0d9488;
+            --teal2:  #14b8a6;
+            --red:    #ef4444;
+            --green:  #22c55e;
+            --blue:   #3b82f6;
+            --radius: 14px;
+        }
+
+        body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); }
+
+        /* ── Hero ── */
+        .product-hero {
+            background: var(--coal);
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(13,148,136,.25) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(245,158,11,.12) 0%, transparent 50%);
+            border-radius: var(--radius);
+            padding: 0; margin-bottom: 24px;
+            overflow: hidden; display: grid;
+            grid-template-columns: auto 1fr;
+            min-height: 200px; animation: rise .5s ease both;
+        }
+        .hero-image-panel {
+            width: 180px; background: rgba(255,255,255,.05);
+            display: flex; align-items: center; justify-content: center;
+            border-right: 1px solid rgba(255,255,255,.08); flex-shrink: 0;
+            pointer-events: none;
+        }
+        .hero-image-panel img { width: 130px; height: 130px; object-fit: cover; border-radius: 12px; border: 2px solid rgba(255,255,255,.15); }
+        .hero-image-placeholder { width: 100px; height: 100px; border-radius: 12px; background: rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; font-size: 42px; color: rgba(255,255,255,.3); }
+        .hero-content { padding: 28px 32px; display: flex; flex-direction: column; justify-content: space-between; position: relative; z-index: 1; }
+        .hero-top { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .hero-title { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: #fff; margin: 0; line-height: 1.15; }
+        .hero-sub { color: rgba(255,255,255,.5); font-size: 13px; margin-top: 4px; }
+        .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 30px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+        .status-pill.available     { background: rgba(34,197,94,.15);  color: #4ade80; border: 1px solid rgba(34,197,94,.25); }
+        .status-pill.not_available { background: rgba(239,68,68,.15);  color: #f87171; border: 1px solid rgba(239,68,68,.25); }
+        .status-pill.limited       { background: rgba(245,158,11,.15); color: #fbbf24; border: 1px solid rgba(245,158,11,.25); }
+        .status-pill.offer         { background: rgba(59,130,246,.15); color: #60a5fa; border: 1px solid rgba(59,130,246,.25); }
+        .hero-kpis { display: flex; gap: 36px; flex-wrap: wrap; padding-top: 20px; margin-top: 16px; border-top: 1px solid rgba(255,255,255,.08); }
+        .hero-kpi-val { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: #fff; line-height: 1; }
+        .hero-kpi-val.gold  { color: var(--gold); }
+        .hero-kpi-val.teal  { color: var(--teal2); }
+        .hero-kpi-val.red   { color: #f87171; }
+        .hero-kpi-val.green { color: #4ade80; }
+        .hero-kpi-lbl { font-size: 11px; color: rgba(255,255,255,.45); text-transform: uppercase; letter-spacing: .5px; margin-top: 3px; }
+
+        /* ── Layout ── */
+        .analytics-grid { display: grid; grid-template-columns: 340px 1fr; gap: 20px; }
+        @media(max-width:1100px) { .analytics-grid { grid-template-columns: 1fr; } }
+        @media(max-width:768px) { .product-hero { grid-template-columns: 1fr; } .hero-image-panel { width: 100%; height: 120px; border-right: none; border-bottom: 1px solid rgba(255,255,255,.08); } }
+
+        /* ── Cards ── */
+        .acard { background: var(--card); border-radius: var(--radius); border: 1px solid var(--rule); overflow: hidden; margin-bottom: 20px; animation: rise .5s ease both; }
+        .acard:nth-child(1){animation-delay:.05s} .acard:nth-child(2){animation-delay:.10s} .acard:nth-child(3){animation-delay:.15s} .acard:nth-child(4){animation-delay:.20s}
+        .acard-head { padding: 15px 20px; border-bottom: 1px solid var(--rule); display: flex; justify-content: space-between; align-items: center; }
+        .acard-head h6 { margin: 0; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--ink2); display: flex; align-items: center; gap: 8px; }
+        .acard-head h6 i { color: var(--teal); font-size: 15px; }
+        .acard-body { padding: 18px 20px; }
+
+        /* ── Pricing ── */
+        .price-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+        .price-row:last-child { border-bottom: none; }
+        .price-tier-name { font-size: 13px; color: var(--muted); font-weight: 500; }
+        .price-tier-val { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; color: var(--ink); }
+
+        /* ── Stock bars ── */
+        .stock-store { display: grid; grid-template-columns: 100px 1fr 60px; align-items: center; gap: 12px; margin-bottom: 14px; }
+        .stock-store:last-child { margin-bottom: 0; }
+        .stock-label { font-size: 12px; font-weight: 600; color: var(--ink2); }
+        .stock-bar-wrap { background: #f1f5f9; border-radius: 4px; height: 8px; overflow: hidden; }
+        .stock-bar { height: 100%; border-radius: 4px; }
+        .stock-val { font-size: 13px; font-weight: 800; text-align: right; }
+
+        /* ── Category rows ── */
+        .cat-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f8fafc; }
+        .cat-row:last-child { border-bottom: none; }
+        .cat-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .cat-name { font-size: 13px; font-weight: 500; flex: 1; }
+        .cat-bar-wrap { flex: 2; background: #f1f5f9; border-radius: 3px; height: 6px; overflow: hidden; }
+        .cat-bar { height: 100%; border-radius: 3px; }
+        .cat-units { font-size: 12px; color: var(--muted); min-width: 40px; text-align: right; }
+        .cat-rev { font-size: 13px; font-weight: 700; color: var(--ink2); min-width: 80px; text-align: right; }
+
+        /* ── Revenue by status mini boxes ── */
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .status-mini { border-radius: 10px; padding: 12px 14px; }
+        .status-mini .sm-val { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; line-height: 1; margin-bottom: 3px; }
+        .status-mini .sm-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+        .sm-completed   { background: #f0fdf4; } .sm-completed .sm-val { color: #15803d; } .sm-completed .sm-lbl { color: #86efac; }
+        .sm-pending     { background: #fefce8; } .sm-pending .sm-val   { color: #a16207; } .sm-pending .sm-lbl   { color: #fde68a; }
+        .sm-partial     { background: #eff6ff; } .sm-partial .sm-val   { color: #1d4ed8; } .sm-partial .sm-lbl   { color: #bfdbfe; }
+        .sm-cancelled   { background: #fef2f2; } .sm-cancelled .sm-val { color: #b91c1c; } .sm-cancelled .sm-lbl { color: #fca5a5; }
+
+        /* ── Tables ── */
+        .data-table { margin: 0; }
+        .data-table thead th { background: #f8fafc; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--muted); padding: 9px 14px; border-bottom: 2px solid var(--rule); white-space: nowrap; }
+        .data-table tbody td { padding: 10px 14px; vertical-align: middle; border-bottom: 1px solid #f8fafc; font-size: 12px; }
+        .data-table tbody tr:last-child td { border-bottom: none; }
+        .data-table tbody tr:hover { background: #fafcff; }
+        .data-table tfoot td { background: #f8fafc; font-weight: 700; font-size: 12px; padding: 10px 14px; border-top: 2px solid var(--rule); }
+
+        /* ── Movement chips ── */
+        .mv { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .3px; }
+        .mv-in           { background:#dcfce7; color:#15803d; }
+        .mv-out          { background:#fee2e2; color:#b91c1c; }
+        .mv-adjustment   { background:#fef9c3; color:#a16207; }
+        .mv-transfer_in  { background:#dbeafe; color:#1d4ed8; }
+        .mv-transfer_out { background:#ede9fe; color:#6d28d9; }
+        .mv-return       { background:#fce7f3; color:#9d174d; }
+        .mv-damage       { background:#f3f4f6; color:#374151; }
+
+        /* ── Order status badges ── */
+        .ob { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; }
+        .ob-completed      { background:#dcfce7; color:#15803d; }
+        .ob-pending        { background:#fef9c3; color:#a16207; }
+        .ob-partially_paid { background:#dbeafe; color:#1d4ed8; }
+        .ob-cancelled      { background:#fee2e2; color:#b91c1c; }
+
+        /* ── Tabs ── */
+        .atabs .nav-link { font-size: 11px; font-weight: 700; color: var(--muted); border: none; border-bottom: 3px solid transparent; padding: 12px 14px; border-radius: 0; background: transparent; text-transform: uppercase; letter-spacing: .5px; }
+        .atabs .nav-link.active { color: var(--teal); border-bottom-color: var(--teal); }
+        .atabs .nav-link:hover:not(.active) { color: var(--ink2); }
+
+        /* ── Chart ── */
+        .chart-wrap { position: relative; height: 240px; }
+
+        /* ── Salesperson progress bars ── */
+        .sp-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #f8fafc; }
+        .sp-row:last-child { border-bottom: none; }
+        .sp-rank { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; flex-shrink: 0; }
+        .sp-rank.r1 { background:#fef9c3; color:#a16207; }
+        .sp-rank.r2 { background:#f1f5f9; color:#475569; }
+        .sp-rank.r3 { background:#fff7ed; color:#c2410c; }
+        .sp-rank.rn { background:#f8fafc; color:#94a3b8; }
+        .sp-name { font-size: 13px; font-weight: 600; flex: 1; color: var(--ink); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sp-bar-wrap { flex: 2; background: #f1f5f9; border-radius: 3px; height: 6px; overflow: hidden; }
+        .sp-bar { height: 100%; border-radius: 3px; background: var(--teal2); }
+        .sp-orders { font-size: 11px; color: var(--muted); min-width: 50px; text-align: right; }
+        .sp-rev { font-size: 13px; font-weight: 700; color: var(--ink2); min-width: 90px; text-align: right; }
+
+        /* ── Rank badge (table) ── */
+        .rank { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; }
+        .rank-1 { background: #fef9c3; color: #a16207; }
+        .rank-2 { background: #f1f5f9; color: #475569; }
+        .rank-3 { background: #fff7ed; color: #c2410c; }
+        .rank-n { background: #f8fafc; color: #94a3b8; }
+
+        .empty { text-align: center; padding: 32px; color: var(--muted); }
+        .empty i { font-size: 36px; opacity: .25; display: block; margin-bottom: 8px; }
+
+        @keyframes rise { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <!-- Breadcrumb -->
+    <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+        <h1 class="page-title fw-semibold fs-18 mb-0">Product Analytics</h1>
+        <nav><ol class="breadcrumb mb-0">
+            {% if request.user.is_superuser %}
+            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+            {% else %}
+            <li class="breadcrumb-item"><a href="{% url 'salesperson_dashboard' %}">Dashboard</a></li>
+            {% endif %}
+            <li class="breadcrumb-item"><a href="{% url 'product_report' %}">Products Report</a></li>
+            <li class="breadcrumb-item active">{{ product.name }}</li>
+        </ol></nav>
+    </div>
+
+    <!-- HERO -->
+    <div class="product-hero">
+        <div class="hero-image-panel">
+            {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}">
+            {% else %}
+                <div class="hero-image-placeholder"><i class="ri-box-3-line"></i></div>
+            {% endif %}
+        </div>
+        <div class="hero-content">
+            <div class="hero-top">
+                <div>
+                    <h1 class="hero-title">{{ product.name }}</h1>
+                    <div class="hero-sub d-flex align-items-center gap-3 mt-2 flex-wrap">
+                        <span><i class="ri-price-tag-3-line me-1"></i>{{ product.category.name }}</span>
+                        {% if product.barcode %}<span><i class="ri-barcode-line me-1"></i>{{ product.barcode }}</span>{% endif %}
+                        {% if product.description %}<span>{{ product.description|truncatechars:60 }}</span>{% endif %}
+                    </div>
+                </div>
+                <div class="d-flex gap-2 flex-wrap" style="position:relative;z-index:2;">
+                    <span class="status-pill {{ product.status }}">
+                        <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block;"></span>
+                        {{ product.get_status_display }}
+                    </span>
+                    {% if request.user.is_superuser %}
+                    <a href="{% url 'productupdate' product.id %}" class="btn btn-sm" style="background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2);">
+                        <i class="ri-edit-line me-1"></i>Edit
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="hero-kpis">
+                <div>
+                    <div class="hero-kpi-val gold">{{ total_units_sold }}</div>
+                    <div class="hero-kpi-lbl">Units Sold</div>
+                </div>
+                <div>
+                    <div class="hero-kpi-val teal">Ksh {{ total_revenue|floatformat:0 }}</div>
+                    <div class="hero-kpi-lbl">Total Revenue</div>
+                </div>
+                <div>
+                    <div class="hero-kpi-val">{{ total_orders }}</div>
+                    <div class="hero-kpi-lbl">Orders</div>
+                </div>
+                <div>
+                    <div class="hero-kpi-val">Ksh {{ avg_unit_price|floatformat:0 }}</div>
+                    <div class="hero-kpi-lbl">Avg. Sell Price</div>
+                </div>
+                <div>
+                    <div class="hero-kpi-val {% if total_stock == 0 %}red{% elif total_stock < 20 %}gold{% else %}green{% endif %}">{{ total_stock }}</div>
+                    <div class="hero-kpi-lbl">Units in Stock</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN GRID -->
+    <div class="analytics-grid">
+
+        <!-- LEFT COLUMN -->
+        <div>
+
+            <!-- Pricing Tiers -->
+            <div class="acard">
+                <div class="acard-head"><h6><i class="ri-price-tag-3-line"></i> Pricing Tiers</h6></div>
+                <div class="acard-body">
+                    {% for tier_name, tier_price in prices %}
+                    <div class="price-row">
+                        <span class="price-tier-name">{{ tier_name }}</span>
+                        <span class="price-tier-val">Ksh {{ tier_price|floatformat:2 }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Stock Levels -->
+            <div class="acard">
+                <div class="acard-head">
+                    <h6><i class="ri-store-line"></i> Stock by Location</h6>
+                    <span class="badge rounded-pill" style="background:var(--teal);font-size:10px;">{{ total_stock }} total</span>
+                </div>
+                <div class="acard-body">
+                    <div class="stock-store">
+                        <div class="stock-label">McDave</div>
+                        <div class="stock-bar-wrap">
+                            <div class="stock-bar" style="width:{% if total_stock > 0 %}{% widthratio product.mcdave_stock total_stock 100 %}%{% else %}0%{% endif %};background:{% if product.mcdave_stock == 0 %}#ef4444{% elif product.mcdave_stock < 10 %}#f59e0b{% else %}#22c55e{% endif %};"></div>
+                        </div>
+                        <div class="stock-val" style="color:{% if product.mcdave_stock == 0 %}#ef4444{% elif product.mcdave_stock < 10 %}#f59e0b{% else %}#22c55e{% endif %}">{{ product.mcdave_stock }}</div>
+                    </div>
+                    <div class="stock-store">
+                        <div class="stock-label">Mombasa</div>
+                        <div class="stock-bar-wrap">
+                            <div class="stock-bar" style="width:{% if total_stock > 0 %}{% widthratio product.kisii_stock total_stock 100 %}%{% else %}0%{% endif %};background:{% if product.kisii_stock == 0 %}#ef4444{% elif product.kisii_stock < 10 %}#f59e0b{% else %}#22c55e{% endif %};"></div>
+                        </div>
+                        <div class="stock-val" style="color:{% if product.kisii_stock == 0 %}#ef4444{% elif product.kisii_stock < 10 %}#f59e0b{% else %}#22c55e{% endif %}">{{ product.kisii_stock }}</div>
+                    </div>
+                    <div class="stock-store">
+                        <div class="stock-label">Offshore</div>
+                        <div class="stock-bar-wrap">
+                            <div class="stock-bar" style="width:{% if total_stock > 0 %}{% widthratio product.offshore_stock total_stock 100 %}%{% else %}0%{% endif %};background:{% if product.offshore_stock == 0 %}#ef4444{% elif product.offshore_stock < 10 %}#f59e0b{% else %}#22c55e{% endif %};"></div>
+                        </div>
+                        <div class="stock-val" style="color:{% if product.offshore_stock == 0 %}#ef4444{% elif product.offshore_stock < 10 %}#f59e0b{% else %}#22c55e{% endif %}">{{ product.offshore_stock }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revenue by Order Status -->
+            <div class="acard">
+                <div class="acard-head"><h6><i class="ri-pie-chart-line"></i> Revenue by Order Status</h6></div>
+                <div class="acard-body">
+                    <div class="status-grid">
+                        <div class="status-mini sm-completed">
+                            <div class="sm-val">Ksh {{ rev_completed|floatformat:0 }}</div>
+                            <div class="sm-lbl" style="color:#16a34a;">✓ Completed</div>
+                        </div>
+                        <div class="status-mini sm-pending">
+                            <div class="sm-val">Ksh {{ rev_pending|floatformat:0 }}</div>
+                            <div class="sm-lbl" style="color:#a16207;">⏳ Pending</div>
+                        </div>
+                        <div class="status-mini sm-partial">
+                            <div class="sm-val">Ksh {{ rev_partial|floatformat:0 }}</div>
+                            <div class="sm-lbl" style="color:#1d4ed8;">◑ Partial</div>
+                        </div>
+                        <div class="status-mini sm-cancelled">
+                            <div class="sm-val">Ksh {{ rev_cancelled|floatformat:0 }}</div>
+                            <div class="sm-lbl" style="color:#b91c1c;">✕ Cancelled</div>
+                        </div>
+                    </div>
+                    <!-- Donut chart -->
+                    <div style="position:relative;height:160px;margin-top:16px;">
+                        <canvas id="statusDonut"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales by Customer Category -->
+            <div class="acard">
+                <div class="acard-head"><h6><i class="ri-group-line"></i> Sales by Customer Type</h6></div>
+                <div class="acard-body">
+                    {% if by_category %}
+                    {% with max_units=by_category.0.units|default:1 %}
+                    {% for cat in by_category %}
+                    <div class="cat-row">
+                        <div class="cat-dot" style="background:{% if cat.order__customer_category == 'factory' %}#ef4444{% elif cat.order__customer_category == 'distributor' %}#f59e0b{% elif cat.order__customer_category == 'wholesale' %}#3b82f6{% elif cat.order__customer_category == 'Towns' %}#22c55e{% else %}#8b5cf6{% endif %}"></div>
+                        <div class="cat-name">{{ cat.order__customer_category|capfirst }}</div>
+                        <div class="cat-bar-wrap">
+                            <div class="cat-bar" style="width:{% widthratio cat.units max_units 100 %}%;background:{% if cat.order__customer_category == 'factory' %}#ef4444{% elif cat.order__customer_category == 'distributor' %}#f59e0b{% elif cat.order__customer_category == 'wholesale' %}#3b82f6{% elif cat.order__customer_category == 'Towns' %}#22c55e{% else %}#8b5cf6{% endif %};"></div>
+                        </div>
+                        <div class="cat-units">{{ cat.units }}u</div>
+                        <div class="cat-rev">Ksh {{ cat.rev|floatformat:0 }}</div>
+                    </div>
+                    {% endfor %}
+                    {% endwith %}
+                    {% else %}
+                    <div class="empty"><i class="ri-bar-chart-line"></i><p>No sales data yet</p></div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sales by Store -->
+            <div class="acard">
+                <div class="acard-head"><h6><i class="ri-building-line"></i> Sales by Store</h6></div>
+                <div class="acard-body">
+                    {% if by_store %}
+                    {% for st in by_store %}
+                    <div class="cat-row">
+                        <div class="cat-dot" style="background:{% if st.order__store == 'mcdave' %}#0d9488{% elif st.order__store == 'kisii' %}#3b82f6{% else %}#8b5cf6{% endif %}"></div>
+                        <div class="cat-name">{% if st.order__store == 'mcdave' %}McDave{% elif st.order__store == 'kisii' %}Mombasa{% else %}Offshore{% endif %}</div>
+                        <div class="cat-units">{{ st.units }}u</div>
+                        <div class="cat-rev">Ksh {{ st.rev|floatformat:0 }}</div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="empty"><i class="ri-store-line"></i><p>No data</p></div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div><!-- /left -->
+
+        <!-- RIGHT COLUMN -->
+        <div>
+
+            <!-- Monthly Chart -->
+            <div class="acard">
+                <div class="acard-head"><h6><i class="ri-line-chart-line"></i> Monthly Performance (12 months)</h6></div>
+                <div class="acard-body">
+                    {% if chart_labels %}
+                    <div class="chart-wrap"><canvas id="monthlyChart"></canvas></div>
+                    {% else %}
+                    <div class="empty"><i class="ri-line-chart-line"></i><p>No sales in the past 12 months</p></div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Salesperson Leaderboard -->
+            <div class="acard">
+                <div class="acard-head">
+                    <h6><i class="ri-user-star-line"></i> Salesperson Leaderboard</h6>
+                    <span style="font-size:11px;color:var(--muted);">by revenue on this product</span>
+                </div>
+                <div class="acard-body">
+                    {% if by_salesperson %}
+                    {% with max_sp_rev=by_salesperson.0.rev|default:1 %}
+                    {% for sp in by_salesperson %}
+                    <div class="sp-row">
+                        <div class="sp-rank {% if forloop.counter == 1 %}r1{% elif forloop.counter == 2 %}r2{% elif forloop.counter == 3 %}r3{% else %}rn{% endif %}">{{ forloop.counter }}</div>
+                        <div class="sp-name">
+                            {% if sp.order__sales_person__first_name %}{{ sp.order__sales_person__first_name }} {{ sp.order__sales_person__last_name }}{% else %}{{ sp.order__sales_person__username|default:"Unknown" }}{% endif %}
+                        </div>
+                        <div class="sp-bar-wrap">
+                            <div class="sp-bar" style="width:{% widthratio sp.rev max_sp_rev 100 %}%;"></div>
+                        </div>
+                        <div class="sp-orders">{{ sp.orders }} orders · {{ sp.units }}u</div>
+                        <div class="sp-rev">Ksh {{ sp.rev|floatformat:0 }}</div>
+                    </div>
+                    {% endfor %}
+                    {% endwith %}
+                    {% else %}
+                    <div class="empty"><i class="ri-user-star-line"></i><p>No salesperson data</p></div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="acard">
+                <ul class="nav atabs border-bottom px-2">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-customers"><i class="ri-group-line me-1"></i>Top Customers</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-orders"><i class="ri-shopping-bag-line me-1"></i>Recent Orders</button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-movements"><i class="ri-arrow-left-right-line me-1"></i>Stock History</button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+
+                    <!-- Top Customers -->
+                    <div class="tab-pane fade show active" id="tab-customers">
+                        {% if top_customers %}
+                        <div class="table-responsive">
+                            <table class="table data-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th><th>Customer</th><th>Type</th>
+                                        <th class="text-center">Orders</th>
+                                        <th class="text-center">Units</th>
+                                        <th class="text-end">Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for c in top_customers %}
+                                    <tr>
+                                        <td><span class="rank {% if forloop.counter == 1 %}rank-1{% elif forloop.counter == 2 %}rank-2{% elif forloop.counter == 3 %}rank-3{% else %}rank-n{% endif %}">{{ forloop.counter }}</span></td>
+                                        <td>
+                                            <a href="{% url 'customer_detail-view' c.order__customer__id %}" class="text-decoration-none fw-semibold" style="color:var(--teal)">
+                                                {{ c.order__customer__first_name }}
+                                            </a>
+                                            {% if c.order__customer__last_name %}<span class="text-muted"> {{ c.order__customer__last_name }}</span>{% endif %}
+                                        </td>
+                                        <td style="font-size:11px;color:var(--muted);">{{ c.order__customer__default_category|capfirst }}</td>
+                                        <td class="text-center">{{ c.orders }}</td>
+                                        <td class="text-center fw-bold">{{ c.units }}</td>
+                                        <td class="text-end fw-bold" style="color:var(--ink2)">Ksh {{ c.rev|floatformat:0 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="4" class="text-end">Totals</td>
+                                        <td class="text-center">{{ total_units_sold }}</td>
+                                        <td class="text-end" style="color:var(--teal)">Ksh {{ total_revenue|floatformat:0 }}</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty"><i class="ri-group-line"></i><p>No customer data yet</p></div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Recent Orders -->
+                    <div class="tab-pane fade" id="tab-orders">
+                        {% if recent_orders %}
+                        <div class="table-responsive">
+                            <table class="table data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Order</th><th>Date</th><th>Customer</th>
+                                        <th>Store</th><th class="text-end">Amount</th><th>Pay Status</th><th>Delivery</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for o in recent_orders %}
+                                    <tr>
+                                        <td><a href="{% url 'order_detail' o.id %}" class="text-decoration-none fw-semibold" style="color:var(--teal)">#{{ o.id }}</a></td>
+                                        <td style="white-space:nowrap;">{{ o.order_date|date:"M d, Y" }}</td>
+                                        <td>{{ o.customer.first_name }}</td>
+                                        <td style="font-size:11px;color:var(--muted);">{% if o.store == 'mcdave' %}McDave{% elif o.store == 'kisii' %}Mombasa{% else %}Offshore{% endif %}</td>
+                                        <td class="text-end fw-semibold">Ksh {{ o.total_amount|floatformat:0 }}</td>
+                                        <td><span class="ob ob-{{ o.paid_status }}">{{ o.get_paid_status_display }}</span></td>
+                                        <td><span class="ob ob-{{ o.delivery_status }}">{{ o.get_delivery_status_display }}</span></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty"><i class="ri-shopping-bag-line"></i><p>No orders found</p></div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Stock Movements -->
+                    <div class="tab-pane fade" id="tab-movements">
+                        {% if recent_movements %}
+                        <div class="table-responsive">
+                            <table class="table data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th><th>Type</th><th>Store</th>
+                                        <th class="text-center">Qty</th>
+                                        <th class="text-center">Before</th>
+                                        <th class="text-center">After</th>
+                                        <th>Ref</th><th>By</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for mv in recent_movements %}
+                                    <tr>
+                                        <td style="white-space:nowrap;">{{ mv.created_at|date:"M d, Y" }}</td>
+                                        <td><span class="mv mv-{{ mv.movement_type }}">{{ mv.get_movement_type_display }}</span></td>
+                                        <td style="font-size:11px;">{{ mv.get_store_display }}</td>
+                                        <td class="text-center fw-bold" style="color:{% if mv.quantity > 0 %}#22c55e{% else %}#ef4444{% endif %}">
+                                            {% if mv.quantity > 0 %}+{% endif %}{{ mv.quantity }}
+                                        </td>
+                                        <td class="text-center text-muted">{{ mv.previous_stock }}</td>
+                                        <td class="text-center fw-bold">{{ mv.new_stock }}</td>
+                                        <td style="font-size:11px;color:var(--muted);">{{ mv.reference_number|default:"—" }}</td>
+                                        <td style="font-size:11px;">{% if mv.recorded_by %}{{ mv.recorded_by.get_full_name|default:mv.recorded_by.username }}{% else %}—{% endif %}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="empty"><i class="ri-arrow-left-right-line"></i><p>No stock movements recorded</p></div>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+
+        </div><!-- /right -->
+    </div><!-- /analytics-grid -->
+
+   
+
+    <!-- Charts -->
+    <script>
+    (function() {
+        // ── Monthly bar+line chart ───────────────────────────
+        {% if chart_labels %}
+        const labels  = {{ chart_labels|safe }};
+        const units   = {{ chart_units|safe }};
+        const revenue = {{ chart_revenue|safe }};
+        new Chart(document.getElementById('monthlyChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Revenue (Ksh)',
+                        data: revenue,
+                        backgroundColor: 'rgba(13,148,136,.75)',
+                        borderRadius: 5,
+                        yAxisID: 'yRev',
+                        order: 2,
+                    },
+                    {
+                        label: 'Units Sold',
+                        data: units,
+                        type: 'line',
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245,158,11,.10)',
+                        borderWidth: 2.5,
+                        pointBackgroundColor: '#f59e0b',
+                        pointRadius: 4,
+                        tension: 0.35,
+                        fill: true,
+                        yAxisID: 'yUnits',
+                        order: 1,
+                    }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 12 } },
+                    tooltip: { callbacks: { label: c => c.dataset.label === 'Revenue (Ksh)' ? ` Ksh ${c.parsed.y.toLocaleString()}` : ` ${c.parsed.y} units` } }
+                },
+                scales: {
+                    yRev:   { type:'linear', position:'left',  ticks: { callback: v => 'Ksh '+v.toLocaleString(), font:{size:10} }, grid:{color:'#f1f5f9'} },
+                    yUnits: { type:'linear', position:'right', ticks: { font:{size:10} }, grid:{display:false} },
+                    x:      { ticks:{font:{size:10}}, grid:{display:false} }
+                }
+            }
+        });
+        {% endif %}
+
+        // ── Order status donut ───────────────────────────────
+        const donutCtx = document.getElementById('statusDonut');
+        if (donutCtx) {
+            new Chart(donutCtx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'Pending', 'Partial', 'Cancelled'],
+                    datasets: [{
+                        data: [
+                            {{ rev_completed|floatformat:0 }},
+                            {{ rev_pending|floatformat:0 }},
+                            {{ rev_partial|floatformat:0 }},
+                            {{ rev_cancelled|floatformat:0 }}
+                        ],
+                        backgroundColor: ['#22c55e','#f59e0b','#3b82f6','#ef4444'],
+                        borderWidth: 0,
+                        hoverOffset: 6,
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font:{size:10}, boxWidth:10, padding:10 } },
+                        tooltip: { callbacks: { label: c => ` Ksh ${c.parsed.toLocaleString()}` } }
+                    }
+                }
+            });
+        }
+    })();
+    </script>
+
+</body>
+</html>
+{% endblock %}

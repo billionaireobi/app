@@ -1,0 +1,290 @@
+{% extends "partials/base.html" %}
+{% load static %}
+
+{% block title %}Stock Dashboard - Zelia{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="fw-bold mb-1">Stock Management</h4>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{% url 'home' %}">Dashboard</a></li>
+                        <li class="breadcrumb-item active">Stock</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                {% if is_admin %}
+                <a href="{% url 'stock_receive' %}" class="btn btn-success">
+                    <i class="ri-add-line me-1"></i> Receive Stock
+                </a>
+                <a href="{% url 'stock_transfer_create' %}" class="btn btn-primary">
+                    <i class="ri-arrow-left-right-line me-1"></i> New Transfer
+                </a>
+                {% endif %}
+                <!-- Export buttons -->
+                <div class="btn-group" role="group">
+                    <a href="{% url 'stock_dashboard' %}?download=csv" class="btn btn-outline-primary btn-sm">
+                        <i class="ri-file-text-line me-1"></i>CSV
+                    </a>
+                    <a href="{% url 'stock_dashboard' %}?download=excel" class="btn btn-outline-success btn-sm">
+                        <i class="ri-file-excel-line me-1"></i>Excel
+                    </a>
+                    <a href="{% url 'stock_dashboard' %}?download=pdf" class="btn btn-outline-danger btn-sm">
+                        <i class="ri-file-pdf-line me-1"></i>PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Overview Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="card-body text-white">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="mb-1 opacity-75">Total Stock</p>
+                        <h3 class="fw-bold mb-0">{{ total_stock|default:0 }}</h3>
+                        <small class="opacity-75">All stores combined</small>
+                    </div>
+                   <div class="rounded-circle bg-white bg-opacity-25 p-3 d-flex align-items-center justify-content-center">
+    <img src="{% static 'assets/images/mcdave/logo.png' %}" 
+         alt="Logo" 
+         style="width: 32px; height: 32px; object-fit: contain;">
+</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+            <div class="card-body text-white">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="mb-1 opacity-75">McDave Store</p>
+                        <h3 class="fw-bold mb-0">{{ mcdave_total|default:0 }}</h3>
+                        <small class="opacity-75">units in stock</small>
+                    </div>
+                    <div class="rounded-circle bg-white bg-opacity-25 p-3">
+                        <img src="{% static 'assets/images/mcdave/logo.png' %}" 
+         alt="Logo" 
+         style="width: 32px; height: 32px; object-fit: contain;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #fc4a1a 0%, #f7b733 100%);">
+            <div class="card-body text-white">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="mb-1 opacity-75">Mombasa Store</p>
+                        <h3 class="fw-bold mb-0">{{ kisii_total|default:0 }}</h3>
+                        <small class="opacity-75">units in stock</small>
+                    </div>
+                    <div class="rounded-circle bg-white bg-opacity-25 p-3">
+                        <img src="{% static 'assets/images/mcdave/logo.png' %}" 
+         alt="Logo" 
+         style="width: 32px; height: 32px; object-fit: contain;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);">
+            <div class="card-body text-white">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="mb-1 opacity-75">Offshore Store</p>
+                        <h3 class="fw-bold mb-0">{{ offshore_total|default:0 }}</h3>
+                        <small class="opacity-75">units in stock</small>
+                    </div>
+                    <div class="rounded-circle bg-white bg-opacity-25 p-3">
+                        <img src="{% static 'assets/images/mcdave/logo.png' %}" 
+         alt="Logo" 
+         style="width: 32px; height: 32px; object-fit: contain;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions and Low Stock Alert -->
+<div class="row mb-4">
+    <div class="col-lg-4 mb-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom">
+                <h6 class="fw-bold mb-0"><i class="ri-flash-line me-2 text-warning"></i>Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{% url 'stock_list' %}" class="btn btn-outline-primary">
+                        <i class="ri-list-check me-2"></i> View All Stock
+                    </a>
+                    {% if is_admin %}
+                    <a href="{% url 'stock_adjustment' %}" class="btn btn-outline-warning">
+                        <i class="ri-equalizer-line me-2"></i> Stock Adjustment
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'stock_transfer_list' %}" class="btn btn-outline-info">
+                        <i class="ri-arrow-left-right-line me-2"></i> View Transfers
+                    </a>
+                    <a href="{% url 'stock_movement_history' %}" class="btn btn-outline-secondary">
+                        <i class="ri-history-line me-2"></i> Movement History
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8 mb-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0">
+                    <i class="ri-alarm-warning-line me-2 text-danger"></i>Low Stock Alerts
+                    <span class="badge bg-danger ms-2">{{ low_stock_count }}</span>
+                </h6>
+                <a href="{% url 'stock_list' %}?filter=low" class="btn btn-sm btn-outline-danger">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if low_stock_products %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product</th>
+                                <th>Store</th>
+                                <th>Stock</th>
+                                {% if is_admin %}
+                                <th>Action</th>
+                                {%endif%}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in low_stock_products %}
+                            <tr>
+                                <td class="fw-medium">{{ item.product.name }}</td>
+                                <td><span class="badge bg-secondary">{{ item.store }}</span></td>
+                                <td>
+                                    <span class="badge {% if item.stock == 0 %}bg-danger{% else %}bg-warning{% endif %}">
+                                        {{ item.stock }} units
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if is_admin %}
+                                    <a href="{% url 'stock_receive' %}" class="btn btn-sm btn-success">Restock</a>
+                                
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="ri-checkbox-circle-line fs-1 text-success"></i>
+                    <p class="mt-2 mb-0">All products are well stocked!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Movements and Pending Transfers -->
+<div class="row">
+    <div class="col-lg-7 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="ri-history-line me-2 text-primary"></i>Recent Stock Movements</h6>
+                <a href="{% url 'stock_movement_history' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_movements %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product</th>
+                                <th>Type</th>
+                                <th>Qty</th>
+                                <th>Store</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for movement in recent_movements %}
+                            <tr>
+                                <td class="fw-medium">{{ movement.product.name|truncatechars:20 }}</td>
+                                <td>
+                                    <span class="badge {% if 'in' in movement.movement_type %}bg-success{% elif 'out' in movement.movement_type %}bg-danger{% else %}bg-info{% endif %}">
+                                        {{ movement.get_movement_type_display }}
+                                    </span>
+                                </td>
+                                <td class="{% if movement.quantity > 0 %}text-success{% else %}text-danger{% endif %} fw-bold">
+                                    {% if movement.quantity > 0 %}+{% endif %}{{ movement.quantity }}
+                                </td>
+                                <td>{{ movement.get_store_display }}</td>
+                                <td class="text-muted small">{{ movement.created_at|date:"M d, H:i" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="ri-inbox-line fs-1"></i>
+                    <p class="mt-2 mb-0">No recent movements</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5 mb-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="ri-truck-line me-2 text-info"></i>Pending Transfers</h6>
+                <a href="{% url 'stock_transfer_list' %}" class="btn btn-sm btn-outline-info">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if pending_transfers %}
+                <ul class="list-group list-group-flush">
+                    {% for transfer in pending_transfers %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-medium">Transfer #{{ transfer.id }}</span>
+                            <br>
+                            <small class="text-muted">
+                                {{ transfer.get_from_store_display }} → {{ transfer.get_to_store_display }}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge {% if transfer.status == 'pending' %}bg-warning{% else %}bg-info{% endif %}">
+                                {{ transfer.get_status_display }}
+                            </span>
+                            <br>
+                            <small class="text-muted">{{ transfer.created_at|date:"M d" }}</small>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="ri-checkbox-circle-line fs-1 text-success"></i>
+                    <p class="mt-2 mb-0">No pending transfers</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

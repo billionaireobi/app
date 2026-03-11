@@ -1,0 +1,22 @@
+
+{% extends 'partials/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="card">
+        <div class="card-body">
+            <h2 class="text-center" style="color: #003087;">Confirm Delete</h2>
+            <p class="text-center">Are you sure you want to delete Quote #McQ{{ quote.id }}Z?</p>
+            <p class="text-center">This action cannot be undone.</p>
+            <div class="text-center mt-4">
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" style="background-color: #003087; border-color: #003087; color: white;">Yes, Delete</button>
+                    <a href="{% url 'quote_detail' quote.id %}" class="btn btn-secondary">No, Cancel</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

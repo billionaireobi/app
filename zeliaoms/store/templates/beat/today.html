@@ -1,0 +1,124 @@
+{% extends "partials/base.html" %}
+{% load static %}
+
+{% block content %}
+<head>
+  <meta charset="UTF-8">
+  <title>Today's Beat</title>
+   <style>
+    body { background:#e8ecf4; }
+    .beat-card { background:#fff; border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,.07); border-left:4px solid #6366f1; transition:.2s; }
+    .beat-card.done { border-left-color:#10b981; opacity:.75; }
+    .beat-card:hover { box-shadow:0 6px 22px rgba(0,0,0,.12); }
+    .day-banner { background:linear-gradient(135deg,#6366f1,#818cf8); border-radius:14px; color:#fff; }
+    .stat-box { background:#fff; border-radius:12px; text-align:center; padding:16px 10px; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+    .avatar { width:40px;height:40px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;flex-shrink:0; }
+  </style>
+</head>
+
+<div class="container py-4">
+
+  <!-- Header -->
+  <div class="day-banner p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div>
+        <h4 class="fw-bold mb-1"><i class="bi bi-calendar-check-fill me-2"></i>Today's Beat Plan</h4>
+        <div class="opacity-80">{{ today }}, {{ today_date|date:"d F Y" }}
+          {% if is_admin and view_user != request.user %}
+           &nbsp;·&nbsp; <strong>{{ view_user.get_full_name|default:view_user.username }}</strong>
+          {% endif %}
+        </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        {% if is_admin %}
+        <form method="get" class="d-flex gap-2">
+          <select name="sp" class="form-select form-select-sm" onchange="this.form.submit()" style="min-width:150px;color:#1e293b;">
+            <option value="">All Reps</option>
+            {% for sp in salespersons %}
+            <option value="{{ sp.id }}" {% if view_user.id == sp.id %}selected{% endif %}>{{ sp.get_full_name|default:sp.username }}</option>
+            {% endfor %}
+          </select>
+        </form>
+        <a href="{% url 'beat_overview' %}" class="btn btn-light btn-sm">
+          <i class="bi bi-bar-chart-line me-1"></i>Overview
+        </a>
+        {% endif %}
+        <a href="{% url 'beat_plans' %}" class="btn btn-light btn-sm">
+          <i class="bi bi-list-check me-1"></i>Manage Plans
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="row g-3 mb-4">
+    <div class="col-4">
+      <div class="stat-box">
+        <div class="fw-bold fs-3 text-primary">{{ plans|length }}</div>
+        <div class="small text-muted">Planned</div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="stat-box">
+        <div class="fw-bold fs-3 text-success">{{ visited_ids|length }}</div>
+        <div class="small text-muted">Visited</div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="stat-box">
+        <div class="fw-bold fs-3 text-warning">{{ plans|length }}</div>
+        <div class="small text-muted">Remaining</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Beat cards -->
+  {% if not plans %}
+    <div class="text-center py-5">
+      <i class="bi bi-calendar-x" style="font-size:3rem;color:#94a3b8;"></i>
+      <p class="text-muted mt-2 mb-3">No customers scheduled for {{ today }}.</p>
+      <a href="{% url 'beat_plan_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>Add Beat Plan
+      </a>
+    </div>
+  {% else %}
+  <div class="d-flex flex-column gap-3">
+    {% for plan in plans %}
+    <div class="beat-card p-3 {% if plan.id in visited_ids %}done{% endif %}">
+      <div class="d-flex align-items-center gap-3">
+        <div class="avatar">{{ plan.customer.first_name|first|upper }}{{ plan.customer.last_name|first|upper|default:"" }}</div>
+        <div class="flex-grow-1">
+          <div class="fw-bold">{{ plan.customer.first_name }} {{ plan.customer.last_name }}</div>
+          <div class="small text-muted">
+            <i class="bi bi-geo-alt me-1"></i>{{ plan.customer.address|default:"No address" }}
+            &nbsp;|&nbsp;<i class="bi bi-telephone me-1"></i>{{ plan.customer.phone_number|default:"—" }}
+          </div>
+          {% if plan.notes %}<div class="small text-secondary fst-italic">{{ plan.notes }}</div>{% endif %}
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          {% if plan.id in visited_ids %}
+            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Done</span>
+          {% else %}
+            <a href="{% url 'beat_log_visit' plan.id %}" class="btn btn-success btn-sm">
+              <i class="bi bi-clipboard-check me-1"></i>Log Visit
+            </a>
+          {% endif %}
+          <a href="{% url 'create_order' %}?customer={{ plan.customer.id }}" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-cart-plus me-1"></i>Order
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="mt-4 text-center">
+    <a href="{% url 'beat_plan_create' %}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-plus-circle me-1"></i>Add Customer to Beat
+    </a>
+  </div>
+
+</div>
+{% comment %} <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script> {% endcomment %}
+{% endblock %}

@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Contact Admin - Zelia Mcdave System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @keyframes gradientShift {
+      0% { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+      25% { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+      50% { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+      75% { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+      100% { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-20px) rotate(5deg); }
+    }
+    
+    @keyframes slideInUp {
+      from { 
+        opacity: 0; 
+        transform: translateY(100px) scale(0.8) rotateY(10deg); 
+      }
+      to { 
+        opacity: 1; 
+        transform: translateY(0) scale(1) rotateY(0deg); 
+      }
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-10px) scale(1.1); }
+    }
+    
+    @keyframes wave {
+      0%, 100% { transform: rotate(0deg) scale(1); }
+      25% { transform: rotate(15deg) scale(1.1); }
+      50% { transform: rotate(-10deg) scale(1.05); }
+      75% { transform: rotate(5deg) scale(1.1); }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    @keyframes wiggle {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(5deg); }
+      50% { transform: rotate(-5deg); }
+      75% { transform: rotate(3deg); }
+    }
+    
+    @keyframes sparkle {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+    
+    @keyframes morph {
+      0%, 100% { border-radius: 50% 30% 70% 40%; }
+      25% { border-radius: 30% 60% 40% 70%; }
+      50% { border-radius: 70% 40% 30% 60%; }
+      75% { border-radius: 40% 70% 60% 30%; }
+    }
+    
+    @keyframes electric {
+      0%, 100% { box-shadow: 0 0 5px #00f, 0 0 10px #00f, 0 0 15px #00f; }
+      50% { box-shadow: 0 0 10px #0ff, 0 0 20px #0ff, 0 0 30px #0ff; }
+    }
+    
+    @keyframes typewriter {
+      from { width: 0; }
+      to { width: 100%; }
+    }
+    
+    @keyframes glitch {
+      0%, 100% { transform: translate(0); }
+      20% { transform: translate(-2px, 2px); }
+      40% { transform: translate(-2px, -2px); }
+      60% { transform: translate(2px, 2px); }
+      80% { transform: translate(2px, -2px); }
+    }
+    
+    @keyframes liquidMorph {
+      0%, 100% { 
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%; 
+        transform: rotate(0deg) scale(1);
+      }
+      25% { 
+        border-radius: 30% 60% 40% 70% / 40% 70% 60% 30%; 
+        transform: rotate(90deg) scale(1.1);
+      }
+      50% { 
+        border-radius: 70% 30% 60% 40% / 30% 60% 40% 70%; 
+        transform: rotate(180deg) scale(0.9);
+      }
+      75% { 
+        border-radius: 40% 70% 30% 60% / 70% 40% 30% 60%; 
+        transform: rotate(270deg) scale(1.05);
+      }
+    }
+    
+    .gradient-bg { animation: gradientShift 8s infinite; }
+    .float-animation { animation: float 3s ease-in-out infinite; }
+    .slide-in-up { animation: slideInUp 1s ease-out; }
+    .bounce-animation { animation: bounce 2s infinite; }
+    .wave-animation { animation: wave 2s infinite; }
+    .pulse-animation { animation: pulse 2s infinite; }
+    .wiggle-animation { animation: wiggle 0.5s ease-in-out; }
+    .sparkle-animation { animation: sparkle 1.5s infinite; }
+    .morph-animation { animation: morph 6s infinite; }
+    .electric-animation { animation: electric 1s infinite; }
+    .glitch-animation { animation: glitch 0.3s infinite; }
+    .liquid-morph { animation: liquidMorph 8s infinite; }
+    
+    .magazine-card {
+      background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.25),
+        0 10px 20px -5px rgba(0, 0, 0, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
+      transform-style: preserve-3d;
+      perspective: 1000px;
+    }
+    
+    .magazine-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .magazine-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      animation: shimmer 3s infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+    
+    .floating-emoji {
+      position: absolute;
+      font-size: 2rem;
+      animation: float 4s ease-in-out infinite;
+      opacity: 0.7;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      user-select: none;
+    }
+    
+    .floating-emoji:hover {
+      transform: scale(1.5) rotate(360deg);
+      opacity: 1;
+    }
+    
+    .emoji-1 { top: 10%; left: 10%; animation-delay: 0s; }
+    .emoji-2 { top: 20%; right: 15%; animation-delay: 1s; }
+    .emoji-3 { bottom: 30%; left: 8%; animation-delay: 2s; }
+    .emoji-4 { bottom: 15%; right: 12%; animation-delay: 0.5s; }
+    .emoji-5 { top: 40%; left: 5%; animation-delay: 1.5s; }
+    .emoji-6 { top: 60%; right: 8%; animation-delay: 2.5s; }
+    .emoji-7 { top: 70%; left: 15%; animation-delay: 3s; }
+    .emoji-8 { bottom: 40%; right: 20%; animation-delay: 0.8s; }
+    
+    .button-hover-effect {
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .button-hover-effect::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s;
+    }
+    
+    .button-hover-effect:hover::before {
+      left: 100%;
+    }
+    
+    .button-hover-effect:hover {
+      transform: translateY(-5px) scale(1.05) rotateX(10deg);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+    }
+    
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #fff;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: particleFloat 3s infinite ease-in-out;
+    }
+    
+    @keyframes particleFloat {
+      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0; }
+      10% { opacity: 1; }
+      50% { transform: translateY(-100px) rotate(180deg); opacity: 0.8; }
+      90% { opacity: 1; }
+    }
+    
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+      animation: confettiFall 3s linear infinite;
+      pointer-events: none;
+    }
+    
+    @keyframes confettiFall {
+      0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    
+    .text-glow {
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+    }
+    
+    .interactive-text:hover {
+      background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4);
+      background-size: 300% 300%;
+      animation: gradientMove 2s ease infinite;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    @keyframes gradientMove {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+    
+    .game-zone {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      backdrop-filter: blur(10px);
+    }
+    
+    .score-display {
+      font-weight: bold;
+      color: #667eea;
+      font-size: 18px;
+    }
+    
+    .falling-object {
+      position: absolute;
+      font-size: 24px;
+      cursor: pointer;
+      user-select: none;
+      animation: fallDown 4s linear infinite;
+      z-index: 999;
+    }
+    
+    @keyframes fallDown {
+      0% { transform: translateY(-50px); opacity: 1; }
+      100% { transform: translateY(100vh); opacity: 0; }
+    }
+    
+    .achievement {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: linear-gradient(45deg, #ffd700, #ffed4e);
+      color: #333;
+      padding: 15px 20px;
+      border-radius: 25px;
+      font-weight: bold;
+      transform: translateX(400px);
+      transition: transform 0.5s ease;
+      z-index: 1001;
+      box-shadow: 0 10px 25px rgba(255, 215, 0, 0.3);
+    }
+    
+    .achievement.show {
+      transform: translateX(0);
+    }
+    
+    .liquid-bg {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+      animation: liquidMorph 8s infinite;
+      pointer-events: none;
+    }
+    
+    .liquid-1 { top: 20%; left: 10%; animation-delay: 0s; }
+    .liquid-2 { bottom: 20%; right: 10%; animation-delay: 2s; }
+    .liquid-3 { top: 50%; left: 50%; animation-delay: 4s; }
+    
+    .mouse-trail {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: radial-gradient(circle, #ff6b6b, transparent);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: trailFade 1s ease-out forwards;
+    }
+    
+    @keyframes trailFade {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(0); opacity: 0; }
+    }
+    
+    .typewriter {
+      overflow: hidden;
+      border-right: 0.15em solid #667eea;
+      white-space: nowrap;
+      margin: 0 auto;
+      letter-spacing: 0.15em;
+      animation: typewriter 4s steps(40, end), blink-caret 0.75s step-end infinite;
+    }
+    
+    @keyframes blink-caret {
+      from, to { border-color: transparent; }
+      50% { border-color: #667eea; }
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 4px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 4px;
+      transition: width 0.3s ease;
+      animation: progressGlow 2s infinite;
+    }
+    
+    @keyframes progressGlow {
+      0%, 100% { box-shadow: 0 0 10px rgba(102, 126, 234, 0.5); }
+      50% { box-shadow: 0 0 20px rgba(102, 126, 234, 0.8); }
+    }
+  </style>
+</head>
+<body class="gradient-bg min-h-screen overflow-hidden">
+  <!-- Liquid Morphing Backgrounds -->
+  <div class="liquid-bg liquid-1"></div>
+  <div class="liquid-bg liquid-2"></div>
+  <div class="liquid-bg liquid-3"></div>
+  
+  <!-- Mini Game Zone -->
+  <div class="game-zone">
+    <div class="text-center">
+      <div class="score-display">Score: <span id="score">0</span></div>
+      <div class="text-xs text-gray-600 mt-1">Catch the falling emojis!</div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Achievement Notification -->
+  <div id="achievement" class="achievement">
+    🎉 Achievement Unlocked!
+  </div>
+  
+  <!-- Floating Background Emojis -->
+  <div class="floating-emoji emoji-1" data-sound="pop">🌟</div>
+  <div class="floating-emoji emoji-2" data-sound="chime">✨</div>
+  <div class="floating-emoji emoji-3" data-sound="whoosh">🚀</div>
+  <div class="floating-emoji emoji-4" data-sound="sparkle">💫</div>
+  <div class="floating-emoji emoji-5" data-sound="ding">🎯</div>
+  <div class="floating-emoji emoji-6" data-sound="magic">🔮</div>
+  <div class="floating-emoji emoji-7" data-sound="celebration">🎊</div>
+  <div class="floating-emoji emoji-8" data-sound="rainbow">🌈</div>
+  
+  <div class="flex items-center justify-center min-h-screen p-4 relative">
+  <div id="accountCard" class="magazine-card rounded-3xl overflow-hidden max-w-2xl w-full slide-in-up">
+    
+    <!-- Decorative Corners -->
+    <div class="absolute top-4 left-4 w-8 h-8 border-l-4 border-t-4 border-purple-400 rounded-tl-lg opacity-50 z-10 electric-animation"></div>
+    <div class="absolute top-4 right-4 w-8 h-8 border-r-4 border-t-4 border-purple-400 rounded-tr-lg opacity-50 z-10 electric-animation"></div>
+    <div class="absolute bottom-4 left-4 w-8 h-8 border-l-4 border-b-4 border-purple-400 rounded-bl-lg opacity-50 z-10 electric-animation"></div>
+    <div class="absolute bottom-4 right-4 w-8 h-8 border-r-4 border-b-4 border-purple-400 rounded-br-lg opacity-50 z-10 electric-animation"></div>
+
+    <!-- Header -->
+    <div class="magazine-header text-white p-8 text-center relative">
+      <h1 class="text-4xl font-bold mb-2 text-glow interactive-text typewriter">
+        Need an Account? 
+        <span class="bounce-animation inline-block ml-2">🆕</span>
+        <span class="wave-animation inline-block ml-2">😊</span>
+      </h1>
+      <div class="text-xl opacity-90">
+        <span class="sparkle-animation inline-block mr-2">✨</span>
+        Welcome to Zelia Mcdave System
+        <span class="sparkle-animation inline-block ml-2">✨</span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="p-8 text-center relative">
+      <div class="mb-8">
+        <p class="text-lg text-gray-700 leading-relaxed mb-6 interactive-text hover:scale-105 transition-transform duration-300 cursor-default">
+          🌟 If you're a new user and need an account to access the platform, please contact the administrator. 
+          <span class="block mt-2">🔒 This is a security measure to avoid unauthorized access.</span>
+        </p>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col sm:flex-row gap-6 justify-center items-center mb-8">
+        <button onclick="openWhatsApp()"
+          class="button-hover-effect bg-gradient-to-r from-green-600 to-blue-600 hover:from-blue-600 hover:to-teal-600 text-white font-bold py-4 px-8 rounded-full transition-all duration-500 transform hover:shadow-xl wiggle-on-hover">
+          💬 Contact Admin
+        </button>
+
+        <button id="loginBtn"
+          class="button-hover-effect bg-gradient-to-r from-green-500 to-blue-500 hover:from-blue-500 hover:to-teal-500 text-white font-bold py-4 px-8 rounded-full transition-all duration-500 transform hover:shadow-xl wiggle-on-hover"
+          onclick="window.location.href='{% url "loginuser" %}'">
+          🔑 Have an Account?
+        </button>
+      </div>
+
+      <!-- MFA Continue -->
+      <div id="continueSection" class="hidden mt-4">
+        <p class="text-gray-700 mb-2">✅ After sending the message, continue to register:</p>
+        <button onclick="goToRegister()"
+          class="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-pink-600 hover:to-purple-600 text-white font-bold py-3 px-6 rounded-full transition duration-500 transform hover:scale-105">
+          🚀 Continue to Register
+        </button>
+      </div>
+
+      <!-- Fun Hints -->
+      <div class="flex justify-center gap-4 text-sm text-gray-500 opacity-75 mt-8">
+        <span class="hover:opacity-100 transition-opacity cursor-default glitch-animation">💡 Hover for magic!</span>
+        <span class="hover:opacity-100 transition-opacity cursor-default">🎨 Click to animate!</span>
+        <span class="hover:opacity-100 transition-opacity cursor-default">🎮 Play the mini-game!</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+  
+  <!-- Animated Footer -->
+  <footer class="text-center p-6 text-white relative z-10">
+    <div class="pulse-animation">
+      <p class="text-sm opacity-80 hover:opacity-100 transition-opacity interactive-text">
+        &copy; 2025 Mcdave Holdings Limited. All rights reserved. 
+        <span class="bounce-animation inline-block ml-2">🏢</span>
+      </p>
+    </div>
+  </footer>
+  
+  <script>
+    // Game variables
+    let score = 0;
+    let gameActive = true;
+    let achievements = [];
+    let mouseTrails = [];
+    let particles = [];
+    
+    // Audio context for sound effects
+    let audioContext;
+    
+    // Initialize audio context
+    function initAudio() {
+      if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+    }
+    
+    // Create sound effect
+    function playSound(type) {
+      if (!audioContext) initAudio();
+      
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Different sound types
+      const sounds = {
+        pop: { freq: 800, duration: 0.1 },
+        chime: { freq: 1200, duration: 0.3 },
+        whoosh: { freq: 400, duration: 0.2 },
+        sparkle: { freq: 1600, duration: 0.15 },
+        ding: { freq: 2000, duration: 0.2 },
+        magic: { freq: 1000, duration: 0.4 },
+        celebration: { freq: 1500, duration: 0.3 },
+        rainbow: { freq: 600, duration: 0.25 },
+        success: { freq: 523, duration: 0.5 }
+      };
+      
+      const sound = sounds[type] || sounds.pop;
+      
+      oscillator.frequency.setValueAtTime(sound.freq, audioContext.currentTime);
+      gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + sound.duration);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + sound.duration);
+    }
+    
+    // Create confetti
+    function createConfetti(x, y) {
+      for (let i = 0; i < 20; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = x + 'px';
+        confetti.style.top = y + 'px';
+        confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 70%, 60%)`;
+        confetti.style.animationDelay = Math.random() * 2 + 's';
+        confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+        document.body.appendChild(confetti);
+        
+        setTimeout(() => confetti.remove(), 5000);
+      }
+    }
+    
+    // Create particles
+    function createParticles(x, y) {
+      for (let i = 0; i < 10; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = (x + Math.random() * 20 - 10) + 'px';
+        particle.style.top = (y + Math.random() * 20 - 10) + 'px';
+        particle.style.animationDelay = Math.random() * 0.5 + 's';
+        document.body.appendChild(particle);
+        
+        setTimeout(() => particle.remove(), 3000);
+      }
+    }
+    
+    // Create mouse trail
+    function createMouseTrail(x, y) {
+      const trail = document.createElement('div');
+      trail.className = 'mouse-trail';
+      trail.style.left = x + 'px';
+      trail.style.top = y + 'px';
+      trail.style.background = `radial-gradient(circle, hsl(${Math.random() * 360}, 70%, 60%), transparent)`;
+      document.body.appendChild(trail);
+      
+      setTimeout(() => trail.remove(), 1000);
+    }
+    
+    // Create falling objects for mini-game
+    function createFallingObject() {
+      if (!gameActive) return;
+      
+      const emojis = ['⭐', '💎', '🎁', '🍀', '🌟', '✨', '💫', '🎯'];
+      const fallingObject = document.createElement('div');
+      fallingObject.className = 'falling-object';
+      fallingObject.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      fallingObject.style.left = Math.random() * (window.innerWidth - 50) + 'px';
+      fallingObject.style.top = '-50px';
+      
+      fallingObject.addEventListener('click', function() {
+        score += 10;
+        document.getElementById('score').textContent = score;
+        updateProgress();
+        playSound('success');
+        createConfetti(this.offsetLeft, this.offsetTop);
+        createParticles(this.offsetLeft, this.offsetTop);
+        this.remove();
+        checkAchievements();
+      });
+      
+      document.body.appendChild(fallingObject);
+      
+      setTimeout(() => {
+        if (fallingObject.parentNode) {
+          fallingObject.remove();
+        }
+      }, 4000);
+      
+      // Schedule next falling object
+      setTimeout(createFallingObject, Math.random() * 2000 + 1000);
+    }
+    
+    // Update progress bar
+    function updateProgress() {
+      const progress = Math.min((score / 100) * 100, 100);
+      document.getElementById('progressBar').style.width = progress + '%';
+    }
+    
+    // Check for achievements
+    function checkAchievements() {
+      const achievementDiv = document.getElementById('achievement');
+      
+      if (score >= 50 && !achievements.includes('first50')) {
+        achievements.push('first50');
+        achievementDiv.textContent = '🎉 First 50 Points!';
+        achievementDiv.classList.add('show');
+        setTimeout(() => achievementDiv.classList.remove('show'), 3000);
+      }
+      
+      if (score >= 100 && !achievements.includes('century')) {
+        achievements.push('century');
+        achievementDiv.textContent = '🏆 Century Club!';
+        achievementDiv.classList.add('show');
+        setTimeout(() => achievementDiv.classList.remove('show'), 3000);
+      }
+    }
+    
+    // Show random motivational messages
+    function showRandomMessage() {
+      const messages = [
+        "🌟 You're doing great!",
+        "✨ Keep clicking!",
+        "🚀 Almost there!",
+        "💫 Fantastic work!",
+        "🎯 You're on fire!"
+      ];
+      
+      const message = document.createElement('div');
+      message.textContent = messages[Math.floor(Math.random() * messages.length)];
+      message.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-2xl font-bold text-white z-50 pointer-events-none';
+      message.style.animation = 'bounce 1s ease-out';
+      document.body.appendChild(message);
+      
+      setTimeout(() => message.remove(), 1000);
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize audio on first user interaction
+      document.addEventListener('click', initAudio, { once: true });
+      
+      // Trigger card animation on load
+      setTimeout(() => {
+        document.getElementById('accountCard').classList.add('visible');
+      }, 300);
+      
+      // Start mini-game
+      setTimeout(createFallingObject, 2000);
+      
+      // Add wiggle effect to buttons on hover
+      const buttons = document.querySelectorAll('.wiggle-on-hover');
+      buttons.forEach(button => {
+        button.addEventListener('mouseenter', function() {
+          this.classList.add('wiggle-animation');
+          playSound('chime');
+        });
+        
+        button.addEventListener('mouseleave', function() {
+          this.classList.remove('wiggle-animation');
+        });
+        
+        button.addEventListener('click', function() {
+          createConfetti(this.offsetLeft + this.offsetWidth/2, this.offsetTop + this.offsetHeight/2);
+          playSound('celebration');
+        });
+        
+        button.addEventListener('animationend', function() {
+          this.classList.remove('wiggle-animation');
+        });
+      });
+      
+      // Add click effect to header
+      const header = document.querySelector('.magazine-header h1');
+      header.addEventListener('click', function() {
+        this.classList.add('glitch-animation');
+        playSound('magic');
+        createParticles(window.innerWidth/2, 200);
+        setTimeout(() => this.classList.remove('glitch-animation'), 300);
+      });
+      
+            // Interactive text effects
+      const interactiveTexts = document.querySelectorAll('.interactive-text');
+      interactiveTexts.forEach(text => {
+        text.addEventListener('click', () => {
+          playSound('sparkle');
+          showRandomMessage();
+        });
+      });
+
+      // Mouse trail
+      document.addEventListener('mousemove', e => {
+        createMouseTrail(e.clientX, e.clientY);
+      });
+    });
+  </script>
+  <script>
+  function openWhatsApp() {
+    const phone = "254741486427";
+    const message = "Hello Admin, I need help creating an account.";
+    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(url, '_blank');
+
+    // Reveal MFA step
+    setTimeout(() => {
+      document.getElementById("continueSection").classList.remove("hidden");
+    }, 1000); // Wait briefly to simulate the user opening WhatsApp
+  }
+
+  function goToRegister() {
+    window.location.href = "{% url 'registeruser' %}";
+  }
+</script>
+</body>
+</html>

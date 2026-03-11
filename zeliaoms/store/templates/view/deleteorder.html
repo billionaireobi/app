@@ -1,0 +1,138 @@
+
+{% load static %}
+
+{% block title %}Delete Order #{{ order.id }}{% endblock %}
+
+{% block content %}
+<head>
+
+                <!-- Meta Data -->
+                <meta charset="UTF-8">
+                <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>
+                <meta http-equiv="X-UA-Compatible" content="IE=edge">
+                
+                <meta name="Description" content="Bootstrap Responsive Admin Web Dashboard HTML5 Template">
+                
+                <meta name="keywords" content="admin,admin dashboard,admin panel,admin template,bootstrap,clean,dashboard,flat,jquery,modern,responsive,premium admin templates,responsive admin,ui,ui kit.">
+                
+            <!-- Favicon -->
+            <link rel="icon" href="{% static 'assets/images/mcdave/logo.png'%}" type="image/x-icon">
+                
+            <!-- Choices JS -->
+            <script src="{% static 'assets/libs/choices.js/public/assets/scripts/choices.min.js'%}"></script>
+
+            <!-- Main Theme Js -->
+            <script src="{% static 'assets/js/main.js'%}"></script>
+            
+            <!-- Bootstrap Css -->
+            <link id="style" href="{% static 'assets/libs/bootstrap/css/bootstrap.min.css'%}" rel="stylesheet" >
+
+            <!-- Style Css -->
+            <link href="{% static 'assets/css/styles.min.css'%}" rel="stylesheet" >
+
+            <!-- Icons Css -->
+            <link href="{% static 'assets/css/icons.css'%}" rel="stylesheet" >
+
+            <!-- Node Waves Css -->
+            <link href="{% static 'assets/libs/node-waves/waves.min.css'%}" rel="stylesheet" > 
+              
+            <!-- Simplebar Css -->
+            <link href="{% static 'assets/libs/simplebar/simplebar.min.css'%}" rel="stylesheet" >
+            
+            <!-- Color Picker Css -->
+            <link rel="stylesheet" href="{% static 'assets/libs/flatpickr/flatpickr.min.css'%}">
+            <link rel="stylesheet" href="{% static 'assets/libs/@simonwep/pickr/themes/nano.min.css'%}">
+
+            <!-- Choices Css -->
+            <link rel="stylesheet" href="{% static 'assets/libs/choices.js/public/assets/styles/choices.min.css'%}">
+
+                {% comment %} toast css {% endcomment %}
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/css/iziToast.css" integrity="sha512-DIW4FkYTOxjCqRt7oS9BFO+nVOwDL4bzukDyDtMO7crjUZhwpyrWBFroq+IqRe6VnJkTpRAS6nhDvf0w+wHmxg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                
+            </head>
+<div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+    <h1 class="page-title fw-semibold fs-18 mb-0">Delete Order #Mc{{ order.id }}Z</h1>
+    <div class="ms-md-1 ms-0">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                {% if is_admin %}
+                <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+                {% else %}
+                <li class="breadcrumb-item"><a href="{% url 'salesperson_dashboard' %}">Dashboard</a></li>
+                {% endif %}
+                <li class="breadcrumb-item"><a href="{% url 'order_list' %}">Orders</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'order_detail' order.id %}">Order #{{ order.id }}</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Delete</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card custom-card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Confirm Deletion</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning" role="alert">
+                    <i class="ri-alert-line me-2"></i>
+                    Are you sure you want to delete Order #{{ order.id }} for customer <strong>{{ order.customer.get_full_name }}</strong>?
+                    This action cannot be undone.
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="text-end">
+                        <button type="submit" class="btn btn-danger px-4 py-2">
+                            <i class="ri-delete-bin-line me-1"></i>Delete
+                        </button>
+                        <a href="{% url 'order_detail' order.id %}" class="btn btn-secondary px-4 py-2 ms-2">
+                            <i class="ri-arrow-left-line me-1"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/js/iziToast.min.js" integrity="sha512-Zq9o+E00xhhR/7vJ49mxFNJ0KQw1E1TMWkPTxrWcnpfEFDEXgUiwJHIKit93EW/XxE31HSI5GEOW06G6BF1AtA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            <!-- Popper JS -->
+            <script src="{% static 'assets/libs/@popperjs/core/umd/popper.min.js'%}"></script>
+
+            <!-- Bootstrap JS -->
+            <script src="{% static 'assets/libs/bootstrap/js/bootstrap.bundle.min.js'%}"></script>
+
+            <!-- Defaultmenu JS -->
+            <script src="{% static 'assets/js/defaultmenu.min.js'%}"></script>
+
+            <!-- Node Waves JS-->
+            <script src="{% static 'assets/libs/node-waves/waves.min.js'%}"></script>
+
+            <!-- Sticky JS -->
+            <script src="{% static 'assets/js/sticky.js'%}"></script>
+
+            
+
+            <!-- Color Picker JS -->
+            <script src="{% static 'assets/libs/@simonwep/pickr/pickr.es5.min.js'%}"></script>
+
+
+            <!-- Apex Charts JS -->
+            <script src="{% static 'assets/libs/apexcharts/apexcharts.min.js'%}"></script>
+
+            <!-- Used For Sessions By Device Chart -->
+            <script src="{% static 'assets/libs/moment/moment.js'%}"></script>
+            
+           
+
+   
+            <!-- Custom-Switcher JS -->
+            <script src="{% static 'assets/js/custom-switcher.min.js'%}"></script>
+                
+            {% comment %} toast js {% endcomment %}
+            <!-- Simplebar JS -->
+            <script src="{% static 'assets/libs/simplebar/simplebar.min.js'%}"></script>
+              <script src="{% static 'assets/js/simplebar.js'%}"></script>
+            <!-- Custom JS -->
+            <script src="{% static 'assets/js/custom.js'%}"></script>
+{% endblock %}

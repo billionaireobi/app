@@ -1,0 +1,592 @@
+{% extends "partials/base.html" %}
+{% load static %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="light" data-menu-styles="dark" data-toggled="close">
+<head>
+    <!-- Meta Data -->
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="Description" content="Bootstrap Responsive Admin Web Dashboard HTML5 Template">
+    <meta name="keywords" content="admin,admin dashboard,admin panel,admin template,bootstrap,clean,dashboard,flat,jquery,modern,responsive,premium admin templates,responsive admin,ui,ui kit.">
+
+    <!-- Favicon -->
+    <link rel="icon" href="{% static 'assets/images/mcdave/logo.png' %}" type="image/x-icon">
+
+    <!-- Choices JS -->
+    <script src="{% static 'assets/libs/choices.js/public/assets/scripts/choices.min.js' %}"></script>
+
+    <!-- Main Theme JS -->
+    <script src="{% static 'assets/js/main.js' %}"></script>
+
+    <!-- Bootstrap CSS -->
+    <link id="style" href="{% static 'assets/libs/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+
+    <!-- Style CSS -->
+    <link href="{% static 'assets/css/styles.min.css' %}" rel="stylesheet">
+
+    <!-- Icons CSS -->
+    <link href="{% static 'assets/css/icons.css' %}" rel="stylesheet">
+
+    <!-- Node Waves CSS -->
+    <link href="{% static 'assets/libs/node-waves/waves.min.css' %}" rel="stylesheet">
+
+    <!-- Simplebar CSS -->
+    <link href="{% static 'assets/libs/simplebar/simplebar.min.css' %}" rel="stylesheet">
+
+    <!-- Color Picker CSS -->
+    <link rel="stylesheet" href="{% static 'assets/libs/flatpickr/flatpickr.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/libs/@simonwep/pickr/themes/nano.min.css' %}">
+
+    <!-- Choices CSS -->
+    <link rel="stylesheet" href="{% static 'assets/libs/choices.js/public/assets/styles/choices.min.css' %}">
+
+    <!-- Toast CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/css/iziToast.css" integrity="sha512-DIW4FkYTOxjCqRt7oS9BFO+nVOwDL4bzukDyDtMO7crjUZhwpyrWBFroq+IqRe6VnJkTpRAS6nhDvf0w+wHmxg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Page Header -->
+    <div class="ps-3 d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+        <h1 class="page-title fw-semibold fs-18 mb-0">Analytics Dashboard</h1>
+        <div class="ms-md-1 ms-0 d-flex align-items-center gap-2">
+            <nav>
+                <ol class="breadcrumb mb-0">
+                {% if user.is_authenticated and user.userprofile.is_admin %}
+                <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+                {% else %}
+                <li class="breadcrumb-item"><a href="{% url 'salesperson_dashboard' %}">Dashboard</a></li>
+                {% endif %}
+                    <li class="breadcrumb-item active" aria-current="page">Analytics</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+    <!-- Page Header Close -->
+
+    <!-- ── Filter Panel ─────────────────────────────────────────────── -->
+    <div class="row mb-3">
+        <div class="col-xl-12">
+            <div class="card custom-card">
+                <div class="card-body py-3">
+                    <form method="GET" action="{% url 'analytics' %}" class="row g-2 align-items-end">
+                        <div class="col-auto">
+                            <label class="form-label mb-1 fw-semibold" style="font-size:12px;">From</label>
+                            <input type="date" name="date_from" class="form-control form-control-sm"
+                                   value="{{ filter_date_from }}">
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label mb-1 fw-semibold" style="font-size:12px;">To</label>
+                            <input type="date" name="date_to" class="form-control form-control-sm"
+                                   value="{{ filter_date_to }}">
+                        </div>
+                        <div class="col-auto">
+                            <label class="form-label mb-1 fw-semibold" style="font-size:12px;">Store</label>
+                            <select name="store" class="form-select form-select-sm">
+                                <option value="">All Stores</option>
+                                {% for val, label in store_choices %}
+                                <option value="{{ val }}" {% if filter_store == val %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% if all_salespersons %}
+                        <div class="col-auto">
+                            <label class="form-label mb-1 fw-semibold" style="font-size:12px;">Salesperson</label>
+                            <select name="salesperson" class="form-select form-select-sm">
+                                <option value="">All Salespersons</option>
+                                {% for sp in all_salespersons %}
+                                <option value="{{ sp.id }}" {% if filter_salesperson == sp.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ sp.get_full_name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+                        <div class="col-auto">
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="ri-filter-line me-1"></i>Apply
+                            </button>
+                            <a href="{% url 'analytics' %}" class="btn btn-outline-secondary btn-sm ms-1">
+                                <i class="ri-refresh-line"></i> Reset
+                            </a>
+                        </div>
+                        <!-- carry filters to download buttons -->
+                        <div class="col-auto ms-auto">
+                            <div class="btn-group">
+                                <a href="{% url 'analytics' %}?download=csv&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}&store={{ filter_store }}&salesperson={{ filter_salesperson }}"
+                                   class="btn btn-outline-primary btn-sm"><i class="ri-file-text-line me-1"></i>CSV</a>
+                                <a href="{% url 'analytics' %}?download=excel&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}&store={{ filter_store }}&salesperson={{ filter_salesperson }}"
+                                   class="btn btn-outline-success btn-sm"><i class="ri-file-excel-line me-1"></i>Excel</a>
+                                <a href="{% url 'analytics' %}?download=pdf&date_from={{ filter_date_from }}&date_to={{ filter_date_to }}&store={{ filter_store }}&salesperson={{ filter_salesperson }}"
+                                   class="btn btn-outline-danger btn-sm"><i class="ri-file-pdf-line me-1"></i>PDF</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ── End Filter Panel ──────────────────────────────────────────── -->
+
+    <div class="row">
+        <div class="col-xl-12">
+            <div class="card custom-card p-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Sales Analytics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-6">
+                            <div class="card p-3">
+                                <h6 class="mb-2" style="color:orange">Sales by Customer Category</h6>
+                                <canvas id="categoryChart" style="max-height: 250px;"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card p-3">
+                                <h6 class="mb-2" style="color:orange">Top Selling Products</h6>
+                                <canvas id="productChart" style="max-height: 250px;"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card p-3">
+                                <h6 class="mb-2" style="color:orange">Stock by Category</h6>
+                                <canvas id="stockChart" style="max-height: 250px;"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card p-3">
+                                <h6 class="mb-2" style="color:orange">Sales Over Time</h6>
+                                <canvas id="salesChart" style="max-height: 250px;"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Tracker Section -->
+    <div class="row mt-4">
+        <div class="col-xl-12">
+            <div class="card custom-card p-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Customer Activity Tracker</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-4">
+                            <div class="card p-3 text-center">
+                                <h3 class="text-success">{{ active_customers }}</h3>
+                                <p class="mb-0">Active Customers (Last 30 days)</p>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card p-3 text-center">
+                                <h3 class="text-warning">{{ inactive_customers }}</h3>
+                                <p class="mb-0">Inactive Customers</p>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card p-3 text-center">
+                                <h3 class="text-primary">{{ total_customers }}</h3>
+                                <p class="mb-0">Total Customers</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-3 mt-3">
+                        <div class="col-lg-12">
+                            <div class="card p-3">
+                                <h6 class="mb-3">Customer Activity by Category</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Category</th>
+                                                <th>Active</th>
+                                                <th>Inactive</th>
+                                                <th>Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for cat in customer_activity_by_category %}
+                                            <tr>
+                                                <td>{{ cat.category|title }}</td>
+                                                <td><span class="badge bg-success">{{ cat.active }}</span></td>
+                                                <td><span class="badge bg-warning">{{ cat.inactive }}</span></td>
+                                                <td>{{ cat.active|add:cat.inactive }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Repeat Orders Section -->
+    <div class="row mt-4">
+        <div class="col-xl-12">
+            <div class="card custom-card p-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Repeat Order Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-6">
+                            <div class="card p-3">
+                                <h6 class="mb-3">Top Repeat Customers</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Customer</th>
+                                                <th>Orders</th>
+                                                <th>Avg Days</th>
+                                                <th>Total Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for cust in repeat_customers_data %}
+                                            <tr>
+                                                <td>{{ cust.customer }}</td>
+                                                <td>{{ cust.order_count }}</td>
+                                                <td>{{ cust.avg_days_between_orders }}</td>
+                                                <td>KSh {{ cust.total_amount|floatformat:0 }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card p-3">
+                                <h6 class="mb-3">Wholesaler Reorder Frequency</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Customer</th>
+                                                <th>Orders</th>
+                                                <th>Avg Days</th>
+                                                <th>Total Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for cust in wholesaler_data %}
+                                            <tr>
+                                                <td>{{ cust.customer }}</td>
+                                                <td>{{ cust.order_count }}</td>
+                                                <td>{{ cust.avg_days_between_orders }}</td>
+                                                <td>KSh {{ cust.total_amount|floatformat:0 }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Targets Section -->
+    <div class="row mt-4">
+        <div class="col-xl-12">
+            <div class="card custom-card p-3">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Salesperson Targets & Performance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-lg-4">
+                            <div class="card p-3">
+                                <h6 class="mb-3">New Outlet Coverage</h6>
+                                <p class="mb-2"><small class="text-muted">Today — {{ filter_date_to }}</small><br>Target: 5 new clients per salesperson per day</p>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Salesperson</th>
+                                                <th>New Clients</th>
+                                                <th>Target</th>
+                                                <th>Achievement</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for sp in new_customers_per_salesperson %}
+                                            <tr>
+                                                <td>{{ sp.salesperson }}</td>
+                                                <td>{{ sp.new_customers }}</td>
+                                                <td>{{ sp.target }}</td>
+                                                <td>
+                                                    <div class="progress" style="height: 20px;">
+                                                        <div class="progress-bar {% if sp.achievement >= 100 %}bg-success{% elif sp.achievement >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                             role="progressbar" 
+                                                             style="width: {{ sp.achievement }}%" 
+                                                             aria-valuenow="{{ sp.achievement }}" 
+                                                             aria-valuemin="0" 
+                                                             aria-valuemax="100">
+                                                            {{ sp.achievement|floatformat:0 }}%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card p-3">
+                                <h6 class="mb-3">Daily Orders Target</h6>
+                                <p class="mb-2"><small class="text-muted">Pending + Completed (excludes cancelled)</small><br>Target: KSh 50,000 per salesperson per day</p>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Salesperson</th>
+                                                <th>Today's Total</th>
+                                                <th>Target</th>
+                                                <th>Achievement</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for sp in daily_orders_per_salesperson %}
+                                            <tr>
+                                                <td>{{ sp.salesperson }}</td>
+                                                <td>KSh {{ sp.daily_total|floatformat:0 }}</td>
+                                                <td>KSh {{ sp.target|floatformat:0 }}</td>
+                                                <td>
+                                                    <div class="progress" style="height: 20px;">
+                                                        <div class="progress-bar {% if sp.achievement >= 100 %}bg-success{% elif sp.achievement >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                             role="progressbar" 
+                                                             style="width: {{ sp.achievement }}%" 
+                                                             aria-valuenow="{{ sp.achievement }}" 
+                                                             aria-valuemin="0" 
+                                                             aria-valuemax="100">
+                                                            {{ sp.achievement|floatformat:0 }}%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card p-3">
+                                <h6 class="mb-3">Monthly Payments Target</h6>
+                                <p class="mb-2"><small class="text-muted">Completed orders only — last 30 days</small><br>Target: KSh 200,000 collected per salesperson</p>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Salesperson</th>
+                                                <th>Collected</th>
+                                                <th>Target</th>
+                                                <th>Achievement</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for sp in payments_per_salesperson %}
+                                            <tr>
+                                                <td>{{ sp.salesperson }}</td>
+                                                <td>KSh {{ sp.monthly_payments|floatformat:0 }}</td>
+                                                <td>KSh {{ sp.target|floatformat:0 }}</td>
+                                                <td>
+                                                    <div class="progress" style="height: 20px;">
+                                                        <div class="progress-bar {% if sp.achievement >= 100 %}bg-success{% elif sp.achievement >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                             role="progressbar" 
+                                                             style="width: {{ sp.achievement }}%" 
+                                                             aria-valuenow="{{ sp.achievement }}" 
+                                                             aria-valuemin="0" 
+                                                             aria-valuemax="100">
+                                                            {{ sp.achievement|floatformat:0 }}%
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="scrollToTop">
+        <span class="arrow"><i class="ri-arrow-up-s-fill fs-20"></i></span>
+    </div>
+    <div id="responsive-overlay"></div>
+
+    <!-- Popper JS -->
+    <script src="{% static 'assets/libs/@popperjs/core/umd/popper.min.js' %}"></script>
+
+    <!-- Bootstrap JS -->
+    <script src="{% static 'assets/libs/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+    <!-- Defaultmenu JS -->
+    <script src="{% static 'assets/js/defaultmenu.min.js' %}"></script>
+
+    <!-- Node Waves JS -->
+    <script src="{% static 'assets/libs/node-waves/waves.min.js' %}"></script>
+
+    <!-- Sticky JS -->
+    <script src="{% static 'assets/js/sticky.js' %}"></script>
+
+    <!-- Color Picker JS -->
+    <script src="{% static 'assets/libs/@simonwep/pickr/pickr.es5.min.js' %}"></script>
+
+    <!-- Apex Charts JS -->
+    <script src="{% static 'assets/libs/apexcharts/apexcharts.min.js' %}"></script>
+
+    <!-- Moment JS -->
+    <script src="{% static 'assets/libs/moment/moment.js' %}"></script>
+
+    <!-- Custom-Switcher JS -->
+    <script src="{% static 'assets/js/custom-switcher.min.js' %}"></script>
+
+    <!-- Toast JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/js/iziToast.min.js" integrity="sha512-Zq9o+E00xhhR/7vJ49mxFNJ0KQw1E1TMWkPTxrWcnpfEFDEXgUiwJHIKit93EW/XxE31HSI5GEOW06G6BF1AtA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <!-- Simplebar JS -->
+    <script src="{% static 'assets/libs/simplebar/simplebar.min.js' %}"></script>
+    <script src="{% static 'assets/js/simplebar.js' %}"></script>
+
+    <!-- Custom JS -->
+    <script src="{% static 'assets/js/custom.js' %}"></script>
+
+    <!-- Chart Initialization -->
+    <script>
+        // Sales over time (Line Chart)
+        const salesData = {{ sales_data|safe }};
+        if (salesData.labels.length > 0) {
+            new Chart(document.getElementById('salesChart'), {
+                type: 'line',
+                data: {
+                    labels: salesData.labels,
+                    datasets: [{
+                        label: 'Sales Amount ($)',
+                        data: salesData.values,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 3,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('salesChart').parentElement.innerHTML += '<p class="text-muted">No sales data available for the past year.</p>';
+        }
+
+        // Sales by category (Pie Chart)
+        const categoryData = {{ category_data|safe }};
+        if (categoryData.labels.length > 0) {
+            new Chart(document.getElementById('categoryChart'), {
+                type: 'pie',
+                data: {
+                    labels: categoryData.labels,
+                    datasets: [{
+                        data: categoryData.values,
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        } else {
+            document.getElementById('categoryChart').parentElement.innerHTML += '<p class="text-muted">No sales data by category available.</p>';
+        }
+
+        // Top products (Bar Chart)
+        const productData = {{ product_data|safe }};
+        if (productData.labels.length > 0) {
+            new Chart(document.getElementById('productChart'), {
+                type: 'bar',
+                data: {
+                    labels: productData.labels,
+                    datasets: [{
+                        label: 'Quantity Sold',
+                        data: productData.values,
+                        backgroundColor: 'rgb(43, 235, 139)',
+                        barPercentage: 0.5,
+                        categoryPercentage: 0.5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true },
+                        x: {
+                            ticks: { maxRotation: 45, minRotation: 0 }
+                        }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('productChart').parentElement.innerHTML += '<p class="text-muted">No product sales data available.</p>';
+        }
+
+        // Stock by category (Bar Chart)
+        const stockData = {{ stock_data|safe }};
+        if (stockData.labels.length > 0 && stockData.values.some(val => val !== null && val > 0)) {
+            new Chart(document.getElementById('stockChart'), {
+                type: 'bar',
+                data: {
+                    labels: stockData.labels,
+                    datasets: [{
+                        label: 'Stock Quantity',
+                        data: stockData.values,
+                        backgroundColor: 'rgb(33, 188, 235)',
+                        barPercentage: 0.5,
+                        categoryPercentage: 0.5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true },
+                        x: {
+                            ticks: { maxRotation: 45, minRotation: 0 }
+                        }
+                    }
+                }
+            });
+        } else {
+            document.getElementById('stockChart').parentElement.innerHTML += '<p class="text-muted">No stock data available for any category.</p>';
+        }
+    </script>
+</body>
+</html>
+{% endblock %}

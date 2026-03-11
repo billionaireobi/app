@@ -1,0 +1,761 @@
+{% load static %}
+<aside class="app-sidebar sticky" id="sidebar">
+
+    <!-- Start::main-sidebar-header -->
+    <div class="main-sidebar-header">
+        <a href="{% url 'home' %}" class="header-logo">
+            <img src="{% static 'assets/images/mcdave/logo.png' %}" alt="logo" class="desktop-logo">
+            <img src="{% static 'assets/images/mcdave/logo.png' %}" alt="logo" class="toggle-logo">
+            <img src="{% static 'assets/images/mcdave/logo.png' %}" alt="logo" class="desktop-dark">
+            <img src="{% static 'assets/images/mcdave/logo.png' %}" alt="logo" class="toggle-dark">
+        </a>
+    </div>
+    <!-- End::main-sidebar-header -->
+
+    <!-- Start::main-sidebar -->
+    <div class="main-sidebar" id="sidebar-scroll">
+
+        <nav class="main-menu-container nav nav-pills flex-column sub-open">
+            <div class="slide-left" id="slide-left">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="#7b8191" width="24" height="24" viewBox="0 0 24 24">
+                    <path d="M13.293 6.293 7.586 12l5.707 5.707 1.414-1.414L10.414 12l4.293-4.293z"></path>
+                </svg>
+            </div>
+
+            <ul class="main-menu">
+
+                <!-- ═══════════════════════════════════════ -->
+                <!--  OVERVIEW                               -->
+                <!-- ═══════════════════════════════════════ -->
+                {% if user.is_authenticated %}
+                <li class="slide__category"><span class="category-name">Overview</span></li>
+
+                {% if user.is_superuser or user.userprofile.is_admin %}
+                <li class="slide has-sub">
+                    <a href="javascript:void(0);" class="side-menu__item">
+                        <i class="bx bx-home side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Dashboard
+                            <span class="badge bg-primary-transparent ms-2">home</span>
+                        </span>
+                        <i class="fe fe-chevron-right side-menu__angle"></i>
+                    </a>
+                    <ul class="slide-menu child1">
+                        <li class="slide">
+                            <a href="{% url 'admin_dashboard' %}" class="side-menu__item">
+                                <i class="bx bx-grid-alt"></i>
+                                <span>Detergents</span>
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="https://plasticoms.mcdave.co.ke" class="side-menu__item">
+                                <i class="bx bx-package"></i>
+                                <span>Plastics</span>
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'analytics' %}" class="side-menu__item">
+                                <i class="bi bi-bar-chart-line side-menu__icon"></i>
+                                <span>Analytics</span>
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                {% elif user.userprofile.is_salesperson %}
+                <li class="slide">
+                    <a href="{% url 'salesperson_dashboard' %}" class="side-menu__item">
+                        <i class="bx bx-home side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Dashboard
+                            <span class="badge bg-primary-transparent ms-2">home</span>
+                        </span>
+                    </a>
+                </li>
+                {% endif %}
+                {% endif %}
+
+
+                <!-- ═══════════════════════════════════════ -->
+                <!--  SALES                                  -->
+                <!-- ═══════════════════════════════════════ -->
+                <li class="slide__category"><span class="category-name">Sales</span></li>
+
+                <!-- Orders -->
+                <li class="slide has-sub">
+                    <a href="javascript:void(0);" class="side-menu__item">
+                        <i class="bi bi-basket side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Orders
+                            <span class="badge bg-info-transparent ms-2">transactions</span>
+                        </span>
+                        <i class="fe fe-chevron-right side-menu__angle"></i>
+                    </a>
+                    <ul class="slide-menu child1">
+                        <li class="slide">
+                            <a href="{% url 'order_list' %}" class="side-menu__item">
+                                <i class="bx bx-receipt"></i> Orders List
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'create_order' %}" class="side-menu__item">
+                                <i class="bx bx-plus-circle"></i> New Order
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Customers -->
+                <li class="slide has-sub">
+                    <a href="javascript:void(0);" class="side-menu__item">
+                        <i class="bx bx-group side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Customers
+                            <span class="badge bg-warning-transparent ms-2">accounts</span>
+                        </span>
+                        <i class="fe fe-chevron-right side-menu__angle"></i>
+                    </a>
+                    <ul class="slide-menu child1">
+                        <li class="slide">
+                            <a href="{% url 'customers_list' %}" class="side-menu__item">
+                                <i class="bx bx-list-ul"></i> Customers List
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'add_customer' %}" class="side-menu__item">
+                                <i class="bx bx-user-plus"></i> Add Customer
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'import_customers' %}" class="side-menu__item">
+                                <i class="bx bx-upload"></i> Import Customers
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'customer_statements' %}" class="side-menu__item">
+                                <i class="bx bx-file-blank"></i> Statements
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Quotes (Admin only) -->
+                {% if user.is_superuser or user.userprofile.is_admin %}
+                <li class="slide has-sub">
+                    <a href="javascript:void(0);" class="side-menu__item">
+                        <i class="bx bx-file side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Quotes
+                            <span class="badge bg-secondary-transparent ms-2">proposals</span>
+                        </span>
+                        <i class="fe fe-chevron-right side-menu__angle"></i>
+                    </a>
+                    <ul class="slide-menu child1">
+                        <li class="slide">
+                            <a href="{% url 'quote_list' %}" class="side-menu__item">
+                                <i class="bx bx-list-ul"></i> Quotes List
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'create_quote' %}" class="side-menu__item">
+                                <i class="bx bx-plus-circle"></i> Create Quote
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% endif %}
+
+
+                <!-- ═══════════════════════════════════════ -->
+                <!--  FIELD OPERATIONS                        -->
+                <!-- ═══════════════════════════════════════ -->
+                <li class="slide__category"><span class="category-name">Field</span></li>
+
+                <!-- Daily Beat -->
+                <li class="slide has-sub">
+                    <a href="javascript:void(0);" class="side-menu__item">
+                        <i class="bx bx-calendar-alt side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Daily Beat
+                            <span class="badge bg-primary-transparent ms-2">route</span>
+                        </span>
+                        <i class="fe fe-chevron-right side-menu__angle"></i>
+                    </a>
+                    <ul class="slide-menu child1">
+                        <li class="slide">
+                            <a href="{% url 'beat_today' %}" class="side-menu__item">
+                                <i class="bx bx-calendar-check"></i> Today's Beat
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'beat_plans' %}" class="side-menu__item">
+                                <i class="bx bx-list-ul"></i> Beat Plans
+                            </a>
+                        </li>
+                        {% if user.is_superuser or user.userprofile.is_admin %}
+                        <li class="slide">
+                            <a href="{% url 'beat_overview' %}" class="side-menu__item">
+                                <i class="bx bx-bar-chart-alt-2"></i> Rep Overview
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </li>
+
+                <!-- Customer Feedback -->
+                <li class="slide has-sub">
+                    <a href="javascript:void(0);" class="side-menu__item">
+                        <i class="bx bx-chat side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Feedback
+                            <span class="badge bg-warning-transparent ms-2">field</span>
+                        </span>
+                        <i class="fe fe-chevron-right side-menu__angle"></i>
+                    </a>
+                    <ul class="slide-menu child1">
+                        <li class="slide">
+                            <a href="{% url 'feedback_list' %}" class="side-menu__item">
+                                <i class="bx bx-list-ul"></i> All Feedbacks
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'add_feedback' %}" class="side-menu__item">
+                                <i class="bx bx-plus-circle"></i> Add Feedback
+                            </a>
+                        </li>
+                        {% if user.is_superuser or user.userprofile.is_admin %}
+                        <li class="slide">
+                            <a href="{% url 'salesperson_feedback_metrics' %}" class="side-menu__item">
+                                <i class="bx bx-bar-chart-alt-2"></i> Metrics by Rep
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </li>
+
+                <!-- Internal Messaging -->
+                <li class="slide">
+                    <a href="{% url 'internal_chat' %}" class="side-menu__item">
+                        <i class="bx bx-message-rounded-dots side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Messages
+                            <span class="badge bg-danger-transparent ms-2" id="sidebar-unread-badge" style="display:none;">0</span>
+                        </span>
+                    </a>
+                </li>
+
+                <!-- ═══════════════════════════════════════ -->
+                <!--  INVENTORY                              -->
+                <!-- ═══════════════════════════════════════ -->
+                <li class="slide__category"><span class="category-name">Inventory</span></li>
+
+                <!-- Products -->
+                {% if user.is_superuser or user.userprofile.is_admin %}
+                <li class="slide has-sub">
+                    <a href="javascript:void(0);" class="side-menu__item">
+                        <i class="bx bx-package side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Products
+                            <span class="badge bg-success-transparent ms-2">catalogue</span>
+                        </span>
+                        <i class="fe fe-chevron-right side-menu__angle"></i>
+                    </a>
+                    <ul class="slide-menu child1">
+                        <li class="slide">
+                            <a href="{% url 'products' %}" class="side-menu__item">
+                                <i class="bx bx-list-ul"></i> Product List
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'addproduct' %}" class="side-menu__item">
+                                <i class="bx bx-plus-circle"></i> Add Product
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'addcategory' %}" class="side-menu__item">
+                                <i class="bx bx-category-alt"></i> Add Category
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'import_products' %}" class="side-menu__item">
+                                <i class="bx bx-upload"></i> Import Products
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% else %}
+                <li class="slide">
+                    <a href="{% url 'products' %}" class="side-menu__item">
+                        <i class="bx bx-package side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Products
+                            <span class="badge bg-success-transparent ms-2">catalogue</span>
+                        </span>
+                    </a>
+                </li>
+                {% endif %}
+
+                <!-- Stock Management -->
+                <li class="slide has-sub">
+                    <a href="javascript:void(0);" class="side-menu__item">
+                        <i class="bx bx-box side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Stock
+                            <span class="badge bg-success-transparent ms-2">warehouse</span>
+                        </span>
+                        <i class="fe fe-chevron-right side-menu__angle"></i>
+                    </a>
+                    <ul class="slide-menu child1">
+                        <li class="slide">
+                            <a href="{% url 'stock_dashboard' %}" class="side-menu__item">
+                                <i class="bx bx-grid-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'stock_list' %}" class="side-menu__item">
+                                <i class="bx bx-bar-chart-alt-2"></i> Stock Levels
+                            </a>
+                        </li>
+                        {% if user.is_superuser or user.userprofile.is_admin %}
+                        <li class="slide">
+                            <a href="{% url 'stock_receive' %}" class="side-menu__item">
+                                <i class="bx bx-download"></i> Receive Stock
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'stock_adjustment' %}" class="side-menu__item">
+                                <i class="bx bx-slider-alt"></i> Adjustment
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'stock_transfer_create' %}" class="side-menu__item">
+                                <i class="bx bx-transfer"></i> New Transfer
+                            </a>
+                        </li>
+                        {% endif %}
+                        <li class="slide">
+                            <a href="{% url 'stock_transfer_list' %}" class="side-menu__item">
+                                <i class="bx bx-list-check"></i> Transfers List
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'stock_movement_history' %}" class="side-menu__item">
+                                <i class="bx bx-history"></i> Movement History
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+
+                <!-- ═══════════════════════════════════════ -->
+                <!--  REPORTS                                -->
+                <!-- ═══════════════════════════════════════ -->
+                <li class="slide__category"><span class="category-name">Reports</span></li>
+
+                <!-- Sales Reports -->
+                <li class="slide has-sub">
+                    <a href="javascript:void(0);" class="side-menu__item">
+                        <i class="bx bx-dollar-circle side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Sales Reports
+                            <span class="badge bg-info-transparent ms-2">revenue</span>
+                        </span>
+                        <i class="fe fe-chevron-right side-menu__angle"></i>
+                    </a>
+                    <ul class="slide-menu child1">
+                        <li class="slide">
+                            <a href="{% url 'sales_report' %}" class="side-menu__item">
+                                <i class="bx bx-line-chart"></i> Sales Overview
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'customer_statements' %}" class="side-menu__item">
+                                <i class="bx bx-file-blank"></i> Statements
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Logistics (Admin only) -->
+                {% if user.is_superuser or user.userprofile.is_admin %}
+                <li class="slide has-sub">
+                    <a href="javascript:void(0);" class="side-menu__item">
+                        <i class="bx bx-file-blank side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Logistics
+                            <span class="badge bg-danger-transparent ms-2">analytics</span>
+                        </span>
+                        <i class="fe fe-chevron-right side-menu__angle"></i>
+                    </a>
+                    <ul class="slide-menu child1">
+                        <li class="slide">
+                            <a href="{% url 'product_report' %}" class="side-menu__item">
+                                <i class="bx bx-package"></i> Products Report
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'customer_report' %}" class="side-menu__item">
+                                <i class="bx bx-group"></i> Customers Report
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'order_report' %}" class="side-menu__item">
+                                <i class="bi bi-basket"></i> Orders Report
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'bulk_orders' %}" class="side-menu__item">
+                                <i class="bx bx-spreadsheet"></i> Bulk Order Actions
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% endif %}
+
+
+                <!-- ═══════════════════════════════════════ -->
+                <!--  SYSTEM  (Admin only)                   -->
+                <!-- ═══════════════════════════════════════ -->
+                {% if user.is_authenticated %}
+                {% if user.is_superuser or user.userprofile.is_admin %}
+                <li class="slide__category"><span class="category-name">System</span></li>
+
+                <!-- Users -->
+                <li class="slide has-sub">
+                    <a href="javascript:void(0);" class="side-menu__item">
+                        <i class="bx bx-user side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Users
+                            <span class="badge bg-warning-transparent ms-2" id="user-count-badge">team</span>
+                        </span>
+                        <i class="fe fe-chevron-right side-menu__angle"></i>
+                    </a>
+                    <ul class="slide-menu child1">
+                        <li class="slide">
+                            <a href="{% url 'user_list' %}" class="side-menu__item">
+                                <i class="bx bx-list-ul"></i> All Users
+                            </a>
+                        </li>
+                        <li class="slide">
+                            <a href="{% url 'user_create' %}" class="side-menu__item">
+                                <i class="bx bx-user-plus"></i> Create User
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <!-- Activity Logs -->
+                <li class="slide">
+                    <a href="{% url 'activitylogs' %}" class="side-menu__item">
+                        <i class="bx bx-history side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Activity Logs
+                            <span class="badge bg-secondary-transparent ms-2">audit</span>
+                        </span>
+                    </a>
+                </li>
+
+                <!-- Login History -->
+                <li class="slide">
+                    <a href="{% url 'login_history' %}" class="side-menu__item">
+                        <i class="bx bx-shield-quarter side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Login History
+                            <span class="badge bg-danger-transparent ms-2">sessions</span>
+                        </span>
+                    </a>
+                </li>
+
+                <!-- Admin Panel -->
+                <li class="slide">
+                    <a href="#" id="adminLink" class="side-menu__item">
+                        <i class="bx bx-shield-quarter side-menu__icon"></i>
+                        <span class="side-menu__label">
+                            Admin Panel
+                            <span class="badge bg-danger-transparent ms-2">restricted</span>
+                        </span>
+                    </a>
+                </li>
+                {% endif %}
+                {% endif %}
+
+
+                <!-- ═══════════════════════════════════════ -->
+                <!--  ACCOUNT                                -->
+                <!-- ═══════════════════════════════════════ -->
+                <li class="slide__category"><span class="category-name">Account</span></li>
+
+                {% if not user.is_superuser and not user.userprofile.is_admin %}
+                <!-- Salesperson: own login history -->
+                <li class="slide">
+                    <a href="{% url 'login_history' %}" class="side-menu__item">
+                        <i class="bx bx-shield-quarter side-menu__icon"></i>
+                        <span class="side-menu__label">My Login History</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                <li class="slide">
+                    <a href="{% url 'logoutuser' %}" class="side-menu__item">
+                        <i class="ti ti-logout fs-18 side-menu__icon op-7"></i>
+                        <span class="side-menu__label">Log Out</span>
+                    </a>
+                </li>
+
+            </ul><!-- end .main-menu -->
+
+            <div class="slide-right" id="slide-right">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="#7b8191" width="24" height="24" viewBox="0 0 24 24">
+                    <path d="M10.707 17.707 16.414 12l-5.707-5.707-1.414 1.414L13.586 12l-4.293 4.293z"></path>
+                </svg>
+            </div>
+        </nav>
+
+    </div>
+    <!-- End::main-sidebar -->
+
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║   Admin Panel · Password Modal           ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<div id="adminModal" class="modal">
+    <div class="modal-content" id="modalBox">
+        <span class="close" id="cancelBtn">&times;</span>
+        <h2>⚠️ Sensitive Area</h2>
+        <p>
+            This page contains <strong>critical system settings</strong>.<br>
+            Please do not make changes unless you are an <u>expert</u>.<br>
+            <b>Your activity is monitored.</b>
+        </p>
+        <div id="warningActions" class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="cancelBtn2">Cancel</button>
+            <button type="button" class="btn btn-danger" id="proceedBtn">Proceed</button>
+        </div>
+        <form id="passwordForm" method="POST" style="display:none;">
+            {% csrf_token %}
+            <input type="password" id="passwordInput" name="password" class="form-control"
+                placeholder="Enter your password" required>
+            <p id="errorMsg" class="error-message"></p>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeAdminModal()">Cancel</button>
+                <button type="submit" id="confirmBtn" class="btn btn-primary">Confirm</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+/* ── Sidebar badge animations ─────────────────────────────── */
+.side-menu__label .badge {
+    display: inline-block;
+    font-size: 9px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    font-weight: 700;
+    letter-spacing: .4px;
+    vertical-align: middle;
+    position: relative;
+    transition: transform 0.25s ease, opacity 0.25s ease, box-shadow 0.25s ease;
+}
+
+@keyframes pulse-blue     { 0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.45)}  60%{box-shadow:0 0 0 5px rgba(59,130,246,0)} }
+@keyframes pulse-green    { 0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.40)}   60%{box-shadow:0 0 0 5px rgba(34,197,94,0)} }
+@keyframes pulse-amber    { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.40)}  60%{box-shadow:0 0 0 5px rgba(245,158,11,0)} }
+@keyframes pulse-cyan     { 0%,100%{box-shadow:0 0 0 0 rgba(6,182,212,.40)}   60%{box-shadow:0 0 0 5px rgba(6,182,212,0)} }
+@keyframes pulse-red      { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.50)}   60%{box-shadow:0 0 0 6px rgba(239,68,68,0)} }
+@keyframes pulse-grey     { 0%,100%{box-shadow:0 0 0 0 rgba(100,116,139,.30)} 60%{box-shadow:0 0 0 4px rgba(100,116,139,0)} }
+@keyframes float          { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
+@keyframes shimmer        { 0%{background-position:-120% center} 100%{background-position:220% center} }
+@keyframes badge-intro    { from{opacity:0;transform:scale(.6) translateY(4px)} to{opacity:1;transform:scale(1) translateY(0)} }
+
+/* Per-color pulse + float combos */
+.badge.bg-primary-transparent   { animation: pulse-blue  2.8s ease-in-out infinite, float 3.5s ease-in-out infinite; }
+.badge.bg-success-transparent   { animation: pulse-green 3.2s ease-in-out infinite, float 4.0s ease-in-out infinite; }
+.badge.bg-warning-transparent   { animation: pulse-amber 3.0s ease-in-out infinite, float 3.8s ease-in-out infinite; }
+.badge.bg-info-transparent      { animation: pulse-cyan  2.6s ease-in-out infinite, float 3.2s ease-in-out infinite; }
+.badge.bg-danger-transparent    { animation: pulse-red   2.2s ease-in-out infinite, float 2.8s ease-in-out infinite; }
+.badge.bg-secondary-transparent { animation: pulse-grey  3.6s ease-in-out infinite, float 4.2s ease-in-out infinite; }
+
+/* Stagger so siblings never pulse in sync */
+.slide:nth-child(1)  .badge { animation-delay: 0s,    0s;    }
+.slide:nth-child(2)  .badge { animation-delay: 0.3s,  0.2s;  }
+.slide:nth-child(3)  .badge { animation-delay: 0.6s,  0.4s;  }
+.slide:nth-child(4)  .badge { animation-delay: 0.9s,  0.6s;  }
+.slide:nth-child(5)  .badge { animation-delay: 1.2s,  0.8s;  }
+.slide:nth-child(6)  .badge { animation-delay: 0.15s, 0.1s;  }
+.slide:nth-child(7)  .badge { animation-delay: 0.45s, 0.35s; }
+.slide:nth-child(8)  .badge { animation-delay: 0.75s, 0.55s; }
+.slide:nth-child(9)  .badge { animation-delay: 1.05s, 0.75s; }
+.slide:nth-child(10) .badge { animation-delay: 1.35s, 0.95s; }
+
+/* Page load pop-in */
+.main-menu .badge {
+    animation-fill-mode: both;
+}
+.slide:nth-child(1)  .badge { animation: badge-intro .4s ease both .05s, pulse-blue  2.8s 0.45s ease-in-out infinite, float 3.5s 0.05s ease-in-out infinite; }
+.slide:nth-child(2)  .badge { animation: badge-intro .4s ease both .10s, pulse-green 3.2s 0.50s ease-in-out infinite, float 4.0s 0.10s ease-in-out infinite; }
+.slide:nth-child(3)  .badge { animation: badge-intro .4s ease both .15s, pulse-amber 3.0s 0.55s ease-in-out infinite, float 3.8s 0.15s ease-in-out infinite; }
+.slide:nth-child(4)  .badge { animation: badge-intro .4s ease both .20s, pulse-cyan  2.6s 0.60s ease-in-out infinite, float 3.2s 0.20s ease-in-out infinite; }
+.slide:nth-child(5)  .badge { animation: badge-intro .4s ease both .25s, pulse-red   2.2s 0.65s ease-in-out infinite, float 2.8s 0.25s ease-in-out infinite; }
+.slide:nth-child(6)  .badge { animation: badge-intro .4s ease both .30s, pulse-grey  3.6s 0.70s ease-in-out infinite, float 4.2s 0.30s ease-in-out infinite; }
+.slide:nth-child(7)  .badge { animation: badge-intro .4s ease both .35s, pulse-blue  2.8s 0.75s ease-in-out infinite, float 3.5s 0.35s ease-in-out infinite; }
+.slide:nth-child(8)  .badge { animation: badge-intro .4s ease both .40s, pulse-green 3.2s 0.80s ease-in-out infinite, float 4.0s 0.40s ease-in-out infinite; }
+.slide:nth-child(9)  .badge { animation: badge-intro .4s ease both .45s, pulse-amber 3.0s 0.85s ease-in-out infinite, float 3.8s 0.45s ease-in-out infinite; }
+.slide:nth-child(10) .badge { animation: badge-intro .4s ease both .50s, pulse-red   2.2s 0.90s ease-in-out infinite, float 2.8s 0.50s ease-in-out infinite; }
+
+/* Hover: pause idle, do shimmer pop */
+.side-menu__item:hover .badge {
+    transform: scale(1.18) translateY(-1px) !important;
+    box-shadow: 0 3px 10px rgba(0,0,0,.18) !important;
+    background-image: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.55) 50%, transparent 65%);
+    background-size: 250% 100%;
+    animation: shimmer .5s ease forwards !important;
+}
+
+/* Active state: stays prominent */
+.side-menu__item.active .badge { transform: scale(1.12); filter: brightness(1.15); }
+
+/* Respect reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    .badge { animation: none !important; transition: none !important; }
+}
+
+/* ── Admin modal ─────────────────────────────────────────── */
+:root {
+    --bg-color: #ffffff; --text-color: #1a1a1a; --input-bg: #f0f0f0;
+    --input-border: #ccc; --btn-primary: #007bff; --btn-primary-hover: #0056b3;
+    --btn-secondary: #6c757d; --btn-secondary-hover: #5a6268;
+    --btn-danger: #dc3545; --btn-danger-hover: #a71d2a; --shadow-color: rgba(0,0,0,0.25);
+}
+@media (prefers-color-scheme: dark) {
+    :root { --bg-color:#1e1e2f; --text-color:#f1f1f1; --input-bg:#2a2a3d; --input-border:#555; --shadow-color:rgba(0,0,0,0.6); }
+}
+.modal { display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.7); align-items:center; justify-content:center; animation:fadeIn 0.3s ease-in-out; }
+.modal-content { background:var(--bg-color); color:var(--text-color); padding:25px; border-radius:12px; width:400px; max-width:90%; box-shadow:0px 6px 25px var(--shadow-color); text-align:center; animation:slideDown 0.4s ease; position:relative; }
+.close { position:absolute; top:12px; right:15px; font-size:26px; color:var(--text-color); cursor:pointer; opacity:0.7; }
+.close:hover { opacity:1; }
+.form-control { width:100%; padding:12px; margin:15px 0; border-radius:8px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-color); font-size:16px; }
+.form-control::placeholder { color:#999; }
+.btn { padding:10px 20px; border-radius:8px; font-size:16px; border:none; cursor:pointer; transition:0.3s ease; }
+.btn-primary { background:var(--btn-primary); color:white; }
+.btn-primary:hover { background:var(--btn-primary-hover); }
+.btn-secondary { background:var(--btn-secondary); color:white; margin-right:10px; }
+.btn-secondary:hover { background:var(--btn-secondary-hover); }
+.btn-danger { background:var(--btn-danger); color:white; }
+.btn-danger:hover { background:var(--btn-danger-hover); }
+.btn:disabled { opacity:0.6; cursor:not-allowed; }
+.modal-actions { margin-top:20px; display:flex; justify-content:center; gap:10px; }
+.error-message { display:none; margin-top:10px; color:#ff4d4f; font-weight:bold; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+@keyframes slideDown { from{transform:translateY(-40px);opacity:0} to{transform:translateY(0);opacity:1} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-8px)} 40%,80%{transform:translateX(8px)} }
+.shake { animation:shake 0.4s; }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const link           = document.getElementById("adminLink");
+    const modal          = document.getElementById("adminModal");
+    const modalBox       = document.getElementById("modalBox");
+    const proceedBtn     = document.getElementById("proceedBtn");
+    const cancelBtn      = document.getElementById("cancelBtn");
+    const cancelBtn2     = document.getElementById("cancelBtn2");
+    const warningActions = document.getElementById("warningActions");
+    const passwordForm   = document.getElementById("passwordForm");
+    const errorMsg       = document.getElementById("errorMsg");
+    const confirmBtn     = document.getElementById("confirmBtn");
+    const passwordInput  = document.getElementById("passwordInput");
+
+    if (!link) return;
+
+    link.addEventListener("click", function (e) {
+        e.preventDefault();
+        modal.style.display = "flex";
+        modalBox.classList.add("shake");
+        setTimeout(() => modalBox.classList.remove("shake"), 400);
+    });
+
+    proceedBtn.addEventListener("click", function () {
+        warningActions.style.display = "none";
+        passwordForm.style.display = "block";
+    });
+
+    cancelBtn.addEventListener("click", closeAdminModal);
+    cancelBtn2.addEventListener("click", closeAdminModal);
+
+    passwordForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        confirmBtn.disabled = true;
+        errorMsg.style.display = "none";
+        const password = passwordInput.value;
+        let response = await fetch("{% url 'confirm_password' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": document.querySelector("[name=csrfmiddlewaretoken]").value,
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: `password=${encodeURIComponent(password)}`
+        });
+        let result = await response.json();
+        confirmBtn.disabled = false;
+        if (result.success) {
+            errorMsg.style.display = "none";
+            window.location.href = result.redirect_url;
+        } else {
+            errorMsg.textContent = result.error;
+            errorMsg.style.display = "block";
+            modalBox.classList.add("shake");
+            setTimeout(() => modalBox.classList.remove("shake"), 400);
+            if (result.error.includes("locked") || result.error.includes("Too many")) {
+                passwordInput.disabled = true;
+                confirmBtn.disabled = true;
+            }
+        }
+    });
+
+    modal.addEventListener("click", function (e) {
+        if (e.target === modal) closeAdminModal();
+    });
+});
+
+// ── Unread message badge in sidebar ──────────────────────────────
+(function() {
+  function updateUnreadBadge() {
+    fetch('{% url "unread_count_api" %}')
+      .then(r => r.json())
+      .then(data => {
+        const badge = document.getElementById('sidebar-unread-badge');
+        if (!badge) return;
+        if (data.unread_count > 0) {
+          badge.textContent = data.unread_count;
+          badge.style.display = '';
+        } else {
+          badge.style.display = 'none';
+        }
+      })
+      .catch(() => {});
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    updateUnreadBadge();
+    setInterval(updateUnreadBadge, 15000); // poll every 15s
+  });
+})();
+
+function closeAdminModal() {
+    const modal          = document.getElementById("adminModal");
+    const passwordForm   = document.getElementById("passwordForm");
+    const warningActions = document.getElementById("warningActions");
+    const errorMsg       = document.getElementById("errorMsg");
+    const passwordInput  = document.getElementById("passwordInput");
+    const confirmBtn     = document.getElementById("confirmBtn");
+    modal.style.display = "none";
+    passwordForm.reset();
+    passwordForm.style.display = "none";
+    warningActions.style.display = "flex";
+    errorMsg.style.display = "none";
+    passwordInput.disabled = false;
+    confirmBtn.disabled = false;
+}
+</script>
+
+</aside>

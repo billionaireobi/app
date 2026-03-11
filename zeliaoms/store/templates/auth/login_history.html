@@ -1,0 +1,217 @@
+{% extends "partials/base.html" %}
+{% load static %}
+
+{% block content %}
+<head>
+  <meta charset="UTF-8">
+  <title>Login History</title>
+   <style>
+    body { background:#e8ecf4; }
+    .lh-card { background:#fff; border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,.07); }
+    .filter-bar { background:#fff; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,.06); padding:14px 18px; margin-bottom:16px; }
+    .avatar { width:38px; height:38px; border-radius:50%; background:#6366f1;
+              display:flex; align-items:center; justify-content:center;
+              color:#fff; font-weight:700; font-size:.85rem; flex-shrink:0; }
+    .photo-wrap { position:relative; width:56px; height:56px; flex-shrink:0; }
+    .photo-thumb { width:56px; height:56px; border-radius:10px; object-fit:cover;
+                   cursor:pointer; border:2px solid #e2e8f0; transition:.2s; display:block; }
+    .photo-thumb:hover { border-color:#6366f1; transform:scale(1.05); }
+    .no-photo { width:56px; height:56px; border-radius:10px; background:#f1f5f9;
+                display:flex; align-items:center; justify-content:center; color:#94a3b8; }
+    .gps-overlay { position:absolute; bottom:0; left:0; right:0; background:rgba(0,0,0,.6);
+                   color:#fff; font-size:.55rem; text-align:center; border-radius:0 0 8px 8px;
+                   padding:1px 2px; white-space:nowrap; overflow:hidden; }
+    .map-link { font-size:.75rem; }
+    .device-cell { max-width:180px; font-size:.78rem; color:#64748b;
+                   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    #photoModal .modal-dialog { max-width:520px; }
+    #photoModal img { width:100%; border-radius:10px; }
+    .table > :not(caption) > * > * { padding:.6rem .75rem; vertical-align:middle; }
+  </style>
+</head>
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="bi bi-shield-lock-fill text-primary me-2"></i>Login History</h4>
+      <small class="text-muted">{{ page_obj.paginator.count }} session{{ page_obj.paginator.count|pluralize }}</small>
+    </div>
+  </div>
+
+  <!-- ── FILTER BAR ──────────────────────────────────── -->
+  <div class="filter-bar">
+    <form method="get" class="row g-2 align-items-end">
+      {% if is_admin %}
+      <div class="col-sm-6 col-md-3">
+        <label class="form-label small fw-semibold mb-1">User</label>
+        <select name="user" class="form-select form-select-sm">
+          <option value="">All users</option>
+          {% for sp in salespersons %}
+          <option value="{{ sp.id }}" {% if sp_filter == sp.id|stringformat:"s" %}selected{% endif %}>
+            {{ sp.get_full_name|default:sp.username }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-sm-6 col-md-2">
+        <label class="form-label small fw-semibold mb-1">From</label>
+        <input type="date" name="date_from" value="{{ date_from }}" class="form-control form-control-sm">
+      </div>
+      <div class="col-sm-6 col-md-2">
+        <label class="form-label small fw-semibold mb-1">To</label>
+        <input type="date" name="date_to" value="{{ date_to }}" class="form-control form-control-sm">
+      </div>
+      <div class="col-sm-6 col-md-2">
+        <label class="form-label small fw-semibold mb-1">Sort by</label>
+        <select name="order" class="form-select form-select-sm">
+          <option value="-login_at" {% if ordering == '-login_at' %}selected{% endif %}>Newest first</option>
+          <option value="login_at"  {% if ordering == 'login_at'  %}selected{% endif %}>Oldest first</option>
+          <option value="user__first_name"  {% if ordering == 'user__first_name'  %}selected{% endif %}>Name A-Z</option>
+          <option value="-user__first_name" {% if ordering == '-user__first_name' %}selected{% endif %}>Name Z-A</option>
+        </select>
+      </div>
+      <div class="col-auto d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filter</button>
+        <a href="{% url 'login_history' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="lh-card">
+    {% if not sessions %}
+      <div class="text-center py-5">
+        <i class="bi bi-clock-history" style="font-size:3rem;color:#94a3b8;"></i>
+        <p class="text-muted mt-2">No login sessions found.</p>
+      </div>
+    {% else %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Photo</th>
+            {% if is_admin %}<th>User</th>{% endif %}
+            <th>Login Time</th>
+            <th>IP Address</th>
+            <th>Location</th>
+            <th>Device</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in sessions %}
+          <tr>
+            <td>
+              {% if s.login_photo %}
+              <div class="photo-wrap">
+                <img src="{{ s.login_photo.url }}" alt="login photo"
+                     class="photo-thumb"
+                     onclick="showPhoto('{{ s.login_photo.url }}', '{{ s.user.get_full_name|default:s.user.username }}', '{{ s.login_at|date:"d M Y H:i" }}', '{% if s.latitude %}{{ s.latitude|floatformat:5 }}, {{ s.longitude|floatformat:5 }}{% endif %}')"
+                     title="Click to enlarge">
+                {% if s.latitude %}
+                <div class="gps-overlay">📍{{ s.latitude|floatformat:3 }},{{ s.longitude|floatformat:3 }}</div>
+                {% endif %}
+              </div>
+              {% else %}
+              <div class="no-photo"><i class="bi bi-person-fill"></i></div>
+              {% endif %}
+            </td>
+            {% if is_admin %}
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="avatar">{{ s.user.first_name|first|upper }}{{ s.user.last_name|first|upper }}</div>
+                <div>
+                  <div class="fw-semibold" style="font-size:.88rem;">{{ s.user.get_full_name|default:s.user.username }}</div>
+                  <div class="text-muted" style="font-size:.75rem;">{{ s.user.username }}</div>
+                </div>
+              </div>
+            </td>
+            {% endif %}
+            <td>
+              <div class="fw-semibold" style="font-size:.88rem;">{{ s.login_at|date:"d M Y" }}</div>
+              <div class="text-muted" style="font-size:.78rem;">{{ s.login_at|date:"H:i:s" }}</div>
+            </td>
+            <td><span class="badge bg-light text-dark border">{{ s.ip_address|default:"—" }}</span></td>
+            <td>
+              {% if s.latitude and s.longitude %}
+              <a href="https://www.google.com/maps?q={{ s.latitude }},{{ s.longitude }}"
+                 target="_blank" class="map-link text-decoration-none d-flex align-items-center gap-1">
+                <i class="bi bi-geo-alt-fill text-danger"></i>
+                <span>{{ s.latitude|floatformat:4 }}, {{ s.longitude|floatformat:4 }}</span>
+                <i class="bi bi-box-arrow-up-right text-muted" style="font-size:.65rem;"></i>
+              </a>
+              {% else %}<span class="text-muted small">—</span>{% endif %}
+            </td>
+            <td class="device-cell" title="{{ s.device_info|default:'' }}">
+              {{ s.device_info|default:"—"|truncatechars:55 }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="px-3 py-3 border-top">
+      <nav>
+        <ul class="pagination justify-content-center flex-wrap gap-1 mb-0">
+          {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link rounded" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          </li>
+          {% endif %}
+          {% for p in page_obj.paginator.page_range %}
+            {% if p == page_obj.number %}
+            <li class="page-item active"><span class="page-link rounded">{{ p }}</span></li>
+            {% elif p >= page_obj.number|add:"-2" and p <= page_obj.number|add:"2" %}
+            <li class="page-item">
+              <a class="page-link rounded" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ p }}">{{ p }}</a>
+            </li>
+            {% endif %}
+          {% endfor %}
+          {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link rounded" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+        <p class="text-center text-muted small mt-2 mb-0">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+        </p>
+      </nav>
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<!-- Photo modal -->
+<div class="modal fade" id="photoModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold" id="photoModalTitle"></h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body pt-2">
+        <img id="photoModalImg" src="" alt="Login photo">
+        <p class="text-muted small mt-2 mb-0" id="photoModalMeta"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showPhoto(url, name, time, gps) {
+  document.getElementById('photoModalImg').src   = url;
+  document.getElementById('photoModalTitle').textContent = name;
+  const meta = 'Logged in: ' + time + (gps ? ' · 📍 ' + gps : '');
+  document.getElementById('photoModalMeta').textContent  = meta;
+  new bootstrap.Modal(document.getElementById('photoModal')).show();
+}
+</script>
+{% endblock %}

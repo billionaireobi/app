@@ -1,0 +1,711 @@
+{% extends "partials/base.html" %}
+{% load static %}
+{% block title %}Zelia OMS-Admin{% endblock %}
+{% block content %}
+<!-- Custom CSS for improved table styling and scrolling -->
+<style>
+    .custom-card {
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .table th, .table td {
+        vertical-align: middle;
+        padding: 12px;
+        text-align: left;
+    }
+    .table th {
+        background-color: #2d2d2d;
+        color: #fff;
+        font-weight: 600;
+    }
+    .table td .product-image {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+    }
+    .badge {
+        padding: 4px 8px;
+        font-size: 0.875rem;
+    }
+    .pagination {
+        margin-top: 15px;
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+    }
+    .pagination button {
+        padding: 5px 10px;
+        border: 1px solid #ddd;
+        background-color: #f8f9fa;
+        cursor: pointer;
+        border-radius: 3px;
+    }
+    .pagination button:disabled {
+        background-color: #e9ecef;
+        cursor: not-allowed;
+    }
+    .pagination button.active {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    /* Products Overview Table Scrolling */
+    #productsTableWrapper {
+        max-height: 400px;
+        overflow-y: auto;
+        overflow-x: auto;
+        display: block;
+    }
+    #productsTable {
+        width: 100%;
+        min-width: 1000px;
+    }
+    /* Top Selling Products Scrolling */
+    #topProductsWrapper {
+        max-height: 300px;
+        overflow-y: auto;
+        overflow-x: auto;
+        display: block;
+    }
+    .product-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid #eee;
+        align-items: center;
+        min-width: 600px;
+    }
+    .product-row:last-child {
+        border-bottom: none;
+    }
+    .product-name {
+        font-weight: 500;
+        flex: 1;
+        white-space: nowrap;
+    }
+    .product-units {
+        color: #6c757d;
+        font-size: 14px;
+        text-align: right;
+        margin-left: 15px;
+        flex: 0.3;
+        white-space: nowrap;
+    }
+    .progress-container {
+        flex: 2;
+        margin: 0 15px;
+    }
+    .progress {
+        height: 8px;
+        background-color: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .progress-bar {
+        height: 100%;
+        border-radius: 4px;
+    }
+    /* DataTables Overrides */
+    .dataTables_wrapper .dataTables_filter {
+        float: right;
+        margin-bottom: 10px;
+        display: block !important; /* Ensure visibility */
+    }
+    .dataTables_wrapper .dataTables_filter label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+        padding: 5px;
+        border-radius: 3px;
+        border: 1px solid #ddd;
+        width: 200px;
+    }
+    .dataTables_wrapper .dataTables_length {
+        float: left;
+        margin-bottom: 10px;
+    }
+    .dataTables_wrapper .dataTables_length select {
+        padding: 5px;
+        border-radius: 3px;
+        border: 1px solid #ddd;
+    }
+    .dataTables_wrapper .dataTables_paginate {
+        margin-top: 10px;
+    }
+</style>
+
+<!-- Page Header -->
+<div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+    <h1 class="page-title fw-semibold fs-18 mb-0">Welcome {{ user.username }}</h1>
+    <div class="ms-md-1 ms-0">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Analytics</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+<!-- Page Header Close -->
+
+<div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xxl-12">
+    <div class="row">
+        <!-- Total Customers -->
+        <div class="col-xxl-4 col-lg-4 col-md-4">
+            <div class="card custom-card overflow-hidden">
+                <div class="card-body">
+                    <div class="d-flex align-items-top justify-content-between">
+                        <div>
+                            <span class="avatar avatar-md avatar-rounded bg-primary">
+                                <i class="ti ti-users fs-16"></i>
+                            </span>
+                        </div>
+                        <div class="flex-fill ms-3">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap">
+                                <div>
+                                    <p class="text-muted mb-0">Total Customers</p>
+                                    <h4 class="fw-semibold mt-1">{{ total_customers }}</h4>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between mt-1">
+                                <div>
+                                    <a class="text-primary" href="{% url 'customers_list' %}">View All<i class="ti ti-arrow-narrow-right ms-2 fw-semibold d-inline-block"></i></a>
+                                </div>
+                                <div class="text-end">
+                                    <p class="mb-0 {% if customer_percentage_change > 0 %}text-success{% else %}text-danger{% endif %} fw-semibold">{% if customer_percentage_change > 0 %}+{{ customer_percentage_change|floatformat:2 }}%{% else %}{{ customer_percentage_change|floatformat:2 }}%{% endif %}</p>
+                                    <span class="text-muted op-7 fs-11">this month</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Orders Today -->
+        <div class="col-xxl-4 col-lg-4 col-md-4">
+            <div class="card custom-card overflow-hidden">
+                <div class="card-body">
+                    <div class="d-flex align-items-top justify-content-between">
+                        <div>
+                            <span class="avatar avatar-md avatar-rounded bg-success">
+                                <i class="ti ti-wave-square fs-16"></i>
+                            </span>
+                        </div>
+                        <div class="flex-fill ms-3">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap">
+                                <div>
+                                    <p class="text-muted mb-0">Orders Today</p>
+                                    <h4 class="fw-semibold mt-1">{{ orders_today }}</h4>
+                                </div>
+                                <div id="crm-orders-today" style="height: 30px; width: 30px;"></div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between mt-1">
+                                <div>
+                                    <a class="text-success" href="{% url 'order_list' %}">View All<i class="ti ti-arrow-narrow-right ms-2 fw-semibold d-inline-block"></i></a>
+                                </div>
+                                <div class="text-end">
+                                    <p class="mb-0 {% if orders_percentage_change > 0 %}text-success{% else %}text-danger{% endif %} fw-semibold">{% if orders_percentage_change > 0 %}+{{ orders_percentage_change|floatformat:2 }}%{% else %}{{ orders_percentage_change|floatformat:2 }}%{% endif %}</p>
+                                    <span class="text-muted op-7 fs-11">today</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Completed Orders -->
+        <div class="col-xxl-4 col-lg-4 col-md-4">
+            <div class="card custom-card overflow-hidden">
+                <div class="card-body">
+                    <div class="d-flex align-items-top justify-content-between">
+                        <div>
+                            <span class="avatar avatar-md avatar-rounded bg-warning">
+                                <i class="ti ti-briefcase fs-16"></i>
+                            </span>
+                        </div>
+                        <div class="flex-fill ms-3">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap">
+                                <div>
+                                    <p class="text-muted mb-0">Completed Orders</p>
+                                    <h4 class="fw-semibold mt-1">{{ total_deals }}</h4>
+                                </div>
+                                <div id="crm-total-deals" style="height: 30px; width: 30px;"></div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between mt-1">
+                                <div>
+                                    <a class="text-warning" href="{% url 'order_list' %}?paid_status=completed">View All<i class="ti ti-arrow-narrow-right ms-2 fw-semibold d-inline-block"></i></a>
+                                </div>
+                                <div class="text-end">
+                                    <p class="mb-0 {% if deals_percentage_change > 0 %}text-success{% else %}text-danger{% endif %} fw-semibold">{% if deals_percentage_change > 0 %}+{{ deals_percentage_change|floatformat:2 }}%{% else %}{{ deals_percentage_change|floatformat:2 }}%{% endif %}</p>
+                                    <span class="text-muted op-7 fs-11">this month</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Total Revenue -->
+        <div class="col-xxl-4 col-lg-4 col-md-4">
+            <div class="card custom-card overflow-hidden">
+                <div class="card-body">
+                    <div class="d-flex align-items-top justify-content-between">
+                        <div>
+                            <span class="avatar avatar-md avatar-rounded bg-secondary">
+                                <i class="ti ti-wallet fs-16"></i>
+                            </span>
+                        </div>
+                        <div class="flex-fill ms-3">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap">
+                                <div>
+                                    <p class="text-muted mb-0">Completed Sales</p>
+                                    <h4 class="fw-semibold mt-1">KES {{ total_revenue|floatformat:2 }}</h4>
+                                </div>
+                                <div id="crm-total-revenue" style="height: 30px; width: 30px;"></div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between mt-1">
+                                <div>
+                                    <a class="text-secondary" href="{% url 'order_list' %}">View All<i class="ti ti-arrow-narrow-right ms-2 fw-semibold d-inline-block"></i></a>
+                                </div>
+                                <div class="text-end">
+                                    <p class="mb-0 {% if revenue_percentage_change > 0 %}text-success{% else %}text-danger{% endif %} fw-semibold">{% if revenue_percentage_change > 0 %}+{{ revenue_percentage_change|floatformat:2 }}%{% else %}{{ revenue_percentage_change|floatformat:2 }}%{% endif %}</p>
+                                    <span class="text-muted op-7 fs-11">this month</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Pending Revenue -->
+        <div class="col-xxl-4 col-lg-4 col-md-4">
+            <div class="card custom-card overflow-hidden">
+                <div class="card-body">
+                    <div class="d-flex align-items-top justify-content-between">
+                        <div>
+                            <span class="avatar avatar-md avatar-rounded bg-warning">
+                                <i class="ti ti-clock fs-16"></i>
+                            </span>
+                        </div>
+                        <div class="flex-fill ms-3">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap">
+                                <div>
+                                    <p class="text-muted mb-0">Pending Sales</p>
+                                    <h4 class="fw-semibold mt-1">KES {{ pending_revenue|floatformat:2 }}</h4>
+                                </div>
+                                <div id="crm-pending-revenue" style="height: 30px; width: 30px;"></div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between mt-1">
+                                <div>
+                                    <a class="text-warning" href="{% url 'order_list' %}">View All<i class="ti ti-arrow-narrow-right ms-2 fw-semibold d-inline-block"></i></a>
+                                </div>
+                                <div class="text-end">
+                                    <p class="mb-0 text-muted fw-semibold">Pending Orders</p>
+                                    <span class="text-muted op-7 fs-11">this month</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Total Revenue This Month -->
+        <div class="col-xxl-4 col-lg-4 col-md-4">
+            <div class="card custom-card overflow-hidden">
+                <div class="card-body">
+                    <div class="d-flex align-items-top justify-content-between">
+                        <div>
+                            <span class="avatar avatar-md avatar-rounded bg-info">
+                                <i class="ti ti-currency-dollar fs-16"></i>
+                            </span>
+                        </div>
+                        <div class="flex-fill ms-3">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap">
+                                <div>
+                                    <p class="text-muted mb-0">Total Sales</p>
+                                    <h4 class="fw-semibold mt-1">KES {{ total_revenue_this_month|floatformat:2 }}</h4>
+                                </div>
+                                <div id="crm-total-revenue-month" style="height: 30px; width: 30px;"></div>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between mt-1">
+                                <div>
+                                    <a class="text-info" href="{% url 'order_list' %}">View All<i class="ti ti-arrow-narrow-right ms-2 fw-semibold d-inline-block"></i></a>
+                                </div>
+                                <div class="text-end">
+                                    <p class="mb-0 text-muted fw-semibold">All Orders</p>
+                                    <span class="text-muted op-7 fs-11">this month</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Recent Orders -->
+        <div class="col-xxl-6 col-xl-6 col-lg-6 col-md-6">
+            <div class="card custom-card">
+                <div class="card-header justify-content-between">
+                    <div class="card-title">
+                        Recent Orders
+                        <div class="text-muted fs-12">Showing the {{ recent_orders|length }} most recent orders</div>
+                    </div>
+                    <a href="{% url 'order_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="ordersTable" class="table table-sm table-hover text-nowrap">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Customer</th>
+                                    <th>Category</th>
+                                    <th>Sales Person</th>
+                                    <th>Total Amount</th>
+                                    <th>Order Date</th>
+                                    <!--<th>Address</th>-->
+                                    <th>Phone</th>
+                                    <th>Payment</th>
+                                    <th>Delivery</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody">
+                                {% for order in recent_orders %}
+                                    <tr data-order-date="{{ order.order_date|date:'c' }}">
+                                        <td>{{ order.customer.get_full_name }}</td>
+                                        <td>{{ order.customer.default_category }}</td>
+                                        <!--<td>-->
+                                        <!--    {% for item in order.order_items.all %}-->
+                                        <!--        {{ item.product.name }}{% if not forloop.last %}, {% endif %}-->
+                                        <!--    {% empty %}-->
+                                        <!--        No products-->
+                                        <!--    {% endfor %}-->
+                                        <!--</td>-->
+                                        <td>{{ order.sales_person.get_full_name|default:"Not assigned" }}</td>
+                                        <td>{{ order.total_amount|floatformat:2 }}</td>
+                                        <td>{{ order.order_date|date:"M d, Y" }}</td>
+                                        <!--<td>{{ order.address|default:"N/A" }}</td>-->
+                                        <td>{{ order.phone|default:"N/A" }}</td>
+                                        <td>
+                                            {% if order.paid_status == "completed" %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif order.paid_status == "pending" %}
+                                                <span class="badge bg-secondary">Pending</span>
+                                            {% else %}
+                                                <span class="badge bg-light text-dark">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if order.delivery_status == "completed" %}
+                                                <span class="badge bg-success">Completed</span>
+                                            {% elif order.delivery_status == "pending" %}
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                            {% elif order.delivery_status == "cancelled" %}
+                                                <span class="badge bg-danger">Cancelled</span>
+                                            {% else %}
+                                                <span class="badge bg-light text-dark">N/A</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="9" class="text-center text-muted">No recent orders available.</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Top Products -->
+        <div class="col-xxl-6 col-xl-6 col-lg-6 col-md-6">
+            <div class="card custom-card">
+                <div class="card-header justify-content-between">
+                    <div class="card-title">
+                        Top Products
+                        <div class="text-muted fs-12">Your best selling products this month</div>
+                    </div>
+                    <a href="{% url 'products' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div id="topProductsWrapper">
+                        {% for item in top_products %}
+                            <div class="product-row">
+                                <div class="product-name">{{ item.product__name }}</div>
+                                <div class="progress-container">
+                                    <div class="progress">
+                                        {% if item.percent < 25 %}
+                                            <div class="progress-bar" style="width: {{ item.percent }}%; background-color: #e74c3c;"></div>
+                                        {% elif item.percent < 50 %}
+                                            <div class="progress-bar" style="width: {{ item.percent }}%; background-color: #f39c12;"></div>
+                                        {% elif item.percent < 75 %}
+                                            <div class="progress-bar" style="width: {{ item.percent }}%; background-color: #f1c40f;"></div>
+                                        {% else %}
+                                            <div class="progress-bar" style="width: {{ item.percent }}%; background-color: #2ecc71;"></div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="product-units">{{ item.total_units }} units</div>
+                            </div>
+                        {% empty %}
+                            <p class="text-muted">No sales data available.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Products Overview -->
+        <div class="col-xl-12">
+            <div class="card custom-card">
+                <div class="card-header justify-content-between">
+                    <div class="card-title">
+                        Products Overview
+                    </div>
+                    <!-- Search bar will be added by DataTables -->
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <div id="productsTableWrapper">
+                            <table id="productsTable" class="table table-striped table-hover text-nowrap table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" style="width: 20%;">Name</th>
+                                        <th scope="col" style="width: 15%;">Category</th>
+                                        <th scope="col" style="width: 10%;">Price/Piece(wholesale)</th>
+                                        <th scope="col" style="width: 10%;">Status</th>
+                                        <th scope="col" style="width: 10%;">Sales</th>
+                                        <th scope="col" style="width: 10%;">Mcdave Stock</th>
+                                        <th scope="col" style="width: 10%;">Kisii Stock</th>
+                                        <th scope="col" style="width: 10%;">Offshore Stock</th>
+                                        <th scope="col" style="width: 15%;">Revenue</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+    {% for product in products %}
+        <tr data-bs-toggle="modal" data-bs-target="#productModal" 
+            data-product-id="{{ product.id }}"
+            data-product-name="{{ product.name }}"
+            data-product-image="{% if product.image %}{{ product.image.url }}{% else %}{% static 'assets/images/mcdave/logo.png' %}{% endif %}"
+            data-product-category="{{ product.category.name }}"
+            data-product-price="{{ product.wholesale_price|floatformat:2 }}"
+            data-product-status="{{ product.status }}"
+            data-product-sales="{{ product.sales_count }}"
+            data-product-mcdave-stock="{{ product.mcdave_stock }}"
+            data-product-kisii-stock="{{ product.kisii_stock }}"
+            data-product-revenue="{{ product.total_revenue|floatformat:2|default:'0.00' }}"
+            style="cursor: pointer;">
+            <td>
+                <div class="d-flex align-items-center">
+                    <div class="me-2 lh-1">
+                        <div class="product-image" style="width: 50px; height: 50px; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" alt="{{ product.name }}" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% else %}
+                                <img src="{% static 'assets/images/mcdave/logo.png' %}" alt="No Image" style="width: 100%; height: 100%; object-fit: cover;">
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="fs-14">{{ product.name }}</div>
+                </div>
+            </td>
+            <td>{{ product.category.name }}</td>
+            <td data-order="{{ product.wholesale_price }}">{{ product.wholesale_price|floatformat:2 }}</td>
+            <td data-status="{{ product.status }}">
+                {% if product.status == 'available' %}
+                    <span class="badge bg-success-transparent">Available</span>
+                {% elif product.status == 'limited' %}
+                    <span class="badge bg-warning-transparent">Limited Deal</span>
+                {% elif product.status == 'offer' %}
+                    <span class="badge bg-primary-transparent">In Offer</span>
+                {% else %}
+                    <span class="badge bg-danger-transparent">Not Available</span>
+                {% endif %}
+            </td>
+            <td data-order="{{ product.sales_count }}">{{ product.sales_count }}</td>
+            <td data-order="{{ product.mcdave_stock }}">{{ product.mcdave_stock }}</td>
+            <td data-order="{{ product.kisii_stock }}">{{ product.kisii_stock }}</td>
+            <td data-order="{{ product.kisii_stock }}">{{ product.kisii_stock }}</td>
+            <td data-order="{{ product.total_revenue|default:0 }}">KES {{ product.total_revenue|floatformat:2|default:"0.00" }}</td>
+        </tr>
+    {% empty %}
+        <tr>
+            <td colspan="7" class="text-center text-muted">No products available.</td>
+        </tr>
+    {% endfor %}
+</tbody>
+
+<!-- Bootstrap Modal -->
+<div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="productModalLabel">Product Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <img id="modalProductImage" src="" alt="Product Image" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">
+                </div>
+                <h6 id="modalProductName"></h6>
+                <p><strong>Category:</strong> <span id="modalProductCategory"></span></p>
+                <p><strong>Wholesale Price:</strong> KES <span id="modalProductPrice"></span></p>
+                <p><strong>Status:</strong> <span id="modalProductStatus"></span></p>
+                <p><strong>Sales Count:</strong> <span id="modalProductSales"></span></p>
+                <p><strong>McDave Stock:</strong> <span id="modalProductMcDaveStock"></span></p>
+                <p><strong>Kisii Stock:</strong> <span id="modalProductKisiiStock"></span></p>
+                <p><strong>Total Revenue:</strong> KES <span id="modalProductRevenue"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                
+            </div>
+        </div>
+    </div>
+</div>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- ApexCharts -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<!-- DataTables -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/decimal.js/10.4.3/decimal.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Sparkline Charts Configuration
+        const sparklineOptions = {
+            chart: { type: 'line', height: 50, sparkline: { enabled: true } },
+            stroke: { curve: 'smooth', width: 2 },
+            series: [{ data: {{ chart_data|safe }} }],
+            colors: ['#8b5cf6'],
+            tooltip: { enabled: false }
+        };
+        ['crm-total-customers', 'crm-total-revenue', 'crm-total-revenue-month', 'crm-pending-revenue', 'crm-orders-today', 'crm-total-deals'].forEach(id => {
+            new ApexCharts(document.querySelector(`#${id}`), sparklineOptions).render();
+        });
+
+        // Recent Orders: Show only the 5 most recent orders
+        (function () {
+            const ordersTableBody = document.querySelector('#ordersTableBody');
+            const rows = Array.from(ordersTableBody.querySelectorAll('tr'));
+            
+            rows.sort((a, b) => {
+                const dateA = new Date(a.dataset.orderDate);
+                const dateB = new Date(b.dataset.orderDate);
+                return dateB - dateA;
+            });
+
+            ordersTableBody.innerHTML = '';
+            const rowsToShow = rows.slice(0, Math.min(5, rows.length));
+            if (rowsToShow.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = '<td colspan="9" class="text-center text-muted">No recent orders available.</td>';
+                ordersTableBody.appendChild(emptyRow);
+            } else {
+                rowsToShow.forEach(row => ordersTableBody.appendChild(row));
+            }
+        })();
+
+        // Products Overview: DataTables with Visible Search Bar
+        (function () {
+            // Log to confirm DataTables is initializing
+            console.log('Initializing DataTables for productsTable...');
+
+            // Custom search to target only Name (column 0) and Category (column 1)
+            $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+                const searchTerm = settings.oPreviousSearch.sSearch.toLowerCase();
+                const name = data[0].toLowerCase();
+                const category = data[1].toLowerCase();
+                return !searchTerm || name.includes(searchTerm) || category.includes(searchTerm);
+            });
+
+            // Initialize DataTables
+            const table = $('#productsTable').DataTable({
+                pageLength: 8,
+                scrollX: true,
+                scrollY: '400px',
+                scrollCollapse: true,
+                paging: true,
+                searching: true,
+                ordering: true,
+                dom: 'lfrtip', // Ensure search bar (f) is included in the layout
+                columnDefs: [
+                    { targets: 0, searchable: true, orderable: true }, // Name
+                    { targets: 1, searchable: true, orderable: true }, // Category
+                    { targets: 2, searchable: false, orderable: true, type: 'num' }, // Price/Piece
+                    { targets: 3, searchable: false, orderable: true, orderData: [3, 0] }, // Status
+                    { targets: 4, searchable: false, orderable: true, type: 'num' }, // Sales
+                    { targets: 5, searchable: false, orderable: true, type: 'num' }, // Stock
+                    { targets: 6, searchable: false, orderable: true, type: 'num' }  // Revenue
+                ],
+                language: {
+                    search: "Search: ",
+                    searchPlaceholder: "Search by product name or category..."
+                }
+            });
+
+            // Log to confirm DataTables initialized successfully
+            console.log('DataTables initialized:', table);
+
+            // Ensure search bar is visible
+            const searchBar = $('.dataTables_filter');
+            if (searchBar.length) {
+                console.log('Search bar found in DOM');
+            } else {
+                console.error('Search bar not found in DOM');
+            }
+        })();
+    });
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const productRows = document.querySelectorAll('tr[data-bs-toggle="modal"]');
+    productRows.forEach(row => {
+        row.addEventListener('click', function () {
+            const productName = this.getAttribute('data-product-name');
+            const productImage = this.getAttribute('data-product-image');
+            const productCategory = this.getAttribute('data-product-category');
+            const productPrice = this.getAttribute('data-product-price');
+            let productStatus = this.getAttribute('data-product-status');
+            const productSales = this.getAttribute('data-product-sales');
+            const productMcDaveStock = this.getAttribute('data-product-mcdave-stock');
+            const productKisiiStock = this.getAttribute('data-product-kisii-stock');
+            const productRevenue = this.getAttribute('data-product-revenue');
+            const productId = this.getAttribute('data-product-id');
+
+            // Map status to display text and badge class
+            const statusMap = {
+                'available': '<span class="badge bg-success-transparent">Available</span>',
+                'limited': '<span class="badge bg-warning-transparent">Limited Deal</span>',
+                'offer': '<span class="badge bg-primary-transparent">In Offer</span>',
+                'not_available': '<span class="badge bg-danger-transparent">Not Available</span>'
+            };
+            productStatus = statusMap[productStatus] || '<span class="badge bg-danger-transparent">Not Available</span>';
+
+            // Update modal content
+            document.getElementById('modalProductName').textContent = productName;
+            document.getElementById('modalProductImage').src = productImage;
+            document.getElementById('modalProductCategory').textContent = productCategory;
+            document.getElementById('modalProductPrice').textContent = productPrice;
+            document.getElementById('modalProductStatus').innerHTML = productStatus;
+            document.getElementById('modalProductSales').textContent = productSales;
+            document.getElementById('modalProductMcDaveStock').textContent = productMcDaveStock;
+            document.getElementById('modalProductKisiiStock').textContent = productKisiiStock;
+            document.getElementById('modalProductRevenue').textContent = productRevenue;
+            document.getElementById('modalProductLink').href = `/product/${productId}/`; // Adjust URL pattern as needed
+        });
+    });
+});
+</script>
+{% endblock %}

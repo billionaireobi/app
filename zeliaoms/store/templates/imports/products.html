@@ -1,0 +1,400 @@
+{% load static %}
+
+{% block title %}Import Products{% endblock %}
+
+{% block content %}
+<head>
+    <!-- Meta Data -->
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="Description" content="Bootstrap Responsive Admin Web Dashboard HTML5 Template">
+    <meta name="keywords" content="admin,admin dashboard,admin panel,admin template,bootstrap,clean,dashboard,flat,jquery,modern,responsive,premium admin templates,responsive admin,ui,ui kit.">
+
+    <!-- Favicon -->
+    <link rel="icon" href="{% static 'assets/images/mcdave/logo.png' %}" type="image/x-icon">
+
+    <!-- Choices JS -->
+    <script src="{% static 'assets/libs/choices.js/public/assets/scripts/choices.min.js' %}"></script>
+
+    <!-- Main Theme JS -->
+    <script src="{% static 'assets/js/main.js' %}"></script>
+
+    <!-- Bootstrap CSS -->
+    <link id="style" href="{% static 'assets/libs/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+
+    <!-- Style CSS -->
+    <link href="{% static 'assets/css/styles.min.css' %}" rel="stylesheet">
+
+    <!-- Icons CSS -->
+    <link href="{% static 'assets/css/icons.css' %}" rel="stylesheet">
+
+    <!-- Node Waves CSS -->
+    <link href="{% static 'assets/libs/node-waves/waves.min.css' %}" rel="stylesheet">
+
+    <!-- Simplebar CSS -->
+    <link href="{% static 'assets/libs/simplebar/simplebar.min.css' %}" rel="stylesheet">
+
+    <!-- Color Picker CSS -->
+    <link rel="stylesheet" href="{% static 'assets/libs/flatpickr/flatpickr.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/libs/@simonwep/pickr/themes/nano.min.css' %}">
+
+    <!-- Choices CSS -->
+    <link rel="stylesheet" href="{% static 'assets/libs/choices.js/public/assets/styles/choices.min.css' %}">
+
+    <!-- Toast CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/css/iziToast.css" integrity="sha512-DIW4FkYTOxjCqRt7oS9BFO+nVOwDL4bzukDyDtMO7crjUZhwpyrWBFroq+IqRe6VnJkTpRAS6nhDvf0w+wHmxg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+
+<!-- Page Header -->
+<div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+    <h1 class="page-title fw-semibold fs-18 mb-0">Import Products</h1>
+    <div class="ms-md-1 ms-0">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}">Dashboard</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'products' %}">Products</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Import</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+<!-- Page Header Close -->
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card custom-card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Import Products from Excel</h5>
+            </div>
+            <div class="card-body">
+                {% if formset %}
+                    <!-- Display imported products for editing -->
+                    <form method="post" enctype="multipart/form-data" id="product-import-form">
+                        {% csrf_token %}
+                        {{ formset.management_form }}
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th class="text-center" style="min-width: 120px;">Image</th>
+                                        <th class="text-center" style="min-width: 120px;">Name</th>
+                                        <th class="text-center" style="min-width: 100px;">Barcode</th>
+                                        <th class="text-center" style="min-width: 100px;">Category</th>
+                                        <th class="text-center" style="min-width: 120px;">Description</th>
+                                        <th class="text-center" style="min-width: 100px;">FactPrice</th>
+                                        <th class="text-center" style="min-width: 100px;">DistPrice</th>
+                                        <th class="text-center" style="min-width: 100px;">WholPrice</th>
+                                        <th class="text-center" style="min-width: 100px;">TownPrice</th>
+                                        <th class="text-center" style="min-width: 100px;">RetPrice</th>
+                                        <th class="text-center" style="min-width: 100px;">McDave Stock</th>
+                                        <th class="text-center" style="min-width: 100px;">Kisii Stock</th>
+                                        <th class="text-center" style="min-width: 100px;">Offshore Stock</th>
+                                        <th class="text-center" style="min-width: 80px;">Status</th>
+                                        
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for form in formset %}
+                                    <tr class="align-middle">
+                                        <td class="p-2">{{ form.image }}</td>
+                                        <td class="p-2">{{ form.name }}</td>
+                                        <td class="p-2">{{ form.barcode }}</td>
+                                        <td class="p-2">{{ form.category }}</td>
+                                        <td class="p-2">{{ form.description }}</td>
+                                        <td class="p-2">{{ form.factory_price }}</td>
+                                        <td class="p-2">{{ form.distributor_price }}</td>
+                                        <td class="p-2">{{ form.wholesale_price }}</td>
+                                        <td class="p-2">{{ form.offshore_price }}</td>
+                                        <td class="p-2">{{ form.retail_price }}</td>
+                                        <td class="p-2">{{ form.mcdave_stock }}</td>
+                                        <td class="p-2">{{ form.kisii_stock }}</td>
+                                        <td class="p-2">{{ form.offshore_stock }}</td>
+                                        <td class="p-2">{{ form.status }}</td>
+                                        
+                                    </tr>
+                                    {% if form.errors %}
+                                    <tr>
+                                        <td colspan="14" class="bg-danger text-white p-3 rounded">
+                                            {% for field in form %}
+                                                {% for error in field.errors %}
+                                                    <small class="d-block">{{ field.label }}: {{ error }}</small>
+                                                {% endfor %}
+                                            {% endfor %}
+                                            {% for error in form.non_field_errors %}
+                                                <small class="d-block">{{ error }}</small>
+                                            {% endfor %}
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-end mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="ri-save-line me-2"></i>Save Products
+                            </button>
+                            <a href="{% url 'products' %}" class="btn btn-outline-secondary btn-lg ms-2">
+                                <i class="ri-arrow-left-line me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                {% else %}
+                    <!-- Upload Excel file -->
+                    <form method="post" enctype="multipart/form-data" class="mb-4">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            <label for="excel_file" class="form-label fw-bold">Upload Excel File</label>
+                            <input type="file" name="excel_file" id="excel_file" class="form-control form-control-lg" accept=".xlsx,.xls" required>
+                        </div>
+                        {% if upload_error %}
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                {{ upload_error }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+                        <button type="submit" name="upload" class="btn btn-primary btn-lg">
+                            <i class="ri-upload-line me-2"></i>Upload and Preview
+                        </button>
+                    </form>
+                    <p class="text-muted mt-3">
+                        <strong>Expected Excel columns:</strong> name, barcode, category, description, status, factory_price, distributor_price, 
+                        wholesale_price, offshore_price, retail_price, mcdave_stock, kisii_stock, offshore_stock. 
+                        Category must match existing category names. Stock fields default to 0 if not provided.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Improved Custom Styles for Dark Theme -->
+<style>
+    /* Enhanced form control styles for dark theme */
+    .form-control, .form-select {
+        background-color: #3a3f44 !important;
+        color: #ffffff !important;
+        border: 1px solid #5a6268 !important;
+        font-size: 14px;
+        padding: 8px 12px;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        background-color: #434a52 !important;
+        color: #ffffff !important;
+        border-color: #007bff !important;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+        outline: none;
+    }
+    
+    .form-control::placeholder {
+        color: #adb5bd !important;
+    }
+    
+    /* Select dropdown improvements */
+    .form-select option {
+        background-color: #3a3f44 !important;
+        color: #ffffff !important;
+    }
+    
+    /* File input specific styling */
+    .form-control[type="file"] {
+        background-color: #3a3f44 !important;
+        color: #ffffff !important;
+        border: 2px dashed #007bff !important;
+        padding: 12px;
+        text-align: center;
+    }
+    
+    .form-control[type="file"]::-webkit-file-upload-button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        margin-right: 10px;
+        cursor: pointer;
+    }
+    
+    .form-control[type="file"]::-webkit-file-upload-button:hover {
+        background-color: #0056b3;
+    }
+    
+    /* Table improvements */
+    .table {
+        background-color: transparent;
+        color: #ffffff;
+        border-color: #5a6268;
+    }
+    
+    .table th {
+        background-color: #212529 !important;
+        color: #ffffff !important;
+        border-color: #5a6268 !important;
+        font-weight: 600;
+        font-size: 13px;
+        padding: 12px 8px;
+        vertical-align: middle;
+    }
+    
+    .table td {
+        background-color: #2c3034 !important;
+        color: #ffffff !important;
+        border-color: #5a6268 !important;
+        padding: 8px;
+        vertical-align: middle;
+    }
+    
+    .table-striped tbody tr:nth-of-type(odd) td {
+        background-color: #363b41 !important;
+    }
+    
+    .table-striped tbody tr:hover td {
+        background-color: #404549 !important;
+    }
+    
+    /* Button styling */
+    .btn-primary {
+        background-color: #007bff;
+        border-color: #007bff;
+        transition: all 0.3s ease;
+        font-weight: 600;
+    }
+    
+    .btn-primary:hover {
+        background-color: #0056b3;
+        border-color: #004085;
+        transform: translateY(-1px);
+    }
+    
+    .btn-outline-secondary {
+        color: #adb5bd;
+        border-color: #6c757d;
+        font-weight: 600;
+    }
+    
+    .btn-outline-secondary:hover {
+        background-color: #6c757d;
+        color: #ffffff;
+        border-color: #6c757d;
+    }
+    
+    /* Card styling */
+    .card {
+        background-color: #2c3034;
+        border-color: #5a6268;
+    }
+    
+    .card-body {
+        background-color: #2c3034;
+        color: #ffffff;
+    }
+    
+    /* Alert styling */
+    .alert-danger {
+        background-color: #dc3545;
+        border-color: #dc3545;
+        color: #ffffff;
+    }
+    
+    /* Text styling */
+    .text-muted {
+        color: #adb5bd !important;
+        font-size: 0.9rem;
+    }
+    
+    .form-label {
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+    
+    /* Responsive improvements */
+    .table-responsive {
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    /* Minimum width for table cells to prevent cramping */
+    .table td .form-control,
+    .table td .form-select {
+        min-width: 80px;
+        font-size: 13px;
+        padding: 6px 8px;
+    }
+    
+    /* Better spacing for error messages */
+    small.d-block {
+        margin-bottom: 0.25rem;
+        font-size: 0.8rem;
+    }
+    
+    /* Improved scrollbar for dark theme */
+    .table-responsive::-webkit-scrollbar {
+        height: 8px;
+    }
+    
+    .table-responsive::-webkit-scrollbar-track {
+        background: #2c3034;
+    }
+    
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #6c757d;
+        border-radius: 4px;
+    }
+    
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: #007bff;
+    }
+</style>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Form submission confirmation
+    $('#product-import-form').on('submit', function(e) {
+        const productCount = $(this).find('tbody tr').not(':has(.alert)').length;
+        const message = `Are you sure you want to save ${productCount} product(s)?`;
+        return confirm(message);
+    });
+    
+    // File input enhancement
+    $('#excel_file').on('change', function() {
+        const fileName = $(this)[0].files[0]?.name || '';
+        const fileSize = $(this)[0].files[0]?.size || 0;
+        const maxSize = 10 * 1024 * 1024; // 10MB
+        
+        if (fileSize > maxSize) {
+            alert('File size exceeds 10MB limit. Please choose a smaller file.');
+            $(this).val('');
+            return;
+        }
+        
+        if (fileName) {
+            console.log(`Selected file: ${fileName}`);
+        }
+    });
+    
+    // Auto-resize text areas
+    $('textarea.form-control').each(function() {
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+    });
+});
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/js/iziToast.min.js" integrity="sha512-Zq9o+E00xhhR/7vJ49mxFNJ0KQw1E1TMWkPTxrWcnpfEFDEXgUiwJHIKit93EW/XxE31HSI5GEOW06G6BF1AtA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="{% static 'assets/libs/@popperjs/core/umd/popper.min.js' %}"></script>
+<script src="{% static 'assets/libs/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+<script src="{% static 'assets/js/defaultmenu.min.js' %}"></script>
+<script src="{% static 'assets/libs/node-waves/waves.min.js' %}"></script>
+<script src="{% static 'assets/js/sticky.js' %}"></script>
+<script src="{% static 'assets/libs/@simonwep/pickr/pickr.es5.min.js' %}"></script>
+<script src="{% static 'assets/libs/apexcharts/apexcharts.min.js' %}"></script>
+<script src="{% static 'assets/libs/moment/moment.js' %}"></script>
+<script src="{% static 'assets/js/custom-switcher.min.js' %}"></script>
+<script src="{% static 'assets/libs/simplebar/simplebar.min.js' %}"></script>
+<script src="{% static 'assets/js/simplebar.js' %}"></script>
+<script src="{% static 'assets/js/custom.js' %}"></script>
+{% endblock %}

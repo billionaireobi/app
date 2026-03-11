@@ -1,0 +1,56 @@
+{# templates/users/detail.html #}
+{% extends 'partials/base.html' %}
+{% block title %}{{ user_obj.get_full_name }} – Profile{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body text-center">
+        <h5 class="card-title">{{ user_obj.get_full_name }}</h5>
+        <p class="card-text"><strong>@{{ user_obj.username }}</strong></p>
+        <p><strong>Email:</strong> {{ user_obj.email }}</p>
+        <p><strong>Phone:</strong> {{ profile.phone|default:"-" }}</p>
+        <p><strong>Department:</strong> {{ profile.department }}</p>
+        <p><strong>Status:</strong>
+          <span class="badge bg-{{ user_obj.is_active|yesno:'success,danger' }}">
+            {{ user_obj.is_active|yesno:'Active,Inactive' }}
+          </span>
+        </p>
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <a href="{% url 'user_edit' user_obj.id %}" class="btn btn-warning w-100 mb-2">Edit User</a>
+      <a href="{% url 'user_change_password' user_obj.id %}" class="btn btn-secondary w-100 mb-2">Change Password</a>
+      <a href="{% url 'user_change_role' user_obj.id %}" class="btn btn-primary w-100 mb-2">Change Role</a>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <h4>Statistics</h4>
+    <div class="row text-center">
+      <div class="col">
+        <h3>{{ total_orders }}</h3>
+        <p>Orders Created</p>
+      </div>
+      <div class="col">
+        <h3>{{ total_quotes }}</h3>
+        <p>Quotes Created</p>
+      </div>
+    </div>
+
+    <h4 class="mt-4">Recent Activity</h4>
+    <ul class="list-group">
+      {% for log in recent_activities %}
+        <li class="list-group-item">
+          <small class="text-muted">{{ log.timestamp|date:"M d, Y H:i" }}</small><br>
+          <strong>{{ log.action }}</strong>: {{ log.details }}
+        </li>
+      {% empty %}
+        <li class="list-group-item">No activity yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

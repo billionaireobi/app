@@ -1,0 +1,321 @@
+{% extends "partials/base.html" %}
+{% load static %}
+
+{% block title %}Orders{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css">
+<style>
+    .scrollable-cell {
+        max-height: 100px;
+        overflow-y: auto;
+    }
+    .scrollable-cell::-webkit-scrollbar {
+        width: 4px;
+    }
+    .scrollable-cell::-webkit-scrollbar-thumb {
+        background-color: #ccc;
+        border-radius: 3px;
+    }
+    .nowrap-column {
+        white-space: nowrap;
+    }
+</style>
+
+<div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+    <h1 class="page-title fw-semibold fs-18 mb-0">Orders</h1>
+    <div class="ms-md-1 ms-0">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                {% if user.is_superuser or user.userprofile.is_admin %}
+                    <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+                {% else %}
+                    <li class="breadcrumb-item"><a href="{% url 'salesperson_dashboard' %}">Dashboard</a></li>
+                {% endif %}
+                <li class="breadcrumb-item active" aria-current="page">Orders</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card custom-card">
+            <!--<div class="card-header d-flex justify-content-between align-items-center">-->
+            <!--    <h5 class="card-title mb-0">Order List</h5>-->
+                <!--<a href="{% url 'create_order' %}" class="btn btn-primary btn-sm">-->
+                <!--    Add Order <i class="ri-add-line ms-1"></i>-->
+                <!--</a>-->
+            <!--</div>-->
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="order-table" class="table table-bordered table-hover w-100 nowrap">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer Name</th>
+                                <th>Store</th>
+                                <th>Order Date</th>
+                                <th>VAT Status</th>
+                                <th>Total Amount</th>
+                                <th>Delivery Status</th>
+                                <th>Paid Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+    {% for order_data in orders_with_vat %}
+    <tr data-bs-toggle="modal" data-bs-target="#orderModal" 
+        data-order-id="{{ order_data.order.id }}"
+        data-order-number="#Mc{{ order_data.order.id }}Z"
+        data-customer-name="{{ order_data.order.customer.get_full_name }}"
+        data-store="{{ order_data.order.get_store_display }}"
+        data-order-date="{{ order_data.order.order_date|date:'Y-m-d H:i' }}"
+        data-items="{% for item_data in order_data.items_with_vat %}{{ item_data.item.product.name }} (x{{ item_data.item.quantity }}),{% endfor %}"
+        data-unit-prices="{% for item_data in order_data.items_with_vat %}{{ item_data.item.unit_price|floatformat:2 }},{% endfor %}"
+        data-variances="{% for item_data in order_data.items_with_vat %}{{ item_data.item.variance|floatformat:2 }},{% endfor %}"
+        data-vat-variation="{{ order_data.order.vat_variation }}"
+        data-prices-with-vat="{% for item_data in order_data.items_with_vat %}{{ item_data.price_with_vat|floatformat:2 }},{% endfor %}"
+        data-total-amount="{{ order_data.order.total_amount|floatformat:2 }}"
+        data-stock="{% for item_data in order_data.items_with_vat %}{% with stock=item_data.store_stock %}{% if stock > 0 %}In Stock ({{ stock }}){% else %}Out of Stock{% endif %},{% endwith %}{% endfor %}"
+        data-delivery-status="{{ order_data.order.delivery_status }}"
+        data-paid-status="{{ order_data.order.paid_status }}"
+        style="cursor: pointer;">
+        <td>#Mc{{ order_data.order.id }}Z</td>
+        <td class="nowrap-column">{{ order_data.order.customer.get_full_name }}</td>
+        <td>{{ order_data.order.get_store_display }}</td>
+        <td class="nowrap-column">{{ order_data.order.order_date|date:"Y-m-d H:i" }}</td>
+        <!--<td class="scrollable-cell">-->
+        <!--    <ul class="list-unstyled mb-0">-->
+        <!--        {% for item_data in order_data.items_with_vat %}-->
+        <!--            <li>{{ item_data.item.product.name }} (x{{ item_data.item.quantity }})</li>-->
+        <!--        {% empty %}-->
+        <!--            <li>No items</li>-->
+        <!--        {% endfor %}-->
+        <!--    </ul>-->
+        <!--</td>-->
+        <!--<td class="scrollable-cell">-->
+        <!--    {% for item_data in order_data.items_with_vat %}-->
+        <!--        {{ item_data.item.unit_price|floatformat:2 }}<br>-->
+        <!--    {% endfor %}-->
+        <!--</td>-->
+        <!--<td class="scrollable-cell">-->
+        <!--    {% for item_data in order_data.items_with_vat %}-->
+        <!--        {{ item_data.item.variance|floatformat:2 }}<br>-->
+        <!--    {% endfor %}-->
+        <!--</td>-->
+        <td>{{ order_data.order.vat_variation }}</td>
+        <!--<td class="scrollable-cell">-->
+        <!--    {% for item_data in order_data.items_with_vat %}-->
+        <!--        {{ item_data.price_with_vat|floatformat:2 }}<br>-->
+        <!--    {% endfor %}-->
+        <!--</td>-->
+        <td class="nowrap-column">{{ order_data.order.total_amount|floatformat:2 }}</td>
+        <!--<td class="scrollable-cell">-->
+        <!--    {% for item_data in order_data.items_with_vat %}-->
+        <!--        {% with stock=item_data.store_stock %}-->
+        <!--            {% if stock > 0 %}-->
+        <!--                <span class="badge bg-success">{{ stock }}</span>-->
+        <!--            {% else %}-->
+        <!--                <span class="badge bg-danger">Out of Stock</span>-->
+        <!--            {% endif %}-->
+        <!--        {% endwith %}-->
+        <!--        <br>-->
+        <!--    {% endfor %}-->
+        <!--</td>-->
+        <!--<td>-->
+        <!--    <span class="badge {% if order_data.order.delivery_status == 'completed' %}bg-success{% elif order_data.order.delivery_status == 'cancelled' %}bg-danger{% else %}bg-warning{% endif %}">-->
+        <!--        {{ order_data.order.delivery_status|title }}-->
+        <!--    </span>-->
+        <!--</td>-->
+        <!--<td>-->
+        <!--    <span class="badge {% if order_data.order.paid_status == 'completed' %}bg-success{% else %}bg-warning{% endif %}">-->
+        <!--        {{ order_data.order.paid_status|title }}-->
+        <!--    </span>-->
+        <!--</td>-->
+        <td>
+    <span class="badge 
+        {% if order_data.order.delivery_status == 'completed' %}bg-success
+        {% elif order_data.order.delivery_status == 'cancelled' %}bg-danger
+        {% elif order_data.order.delivery_status == 'returned' %}bg-secondary
+        {% else %}bg-warning
+        {% endif %}">
+        {{ order_data.order.get_delivery_status_display }}
+    </span>
+</td>
+<td>
+    <span class="badge 
+        {% if order_data.order.paid_status == 'completed' %}bg-success
+        {% elif order_data.order.paid_status == 'pending' %}bg-info
+        {% elif order_data.order.paid_status == 'partially_paid' %}bg-warning
+        {% else %}bg-secondary
+        {% endif %}">
+        {{ order_data.order.get_paid_status_display }}
+    </span>
+</td>
+        <td>
+            <div class="d-flex gap-2" onclick="event.stopPropagation();">
+                <a href="{% url 'order_detail' order_data.order.id %}" class="btn btn-sm btn-info">
+                    <i class="ri-eye-line"></i> View
+                </a>
+                <a href="{% url 'edit_order' order_data.order.id %}" class="btn btn-sm btn-warning">
+                    <i class="ri-edit-line"></i> Edit
+                </a>
+                <a href="{% url 'delete_order' order_data.order.id %}" class="btn btn-sm btn-danger" onclick="return confirm('Delete this order?');">
+                    <i class="ri-delete-bin-line"></i> Delete
+                </a>
+            </div>
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
+
+<!-- Bootstrap Modal -->
+<div class="modal fade" id="orderModal" tabindex="-1" aria-labelledby="orderModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orderModalLabel">Order Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Order Number:</strong> <span id="modalOrderNumber"></span></p>
+                <p><strong>Customer:</strong> <span id="modalCustomerName"></span></p>
+                <p><strong>Store:</strong> <span id="modalStore"></span></p>
+                <p><strong>Order Date:</strong> <span id="modalOrderDate"></span></p>
+                <p><strong>Items:</strong> <span id="modalItems"></span></p>
+                <p><strong>Unit Prices:</strong> <span id="modalUnitPrices"></span></p>
+                <p><strong>Variances:</strong> <span id="modalVariances"></span></p>
+                <p><strong>VAT Variation:</strong> <span id="modalVatVariation"></span></p>
+                <p><strong>Prices with VAT:</strong> <span id="modalPricesWithVat"></span></p>
+                <p><strong>Total Amount:</strong> KES <span id="modalTotalAmount"></span></p>
+                <p><strong>Stock Status:</strong> <span id="modalStock"></span></p>
+                <p><strong>Delivery Status:</strong> <span id="modalDeliveryStatus"></span></p>
+                <p><strong>Paid Status:</strong> <span id="modalPaidStatus"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" id="modalOrderLink" class="btn btn-primary">View Full Details</a>
+            </div>
+        </div>
+    </div>
+</div>
+            
+
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DataTables Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.print.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.6/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.html5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+$(document).ready(function () {
+    const $table = $('#order-table');
+    if ($table.length) {
+        if ($.fn.DataTable.isDataTable($table)) {
+            $table.DataTable().destroy();
+        }
+        $table.DataTable({
+            dom: 'lfrtip', // Keeps length menu, search, table, info, and pagination; no buttons
+            scrollX: true,
+            scrollY: "500px",
+            scrollCollapse: true,
+            paging: true,
+            pageLength: 20,
+            lengthMenu: [[5, 50, 100, 200, -1], [5, 50, 100, 200, "All"]],
+            order: [[3, 'desc']], // Enables ordering, defaulting to Order Date descending
+            columnDefs: [
+                { targets: [4, 5, 6, 7, 8], orderable: false } // Disables ordering on specified columns
+            ]
+        });
+    } else {
+        console.error('Table #order-table not found in the DOM');
+    }
+});
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const orderRows = document.querySelectorAll('tr[data-bs-toggle="modal"]');
+    console.log('Total rows found:', orderRows.length); // Debug: Check if rows are detected
+
+    orderRows.forEach(row => {
+        row.addEventListener('click', function () {
+            console.log('Row clicked, processing data for row:', this); // Debug: Log the clicked row
+            const orderId = this.getAttribute('data-order-id');
+            const orderNumber = this.getAttribute('data-order-number');
+            const customerName = this.getAttribute('data-customer-name');
+            const store = this.getAttribute('data-store');
+            const orderDate = this.getAttribute('data-order-date');
+            let items = this.getAttribute('data-items').split(',').map(item => item.trim()).filter(item => item);
+            let unitPrices = this.getAttribute('data-unit-prices').split(',').map(price => price.trim()).filter(price => price);
+            let variances = this.getAttribute('data-variances').split(',').map(variance => variance.trim()).filter(variance => variance);
+            const vatVariation = this.getAttribute('data-vat-variation');
+            let pricesWithVat = this.getAttribute('data-prices-with-vat').split(',').map(price => price.trim()).filter(price => price);
+            const totalAmount = this.getAttribute('data-total-amount');
+            let stock = this.getAttribute('data-stock').split(',').map(status => status.trim()).filter(status => status);
+            const deliveryStatus = this.getAttribute('data-delivery-status');
+            const paidStatus = this.getAttribute('data-paid-status');
+
+            // Debug: Log all data
+            console.log('Data extracted:', {
+                orderId, orderNumber, customerName, store, orderDate, items, unitPrices, variances,
+                vatVariation, pricesWithVat, totalAmount, stock, deliveryStatus, paidStatus
+            });
+
+            // Fallback: Ensure arrays are not empty
+            if (items.length === 0) items = ['No items'];
+            if (unitPrices.length === 0) unitPrices = ['N/A'];
+            if (variances.length === 0) variances = ['N/A'];
+            if (pricesWithVat.length === 0) pricesWithVat = ['N/A'];
+            if (stock.length === 0) stock = ['N/A'];
+
+            // Format status badges
+            const capitalize = (str) => str.charAt(0).toUpperCase() + str.slice(1);
+            const deliveryStatusBadge = `<span class="badge ${deliveryStatus === 'completed' ? 'bg-success' : deliveryStatus === 'cancelled' ? 'bg-danger' : 'bg-warning'}">${capitalize(deliveryStatus)}</span>`;
+            const paidStatusBadge = `<span class="badge ${paidStatus === 'completed' ? 'bg-success' : 'bg-warning'}">${capitalize(paidStatus)}</span>`;
+
+            // Update modal content with fallback values
+            document.getElementById('modalOrderNumber').textContent = orderNumber || 'N/A';
+            document.getElementById('modalCustomerName').textContent = customerName || 'N/A';
+            document.getElementById('modalStore').textContent = store || 'N/A';
+            document.getElementById('modalOrderDate').textContent = orderDate || 'N/A';
+            document.getElementById('modalItems').textContent = items.join(', ') || 'N/A';
+            document.getElementById('modalUnitPrices').textContent = unitPrices.join(', ') || 'N/A';
+            document.getElementById('modalVariances').textContent = variances.join(', ') || 'N/A';
+            document.getElementById('modalVatVariation').textContent = vatVariation || 'N/A';
+            document.getElementById('modalPricesWithVat').textContent = pricesWithVat.join(', ') || 'N/A';
+            document.getElementById('modalTotalAmount').textContent = totalAmount || 'N/A';
+            document.getElementById('modalStock').textContent = stock.join(', ') || 'N/A';
+            document.getElementById('modalDeliveryStatus').innerHTML = deliveryStatusBadge || '<span class="badge bg-secondary">N/A</span>';
+            document.getElementById('modalPaidStatus').innerHTML = paidStatusBadge || '<span class="badge bg-secondary">N/A</span>';
+            document.getElementById('modalOrderLink').href = `/orders/${orderId || 0}/`; // Adjust URL pattern as needed
+
+            console.log('Modal content updated with:', {
+                orderNumber, customerName, store, orderDate, items, unitPrices, variances,
+                vatVariation, pricesWithVat, totalAmount, stock, deliveryStatus, paidStatus
+            });
+        });
+    });
+
+    // Manual test to check if modal elements exist
+    const modal = document.getElementById('orderModal');
+    if (modal) {
+        console.log('Modal element found:', modal);
+    } else {
+        console.error('Modal element not found!');
+    }
+});
+</script>
+{% endblock %}

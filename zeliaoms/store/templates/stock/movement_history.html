@@ -1,0 +1,126 @@
+{% extends "partials/base.html" %}
+{% load static %}
+
+{% block title %}Stock Movement History - Zelia{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h4 class="fw-bold mb-1">Stock Movement History</h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'stock_dashboard' %}">Stock</a></li>
+                <li class="breadcrumb-item active">Movement History</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label">Product</label>
+                <select name="product" class="form-select">
+                    <option value="">All Products</option>
+                    {% for product in products %}
+                    <option value="{{ product.id }}" {% if product_filter == product.id|stringformat:"s" %}selected{% endif %}>{{ product.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Store</label>
+                <select name="store" class="form-select">
+                    <option value="">All Stores</option>
+                    {% for key, name in stores %}
+                    <option value="{{ key }}" {% if store_filter == key %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Movement Type</label>
+                <select name="type" class="form-select">
+                    <option value="">All Types</option>
+                    {% for key, name in movement_types %}
+                    <option value="{{ key }}" {% if type_filter == key %}selected{% endif %}>{{ name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="ri-filter-line me-1"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Movement History Table -->
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Date/Time</th>
+                        <th>Product</th>
+                        <th>Store</th>
+                        <th>Type</th>
+                        <th class="text-center">Quantity</th>
+                        <th class="text-center">Before</th>
+                        <th class="text-center">After</th>
+                        <th>Reference</th>
+                        <th>By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for movement in movements %}
+                    <tr>
+                        <td class="text-muted">{{ movement.created_at|date:"M d, Y H:i" }}</td>
+                        <td class="fw-medium">{{ movement.product.name|truncatechars:25 }}</td>
+                        <td><span class="badge bg-secondary">{{ movement.get_store_display }}</span></td>
+                        <td>
+                            <span class="badge
+                                {% if movement.movement_type == 'in' %}bg-success
+                                {% elif movement.movement_type == 'out' %}bg-danger
+                                {% elif 'transfer' in movement.movement_type %}bg-info
+                                {% elif movement.movement_type == 'adjustment' %}bg-warning
+                                {% elif movement.movement_type == 'return' %}bg-primary
+                                {% else %}bg-secondary
+                                {% endif %}">
+                                {{ movement.get_movement_type_display }}
+                            </span>
+                        </td>
+                        <td class="text-center fw-bold {% if movement.quantity > 0 %}text-success{% else %}text-danger{% endif %}">
+                            {% if movement.quantity > 0 %}+{% endif %}{{ movement.quantity }}
+                        </td>
+                        <td class="text-center text-muted">{{ movement.previous_stock }}</td>
+                        <td class="text-center">{{ movement.new_stock }}</td>
+                        <td>
+                            {% if movement.reference_number %}
+                            <small>{{ movement.reference_number }}</small>
+                            {% elif movement.order %}
+                            <small>Order #{{ movement.order.id }}</small>
+                            {% elif movement.transfer %}
+                            <small>Transfer #{{ movement.transfer.id }}</small>
+                            {% else %}
+                            <small class="text-muted">-</small>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">{{ movement.recorded_by.username|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            <i class="ri-history-line fs-1"></i>
+                            <p class="mt-2 mb-0">No movements found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

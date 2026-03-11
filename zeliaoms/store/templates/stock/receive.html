@@ -1,0 +1,117 @@
+{% extends "partials/base.html" %}
+{% load static %}
+
+{% block title %}Receive Stock - Zelia{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h4 class="fw-bold mb-1">Receive Stock</h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'stock_dashboard' %}">Stock</a></li>
+                <li class="breadcrumb-item active">Receive</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-success bg-opacity-10 border-bottom">
+        <h5 class="mb-0"><i class="ri-inbox-archive-line me-2 text-success"></i>Receive New Stock</h5>
+    </div>
+    <div class="card-body">
+        <form method="post" id="receiveForm">
+            {% csrf_token %}
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label fw-medium">Receiving Store *</label>
+                    <select name="store" class="form-select" required>
+                        <option value="">Select store...</option>
+                        {% for key, name in stores %}
+                        <option value="{{ key }}">{{ name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-medium">Reference Number</label>
+                    <input type="text" name="reference" class="form-control" placeholder="PO number, delivery note, etc.">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-medium">Notes</label>
+                    <input type="text" name="notes" class="form-control" placeholder="Additional notes...">
+                </div>
+            </div>
+
+            <h6 class="fw-bold mb-3">Products to Receive</h6>
+            <div id="productsContainer">
+                <div class="row g-3 mb-3 product-row align-items-end">
+                    <div class="col-md-6">
+                        <label class="form-label">Product</label>
+                        <select name="product_ids[]" class="form-select product-select" required>
+                            <option value="">Select product...</option>
+                            {% for product in products %}
+                            <option value="{{ product.id }}">{{ product.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" name="quantities[]" class="form-control" min="1" required placeholder="Enter quantity">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="button" class="btn btn-outline-danger w-100 remove-row" disabled>
+                            <i class="ri-delete-bin-line"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" id="addProduct" class="btn btn-outline-success mb-4">
+                <i class="ri-add-line me-1"></i> Add Another Product
+            </button>
+
+            <div class="border-top pt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-success">
+                    <i class="ri-check-line me-1"></i> Receive Stock
+                </button>
+                <a href="{% url 'stock_dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('productsContainer');
+    const addBtn = document.getElementById('addProduct');
+
+    addBtn.addEventListener('click', function() {
+        const rows = container.querySelectorAll('.product-row');
+        const newRow = rows[0].cloneNode(true);
+        newRow.querySelectorAll('input').forEach(input => input.value = '');
+        newRow.querySelectorAll('select').forEach(select => select.value = '');
+        newRow.querySelector('.remove-row').disabled = false;
+        container.appendChild(newRow);
+        updateRemoveButtons();
+    });
+
+    container.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-row')) {
+            const row = e.target.closest('.product-row');
+            if (container.querySelectorAll('.product-row').length > 1) {
+                row.remove();
+                updateRemoveButtons();
+            }
+        }
+    });
+
+    function updateRemoveButtons() {
+        const rows = container.querySelectorAll('.product-row');
+        rows.forEach((row, index) => {
+            row.querySelector('.remove-row').disabled = rows.length === 1;
+        });
+    }
+});
+</script>
+{% endblock %}

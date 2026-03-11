@@ -1,0 +1,325 @@
+{% extends "partials/base.html" %}
+{% load static %}
+{% block content %}
+
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>
+    <title>Products Report - McDave Sales</title>
+    <link rel="icon" href="{% static 'assets/images/mcdave/logo.png' %}" type="image/x-icon">
+    <link id="style" href="{% static 'assets/libs/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <!--<link href="{% static 'assets/css/styles.min.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/css/icons.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/libs/node-waves/waves.min.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/libs/simplebar/simplebar.min.css' %}" rel="stylesheet">-->
+    
+    <style>
+        /* ── Page accent ─────────────────────────── */
+        :root { --accent: #0f766e; --accent-light: #e6faf8; --accent-mid: #14b8a6; }
+
+        .page-accent-bar {
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-mid) 60%, #67e8f9 100%);
+            border-radius: 2px;
+            margin-bottom: 28px;
+        }
+
+        /* ── Filter card ─────────────────────────── */
+        .filter-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid var(--accent);
+            border-radius: 10px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+        }
+        .filter-title {
+            font-size: 12px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.8px; color: var(--accent); margin-bottom: 14px;
+            display: flex; align-items: center; gap: 6px;
+        }
+
+        /* ── Stat grid ───────────────────────────── */
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
+        .stat-box {
+            background: white; border-radius: 10px; padding: 18px 16px;
+            border: 1px solid #e2e8f0; position: relative; overflow: hidden;
+            transition: box-shadow .2s, transform .2s;
+        }
+        .stat-box:hover { box-shadow: 0 6px 20px rgba(0,0,0,.07); transform: translateY(-2px); }
+        .stat-box::after {
+            content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+            height: 3px; border-radius: 0 0 10px 10px;
+        }
+        .stat-box.teal::after { background: var(--accent-mid); }
+        .stat-box.green::after { background: #22c55e; }
+        .stat-box.amber::after { background: #f59e0b; }
+        .stat-box.red::after { background: #ef4444; }
+        .stat-box.violet::after { background: #8b5cf6; }
+        .stat-box.sky::after { background: #38bdf8; }
+
+        .stat-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 10px; }
+        .stat-box.teal .stat-icon { background: var(--accent-light); color: var(--accent); }
+        .stat-box.green .stat-icon { background: #f0fdf4; color: #16a34a; }
+        .stat-box.amber .stat-icon { background: #fffbeb; color: #d97706; }
+        .stat-box.red .stat-icon { background: #fef2f2; color: #dc2626; }
+        .stat-box.violet .stat-icon { background: #f5f3ff; color: #7c3aed; }
+        .stat-box.sky .stat-icon { background: #f0f9ff; color: #0284c7; }
+        .stat-value { font-size: 22px; font-weight: 800; color: #1e293b; line-height: 1; margin-bottom: 4px; }
+        .stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+
+        /* ── Table wrapper ───────────────────────── */
+        .table-wrap { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+        .table-head-bar {
+            background: #f8fafc; padding: 14px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .table-head-bar h6 { margin: 0; font-weight: 700; color: #1e293b; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .rpt-table { margin: 0; }
+        .rpt-table thead th {
+            background: #f1f5f9; border-bottom: 2px solid #e2e8f0;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .5px; color: #475569; padding: 11px 14px; white-space: nowrap;
+        }
+        .rpt-table tbody td { padding: 11px 14px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+        .rpt-table tbody tr:last-child td { border-bottom: none; }
+        .rpt-table tbody tr:hover { background: #fafafa; }
+
+        /* ── Stock pill ──────────────────────────── */
+        .stk { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
+        .stk-good { background: #dcfce7; color: #15803d; }
+        .stk-low  { background: #fef9c3; color: #a16207; }
+        .stk-out  { background: #fee2e2; color: #b91c1c; }
+        .stk-dot { width: 6px; height: 6px; border-radius: 50%; }
+        .stk-good .stk-dot { background: #22c55e; }
+        .stk-low  .stk-dot { background: #eab308; }
+        .stk-out  .stk-dot { background: #ef4444; }
+
+        /* ── Status badge ────────────────────────── */
+        .s-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .s-available { background: #dcfce7; color: #15803d; }
+        .s-not_available { background: #fee2e2; color: #b91c1c; }
+        .s-limited { background: #fef9c3; color: #a16207; }
+        .s-offer { background: #e0f2fe; color: #0369a1; }
+
+        /* ── Product thumb ───────────────────────── */
+        .prod-thumb {
+            width: 42px; height: 42px; border-radius: 8px; border: 1px solid #e2e8f0;
+            object-fit: cover; background: #f8fafc; display: flex; align-items: center;
+            justify-content: center; color: #94a3b8; font-size: 18px; flex-shrink: 0;
+        }
+
+        .btn-xs { padding: 3px 9px; font-size: 12px; border-radius: 6px; }
+        .empty-state { text-align: center; padding: 56px 20px; color: #94a3b8; }
+        .empty-state i { font-size: 52px; opacity: .35; display: block; margin-bottom: 14px; }
+        .empty-state h5 { color: #64748b; }
+    </style>
+</head>
+<body>
+    <!-- Breadcrumb -->
+    <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+        <h1 class="page-title fw-semibold fs-18 mb-0">
+            <i class="ri-box-3-line me-2 text-teal"></i>Products Report
+        </h1>
+        <nav><ol class="breadcrumb mb-0">
+            {% if request.user.is_superuser %}
+            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+            {% else %}
+            <li class="breadcrumb-item"><a href="{% url 'salesperson_dashboard' %}">Dashboard</a></li>
+            {% endif %}
+            <li class="breadcrumb-item">Reports</li>
+            <li class="breadcrumb-item active">Products</li>
+        </ol></nav>
+    </div>
+
+    <div class="page-accent-bar"></div>
+
+    <!-- Filters -->
+    <div class="filter-card">
+        <div class="filter-title"><i class="ri-filter-3-line"></i> Filter Products</div>
+        <form method="GET">
+            <div class="row">
+                <div class="col-md-3 mb-2">
+                    <label class="form-label fw-semibold small">Category</label>
+                    <select name="category" class="form-select form-select-sm">
+                        <option value="">All Categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if request.GET.category == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="form-label fw-semibold small">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All Statuses</option>
+                        <option value="available" {% if request.GET.status == "available" %}selected{% endif %}>Available</option>
+                        <option value="limited" {% if request.GET.status == "limited" %}selected{% endif %}>Limited Deal</option>
+                        <option value="offer" {% if request.GET.status == "offer" %}selected{% endif %}>In Offer</option>
+                        <option value="not_available" {% if request.GET.status == "not_available" %}selected{% endif %}>Not Available</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="form-label fw-semibold small">Stock Level</label>
+                    <select name="stock_filter" class="form-select form-select-sm">
+                        <option value="">All Levels</option>
+                        <option value="out" {% if request.GET.stock_filter == "out" %}selected{% endif %}>Out of Stock</option>
+                        <option value="low" {% if request.GET.stock_filter == "low" %}selected{% endif %}>Low (&lt; 10)</option>
+                        <option value="good" {% if request.GET.stock_filter == "good" %}selected{% endif %}>Well Stocked</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label class="form-label fw-semibold small">Search</label>
+                    <input type="text" name="search" class="form-control form-control-sm"
+                           placeholder="Name or barcode…" value="{{ request.GET.search }}">
+                </div>
+                <div class="col-md-2 mb-2 d-flex align-items-end">
+                    <div class="d-flex gap-2 w-100">
+                        <button type="submit" class="btn btn-sm btn-primary flex-grow-1">
+                            <i class="ri-search-line me-1"></i>Filter
+                        </button>
+                        <a href="{% url 'product_report' %}" class="btn btn-sm btn-secondary">
+                            <i class="ri-refresh-line"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!--<div class="d-flex gap-2 mt-1">-->
+            <!--    <button type="submit" name="download" value="pdf" class="btn btn-sm btn-success">-->
+            <!--        <i class="ri-file-pdf-line me-1"></i>Export PDF-->
+            <!--    </button>-->
+            <!--    <button type="submit" name="download" value="excel" class="btn btn-sm btn-info text-white">-->
+            <!--        <i class="ri-file-excel-line me-1"></i>Export Excel-->
+            <!--    </button>-->
+            <!--</div>-->
+        </form>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-grid">
+        <div class="stat-box teal">
+            <div class="stat-icon"><i class="ri-box-3-line"></i></div>
+            <div class="stat-value">{{ stats.total }}</div>
+            <div class="stat-label">Total Products</div>
+        </div>
+        <div class="stat-box green">
+            <div class="stat-icon"><i class="ri-checkbox-circle-line"></i></div>
+            <div class="stat-value">{{ stats.available }}</div>
+            <div class="stat-label">Available</div>
+        </div>
+        <div class="stat-box amber">
+            <div class="stat-icon"><i class="ri-alert-line"></i></div>
+            <div class="stat-value">{{ stats.low_stock }}</div>
+            <div class="stat-label">Low Stock</div>
+        </div>
+        <div class="stat-box red">
+            <div class="stat-icon"><i class="ri-close-circle-line"></i></div>
+            <div class="stat-value">{{ stats.out_of_stock }}</div>
+            <div class="stat-label">Out of Stock</div>
+        </div>
+        <div class="stat-box violet">
+            <div class="stat-icon"><i class="ri-price-tag-3-line"></i></div>
+            <div class="stat-value">{{ stats.categories }}</div>
+            <div class="stat-label">Categories</div>
+        </div>
+        <div class="stat-box sky">
+            <div class="stat-icon"><i class="ri-store-line"></i></div>
+            <div class="stat-value">{{ stats.total_units }}</div>
+            <div class="stat-label">Units (McDave)</div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+        <div class="table-head-bar">
+            <h6><i class="ri-box-3-line" style="color:var(--accent)"></i> Inventory Report</h6>
+            <span class="badge bg-primary rounded-pill">{{ products|length }} items</span>
+        </div>
+        {% if products %}
+        <div class="table-responsive">
+            <table class="table rpt-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th class="text-end">Factory</th>
+                        <th class="text-end">Wholesale</th>
+                        <th class="text-end">Retail</th>
+                        <th class="text-center">McDave</th>
+                        <th class="text-center">Mombasa</th>
+                        <th class="text-center">Offshore</th>
+                        <th class="text-center">Total</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in products %}
+                    {% with total=p.mcdave_stock|add:p.kisii_stock|add:p.offshore_stock %}
+                    <tr>
+                        <td class="text-muted small">{{ forloop.counter }}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="prod-thumb">
+                                    {% if p.image %}<img src="{{ p.image.url }}" alt="" style="width:42px;height:42px;border-radius:8px;object-fit:cover;">
+                                    {% else %}<i class="ri-image-line"></i>{% endif %}
+                                </div>
+                                <div>
+                                    <div class="fw-semibold text-dark" style="font-size:13px;">{{ p.name }}</div>
+                                    {% if p.barcode %}<div class="text-muted" style="font-size:11px;"><i class="ri-barcode-line me-1"></i>{{ p.barcode }}</div>{% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge bg-light text-dark">{{ p.category.name }}</span></td>
+                        <td><span class="s-badge s-{{ p.status }}">{{ p.get_status_display }}</span></td>
+                        <td class="text-end">{{ p.factory_price|floatformat:0 }}</td>
+                        <td class="text-end">{{ p.wholesale_price|floatformat:0 }}</td>
+                        <td class="text-end">{{ p.retail_price|floatformat:0 }}</td>
+                        <td class="text-center">
+                            <span class="stk {% if p.mcdave_stock == 0 %}stk-out{% elif p.mcdave_stock < 10 %}stk-low{% else %}stk-good{% endif %}">
+                                <span class="stk-dot"></span>{{ p.mcdave_stock }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="stk {% if p.kisii_stock == 0 %}stk-out{% elif p.kisii_stock < 10 %}stk-low{% else %}stk-good{% endif %}">
+                                <span class="stk-dot"></span>{{ p.kisii_stock }}
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="stk {% if p.offshore_stock == 0 %}stk-out{% elif p.offshore_stock < 10 %}stk-low{% else %}stk-good{% endif %}">
+                                <span class="stk-dot"></span>{{ p.offshore_stock }}
+                            </span>
+                        </td>
+                        <td class="text-center fw-bold">{{ total }}</td>
+                        <td>
+                            <a href="{% url 'product_detail_sum' p.id %}" class="btn btn-primary btn-xs"><i class="ri-eye-line"></i></a>
+                            {% if request.user.is_superuser %}<a href="{% url 'productupdate' p.id %}" class="btn btn-warning btn-xs ms-1"><i class="ri-edit-line"></i></a>{% endif %}
+                        </td>
+                    </tr>
+                    {% endwith %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="ri-box-3-line"></i>
+            <h5>No Products Found</h5>
+            <p class="text-muted">Adjust your filters and try again.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!--<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+    <!--<script src="{% static 'assets/libs/bootstrap/js/bootstrap.bundle.min.js' %}"></script>-->
+    <!--<script src="{% static 'assets/js/defaultmenu.min.js' %}"></script>-->
+    <!--<script src="{% static 'assets/libs/node-waves/waves.min.js' %}"></script>-->
+    <!--<script src="{% static 'assets/js/sticky.js' %}"></script>-->
+    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/js/iziToast.min.js"></script>-->
+    <!--<script src="{% static 'assets/libs/simplebar/simplebar.min.js' %}"></script>-->
+    <!--<script src="{% static 'assets/js/custom.js' %}"></script>-->
+</body>
+</html>
+{% endblock %}

@@ -1,0 +1,765 @@
+{% extends "partials/base.html" %}
+{% load static %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="light" data-menu-styles="dark" data-toggled="close">
+<head>
+    <!-- Meta Data -->
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="Description" content="Bootstrap Responsive Admin Web Dashboard HTML5 Template">
+    <meta name="keywords" content="admin,admin dashboard,admin panel,admin template,bootstrap,clean,dashboard,flat,jquery,modern,responsive,premium admin templates,responsive admin,ui,ui kit.">
+
+    <!-- Favicon -->
+    <link rel="icon" href="{% static 'assets/images/mcdave/logo.png' %}" type="image/x-icon">
+
+    <!-- Choices JS -->
+    <script src="{% static 'assets/libs/choices.js/public/assets/scripts/choices.min.js' %}"></script>
+
+    <!-- Main Theme JS -->
+    <script src="{% static 'assets/js/main.js' %}"></script>
+
+    <!-- Bootstrap CSS -->
+    <link id="style" href="{% static 'assets/libs/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+
+    <!-- Style CSS -->
+    <link href="{% static 'assets/css/styles.min.css' %}" rel="stylesheet">
+
+    <!-- Icons CSS -->
+    <link href="{% static 'assets/css/icons.css' %}" rel="stylesheet">
+
+    <!-- Node Waves CSS -->
+    <link href="{% static 'assets/libs/node-waves/waves.min.css' %}" rel="stylesheet">
+
+    <!-- Simplebar CSS -->
+    <link href="{% static 'assets/libs/simplebar/simplebar.min.css' %}" rel="stylesheet">
+
+    <!-- Color Picker CSS -->
+    <link rel="stylesheet" href="{% static 'assets/libs/flatpickr/flatpickr.min.css' %}">
+    <link rel="stylesheet" href="{% static 'assets/libs/@simonwep/pickr/themes/nano.min.css' %}">
+
+    <!-- Choices CSS -->
+    <link rel="stylesheet" href="{% static 'assets/libs/choices.js/public/assets/styles/choices.min.css' %}">
+
+    <!-- Toast CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/css/iziToast.css" integrity="sha512-DIW4FkYTOxjCqRt7oS9BFO+nVOwDL4bzukDyDtMO7crjUZhwpyrWBFroq+IqRe6VnJkTpRAS6nhDvf0w+wHmxg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<style>
+    :root {
+        --primary-color: #4f46e5;
+        --primary-light: #818cf8;
+        --secondary-color: #6b7280;
+        --success-color: #10b981;
+        --warning-color: #f59e0b;
+        --danger-color: #ef4444;
+        --background-color: #f8fafc;
+        --card-background: #ffffff;
+        --text-primary: #1f2937;
+        --text-secondary: #6b7280;
+        --border-color: #e5e7eb;
+        --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background-color: var(--background-color);
+        color: var(--text-primary);
+        line-height: 1.6;
+        margin: 0;
+        padding: 0;
+    }
+
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 0 0 1rem 1rem;
+    }
+
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin: 0;
+        text-align: center;
+    }
+
+    .filter-section {
+        background: var(--card-background);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+    }
+
+    .filter-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        align-items: end;
+        justify-content: center;
+    }
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        min-width: 140px;
+    }
+
+    .form-group label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+        color: var(--text-primary);
+        font-size: 0.875rem;
+    }
+
+    .form-group input {
+        padding: 0.75rem;
+        border: 2px solid var(--border-color);
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        background: white;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-size: 0.875rem;
+    }
+
+    .btn-primary {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #3730a3;
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .btn-outline {
+        background: white;
+        color: var(--primary-color);
+        border: 2px solid var(--primary-color);
+    }
+
+    .btn-outline:hover {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .metric-card {
+        background: var(--card-background);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-lg);
+    }
+
+    .metric-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+
+    .metric-title {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        margin: 0;
+    }
+
+    .metric-icon {
+        width: 2.5rem;
+        height: 2.5rem;
+        border-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin: 0;
+    }
+
+    .metric-change {
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-top: 0.5rem;
+    }
+
+    .metric-change.positive {
+        color: var(--success-color);
+    }
+
+    .metric-change.negative {
+        color: var(--danger-color);
+    }
+
+    .section {
+        background: var(--card-background);
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+        border: 1px solid var(--border-color);
+    }
+
+    .section-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 1.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        border-radius: 0.5rem;
+        border: 1px solid var(--border-color);
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        margin: 0;
+    }
+
+    .table th {
+        background: #f8fafc;
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--text-primary);
+        border-bottom: 2px solid var(--border-color);
+        white-space: nowrap;
+    }
+
+    .table td {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-primary);
+    }
+
+    .table tbody tr:hover {
+        background: #f8fafc;
+    }
+
+    .table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .rank-badge {
+        background: var(--primary-color);
+        color: white;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.25rem 0.5rem;
+        border-radius: 1rem;
+        min-width: 1.5rem;
+        text-align: center;
+        display: inline-block;
+    }
+
+    .stock-level {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .stock-indicator {
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+    }
+
+    .stock-indicator.high {
+        background: var(--success-color);
+    }
+
+    .stock-indicator.medium {
+        background: var(--warning-color);
+    }
+
+    .stock-indicator.low {
+        background: var(--danger-color);
+    }
+
+    .customer-orders {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .order-tag {
+        background: #e0e7ff;
+        color: var(--primary-color);
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: var(--text-secondary);
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+    .login-prompt {
+        text-align: center;
+        padding: 3rem;
+        background: var(--card-background);
+        border-radius: 1rem;
+        box-shadow: var(--shadow);
+    }
+
+    .login-prompt a {
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .login-prompt a:hover {
+        text-decoration: underline;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .container {
+            padding: 0.5rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+        }
+
+        .filter-form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .form-group {
+            min-width: auto;
+        }
+
+        .metrics-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .metric-card {
+            padding: 1rem;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+        }
+
+        .section {
+            padding: 1rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.75rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .customer-orders {
+            flex-direction: column;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .page-title {
+            font-size: 1.75rem;
+        }
+
+        .metric-card {
+            padding: 0.75rem;
+        }
+
+        .section {
+            padding: 0.75rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.5rem 0.25rem;
+            font-size: 0.8rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+        }
+    }
+
+    /* Color variants for different metric types */
+    .metric-sales .metric-icon {
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success-color);
+    }
+
+    .metric-revenue .metric-icon {
+        background: rgba(245, 158, 11, 0.1);
+        color: var(--warning-color);
+    }
+
+    .metric-orders .metric-icon {
+        background: rgba(79, 70, 229, 0.1);
+        color: var(--primary-color);
+    }
+
+    .metric-pending .metric-icon {
+        background: rgba(239, 68, 68, 0.1);
+        color: var(--danger-color);
+    }
+</style>
+
+<body>
+    <div class="page-header">
+        <div class="container">
+            <h1 class="page-title">
+                <i class="fas fa-chart-line"></i>
+                Zelia Report
+            </h1>
+        </div>
+    </div>
+
+    <div class="container">
+        {% if user.is_authenticated %}
+            <!-- Date Filter Form -->
+            <div class="filter-section">
+                <form method="GET" action="{% url 'analytics_report' %}" class="filter-form">
+                    <div class="form-group">
+                        <label for="start_date">Start Date</label>
+                        <input type="date" id="start_date" name="start_date" value="{{ start_date }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="end_date">End Date</label>
+                        <input type="date" id="end_date" name="end_date" value="{{ end_date }}" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i>
+                        Filter
+                    </button>
+                    <a href="{% url 'analytics_report' %}?start_date={{ start_date }}&end_date={{ end_date }}&download_pdf=1" class="btn btn-outline">
+                        <i class="fas fa-download"></i>
+                        Download PDF
+                    </a>
+                    <a href="{% url 'analytics_report' %}?start_date={{ start_date }}&end_date={{ end_date }}&download_csv=1" class="btn btn-outline">
+                        <i class="fas fa-file-csv"></i>
+                        Download CSV
+                    </a>
+                    <a href="{% url 'analytics_report' %}?start_date={{ start_date }}&end_date={{ end_date }}&download_excel=1" class="btn btn-outline">
+                        <i class="fas fa-file-excel"></i>
+                        Download Excel
+                    </a>
+                </form>
+            </div>
+
+            <!-- Summary Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-card metric-sales">
+                    <div class="metric-header">
+                        <h3 class="metric-title">Total Sales</h3>
+                        <div class="metric-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                    </div>
+                    <p class="metric-value">{{ total_sales|floatformat:2 }}</p>
+                </div>
+
+                <div class="metric-card metric-revenue">
+                    <div class="metric-header">
+                        <h3 class="metric-title">Pending Revenue</h3>
+                        <div class="metric-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                    </div>
+                    <p class="metric-value">{{ pending_revenue|floatformat:2 }}</p>
+                </div>
+
+                <div class="metric-card metric-orders">
+                    <div class="metric-header">
+                        <h3 class="metric-title">Total Orders</h3>
+                        <div class="metric-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                    </div>
+                    <p class="metric-value">{{ total_orders }}</p>
+                </div>
+
+                <div class="metric-card metric-orders">
+                    <div class="metric-header">
+                        <h3 class="metric-title">Completed Orders</h3>
+                        <div class="metric-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                    <p class="metric-value">{{ completed_orders }}</p>
+                </div>
+
+                <div class="metric-card metric-pending">
+                    <div class="metric-header">
+                        <h3 class="metric-title">Pending Orders</h3>
+                        <div class="metric-icon">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                    </div>
+                    <p class="metric-value">{{ pending_orders }}</p>
+                </div>
+            </div>
+
+            <!-- Stock Levels -->
+            <!-- Stock Levels -->
+<div class="section">
+    <h2 class="section-title">
+        <i class="fas fa-boxes"></i>
+        Stock Levels
+    </h2>
+    {% if stock_levels %}
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>McDave Stock</th>
+                        <th>Mombasa Stock</th>
+                        <th>Offshore Stock</th>
+                        <th>Total Stock</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in stock_levels %}
+                    <tr>
+                        <td>{{ product.name }}</td>
+                        <td>{{ product.mcdave_stock|default:"0" }}</td>
+                        <td>{{ product.kisii_stock|default:"0" }}</td>
+                        <td>{{ product.offshore_stock|default:"0" }}</td>
+                        <td>{{ product.total_stock|default:"0" }}</td>
+                        <td>
+                            <div class="stock-level">
+                                {% if product.total_stock > 50 %}
+                                    <span class="stock-indicator high"></span>
+                                    <span>High</span>
+                                {% elif product.total_stock > 10 %}
+                                    <span class="stock-indicator medium"></span>
+                                    <span>Medium</span>
+                                {% else %}
+                                    <span class="stock-indicator low"></span>
+                                    <span>Low</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No stock data available for the selected period.</p>
+        </div>
+    {% endif %}
+</div>
+
+            <!-- Top Selling Products -->
+            <div class="section">
+                <h2 class="section-title">
+                    <i class="fas fa-trophy"></i>
+                    Top Selling Products
+                </h2>
+                {% if top_products %}
+                    <div class="table-container">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Product Name</th>
+                                    <th>Units Sold</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in top_products %}
+                                <tr>
+                                    <td>
+                                        <span class="rank-badge">{{ forloop.counter }}</span>
+                                    </td>
+                                    <td>{{ product.product__name }}</td>
+                                    <td>{{ product.total_units }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <i class="fas fa-chart-bar"></i>
+                        <p>No sales data available for the selected period.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Customer Buying Metrics -->
+            <!-- Customer Buying Metrics -->
+<div class="section">
+    <h2 class="section-title">
+        <i class="fas fa-users"></i>
+        Customer Buying Metrics
+    </h2>
+    {% if customers %}
+        <div class="table-container">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Customer Name</th>
+                        <th>Total Spent</th>
+                        <th>Order Count</th>
+                        <th>Order id</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in customers %}
+                    <tr>
+                        <td>{{ customer.get_full_name }}</td>
+                        <td>{{ customer.total_spent|floatformat:2|default:"0.00" }}</td>
+                        <td>{{ customer.order_count }}</td>
+                        <td>
+                            <div class="customer-orders">
+                                {% for order in customer.orders.all %}
+                                    <span class="order-tag">#Mc{{ order.id }}Z</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-user-times"></i>
+            <p>No customer data available for the selected period.</p>
+        </div>
+    {% endif %}
+</div>
+        {% else %}
+            <div class="login-prompt">
+                <i class="fas fa-lock fa-3x" style="color: var(--text-secondary); margin-bottom: 1rem;"></i>
+                <h2>Authentication Required</h2>
+                <p>Please <a href="{% url 'loginuser' %}">log in</a> to view the analytics report.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Popper JS -->
+    <script src="{% static 'assets/libs/@popperjs/core/umd/popper.min.js' %}"></script>
+
+    <!-- Bootstrap JS -->
+    <script src="{% static 'assets/libs/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+
+    <!-- Defaultmenu JS -->
+    <script src="{% static 'assets/js/defaultmenu.min.js' %}"></script>
+
+    <!-- Node Waves JS -->
+    <script src="{% static 'assets/libs/node-waves/waves.min.js' %}"></script>
+
+    <!-- Sticky JS -->
+    <script src="{% static 'assets/js/sticky.js' %}"></script>
+
+    <!-- Color Picker JS -->
+    <script src="{% static 'assets/libs/@simonwep/pickr/pickr.es5.min.js' %}"></script>
+
+    <!-- Apex Charts JS -->
+    <script src="{% static 'assets/libs/apexcharts/apexcharts.min.js' %}"></script>
+
+    <!-- Moment JS -->
+    <script src="{% static 'assets/libs/moment/moment.js' %}"></script>
+
+    <!-- Custom-Switcher JS -->
+    <script src="{% static 'assets/js/custom-switcher.min.js' %}"></script>
+
+    <!-- Toast JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/js/iziToast.min.js" integrity="sha512-Zq9o+E00xhhR/7vJ49mxFNJ0KQw1E1TMWkPTxrWcnpfEFDEXgUiwJHIKit93EW/XxE31HSI5GEOW06G6BF1AtA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+    <!-- Simplebar JS -->
+    <script src="{% static 'assets/libs/simplebar/simplebar.min.js' %}"></script>
+    <script src="{% static 'assets/js/simplebar.js' %}"></script>
+
+    <!-- Custom JS -->
+    <script src="{% static 'assets/js/custom.js' %}"></script>
+</body>
+</html>
+{% endblock content %}

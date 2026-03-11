@@ -1,0 +1,66 @@
+
+{% extends 'partials/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Quote #McQ{{ quote.id }}Z</h2>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    <div class="card">
+        <div class="card-body">
+            <p><strong>Customer:</strong> {{ quote.customer.get_full_name }}</p>
+            <p><strong>Sales Person:</strong> {{ quote.sales_person.get_full_name|default:quote.sales_person.username }}</p>
+            <p><strong>Quote Date:</strong> {{ quote.quote_date|date:"Y-m-d H:i" }}</p>
+            <p><strong>Expiry Date:</strong> {{ quote.expiry_date|date:"Y-m-d H:i"|default:"N/A" }}</p>
+            <p><strong>Status:</strong> {{ quote.get_status_display }}</p>
+            <p><strong>Customer Category:</strong> {{ quote.get_customer_category_display }}</p>
+            <p><strong>VAT Variation:</strong> {{ quote.get_vat_variation_display }}</p>
+            <p><strong>Total Amount:</strong> Ksh {{ quote.total_amount|floatformat:2 }}</p>
+            <p><strong>Notes:</strong> {{ quote.notes|default:"None" }}</p>
+            <h4>Quote Items</h4>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Unit Price</th>
+                        <th>Variance</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in quote.quote_items.all %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ item.product.name }}</td>
+                            <td>{{ item.quantity }}</td>
+                            <td>Ksh {{ item.unit_price|floatformat:2 }}</td>
+                            <td>Ksh {{ item.variance|floatformat:2 }}</td>
+                            <td>Ksh {{ item.line_total|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="mt-3">
+                <a href="{% url 'download_quote_pdf' quote.id %}" class="btn btn-primary">Download PDF</a>
+                {% if quote.status == 'draft' or quote.status == 'sent' %}
+                    <a href="{% url 'approve_quote' quote.id %}" class="btn btn-success">Approve Quote</a>
+                {% endif %}
+                {% if quote.status == 'approved' %}
+                    <a href="{% url 'convert_quote_to_order' quote.id %}" class="btn btn-primary">Convert to Order</a>
+                {% endif %}
+                <a href="{% url 'delete_quote' quote.id %}" class="btn btn-danger">Delete Quote</a>
+                <a href="{% url 'quote_list' %}" class="btn btn-secondary">Back to Quotes</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

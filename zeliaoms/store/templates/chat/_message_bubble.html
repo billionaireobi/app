@@ -1,0 +1,90 @@
+{% load static %}
+{# Renders a single InternalMessage bubble for server-side initial load #}
+{% if msg.message_type == 'feedback_alert' %}
+  <div class="msg-wrap other" data-msg-id="{{ msg.id }}">
+    <div class="msg-feedback">
+      <div style="font-size:.72rem;font-weight:700;opacity:.7;margin-bottom:2px;">
+        {{ msg.sender.get_full_name|default:msg.sender.username|default:"System" }}
+      </div>
+      📋 {{ msg.message }}
+      {% if msg.feedback %}
+        <br><a href="{% url 'feedback_detail' msg.feedback.pk %}" style="font-size:.75rem;color:#92400e;">View feedback →</a>
+      {% endif %}
+      <div class="msg-meta">{{ msg.created_at|date:"H:i" }}</div>
+    </div>
+  </div>
+{% elif msg.message_type == 'system' %}
+  <div class="msg-wrap other" data-msg-id="{{ msg.id }}">
+    <div class="msg-system">
+      ℹ️ {{ msg.message }}
+      <div class="msg-meta">{{ msg.created_at|date:"H:i" }}</div>
+    </div>
+  </div>
+{% elif msg.sender == current_user %}
+  <div class="msg-wrap mine" data-msg-id="{{ msg.id }}">
+    <div class="msg-bubble msg-mine">
+      {% if msg.recipient %}
+        <span class="badge bg-light text-dark border me-1" style="font-size:.65rem;">→ {{ msg.recipient.get_full_name|default:msg.recipient.username }}</span>
+      {% endif %}
+      {% if msg.attach_type == 'image' and msg.attachment %}
+        <img src="{{ msg.attachment.url }}" class="attach-image" onclick="openImg('{{ msg.attachment.url }}')" alt="photo">
+        {% if msg.message %}<div style="margin-top:4px;font-size:.8rem;">{{ msg.message }}</div>{% endif %}
+      {% elif msg.attach_type == 'file' and msg.attachment %}
+        <a href="{{ msg.attachment.url }}" target="_blank" class="attach-file">
+          <i class="bi bi-file-earmark-arrow-down-fill"></i>{{ msg.attachment_name|default:"file" }}
+        </a>
+        {% if msg.message %}<div style="margin-top:4px;font-size:.8rem;">{{ msg.message }}</div>{% endif %}
+      {% elif msg.attach_type == 'location' and msg.latitude %}
+        <a href="https://www.google.com/maps?q={{ msg.latitude }},{{ msg.longitude }}" target="_blank" class="attach-location">
+          <i class="bi bi-geo-alt-fill"></i>{{ msg.location_label|default:"Shared Location" }}
+        </a>
+      {% elif msg.attach_type == 'contact' %}
+        <div class="attach-contact">
+          <i class="bi bi-person-fill"></i>
+          <div>
+            <div class="fw-semibold">{{ msg.contact_name }}</div>
+            <a href="tel:{{ msg.contact_phone }}" style="color:inherit;text-decoration:none;font-size:.78rem;">{{ msg.contact_phone }}</a>
+          </div>
+        </div>
+      {% else %}
+        {{ msg.message }}
+      {% endif %}
+      <div class="msg-meta">{{ msg.created_at|date:"H:i" }}</div>
+    </div>
+  </div>
+{% else %}
+  <div class="msg-wrap other" data-msg-id="{{ msg.id }}">
+    <div class="msg-bubble msg-other">
+      <div style="font-size:.72rem;font-weight:700;opacity:.7;margin-bottom:2px;">
+        {{ msg.sender.get_full_name|default:msg.sender.username }}
+      </div>
+      {% if msg.recipient %}
+        <span class="badge bg-light text-dark border me-1" style="font-size:.65rem;">→ {{ msg.recipient.get_full_name|default:msg.recipient.username }}</span>
+      {% endif %}
+      {% if msg.attach_type == 'image' and msg.attachment %}
+        <img src="{{ msg.attachment.url }}" class="attach-image" onclick="openImg('{{ msg.attachment.url }}')" alt="photo">
+        {% if msg.message %}<div style="margin-top:4px;font-size:.8rem;">{{ msg.message }}</div>{% endif %}
+      {% elif msg.attach_type == 'file' and msg.attachment %}
+        <a href="{{ msg.attachment.url }}" target="_blank" class="attach-file">
+          <i class="bi bi-file-earmark-arrow-down-fill"></i>{{ msg.attachment_name|default:"file" }}
+        </a>
+        {% if msg.message %}<div style="margin-top:4px;font-size:.8rem;">{{ msg.message }}</div>{% endif %}
+      {% elif msg.attach_type == 'location' and msg.latitude %}
+        <a href="https://www.google.com/maps?q={{ msg.latitude }},{{ msg.longitude }}" target="_blank" class="attach-location">
+          <i class="bi bi-geo-alt-fill"></i>{{ msg.location_label|default:"Shared Location" }}
+        </a>
+      {% elif msg.attach_type == 'contact' %}
+        <div class="attach-contact">
+          <i class="bi bi-person-fill"></i>
+          <div>
+            <div class="fw-semibold">{{ msg.contact_name }}</div>
+            <a href="tel:{{ msg.contact_phone }}" style="color:inherit;text-decoration:none;font-size:.78rem;">{{ msg.contact_phone }}</a>
+          </div>
+        </div>
+      {% else %}
+        {{ msg.message }}
+      {% endif %}
+      <div class="msg-meta">{{ msg.created_at|date:"H:i" }}</div>
+    </div>
+  </div>
+{% endif %}

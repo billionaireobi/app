@@ -1,0 +1,613 @@
+{% extends "partials/base.html" %}
+{% load static %}
+
+{% block content %}
+<head>
+  <meta charset="UTF-8">
+  <title>Team Messages</title>
+  {% comment %} <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"> {% endcomment %}
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root { --primary:#6366f1; --surface:#fff; --bg:#e8ecf4; }
+    body  { background:var(--bg); }
+
+    .chat-shell {
+      display:flex; height:calc(100vh - 80px); max-height:800px;
+      background:#fff; border-radius:16px; box-shadow:0 4px 24px rgba(0,0,0,.1);
+      overflow:hidden;
+    }
+
+    /* Sidebar */
+    .chat-sidebar {
+      width:220px; flex-shrink:0; border-right:1px solid #e2e8f0;
+      background:#f8fafc; display:flex; flex-direction:column;
+    }
+    .chat-sidebar-header {
+      padding:14px 14px 10px; font-weight:700; font-size:.85rem;
+      text-transform:uppercase; letter-spacing:.05em; color:#64748b;
+      border-bottom:1px solid #e2e8f0;
+    }
+    .user-btn {
+      display:flex; align-items:center; gap:8px; padding:8px 14px;
+      cursor:pointer; border:none; background:none; width:100%; text-align:left;
+      font-size:.875rem; color:#374151; border-radius:0; transition:.15s;
+    }
+    .user-btn:hover, .user-btn.active { background:#ede9fe; color:#6366f1; }
+    .user-avatar {
+      width:32px; height:32px; border-radius:50%; background:#6366f1;
+      display:flex; align-items:center; justify-content:center;
+      color:#fff; font-size:.8rem; font-weight:700; flex-shrink:0;
+    }
+
+    /* Main panel */
+    .chat-main { flex:1; display:flex; flex-direction:column; min-width:0; }
+
+    .chat-header {
+      padding:14px 20px; border-bottom:1px solid #e2e8f0;
+      display:flex; align-items:center; gap:10px; background:#fff;
+    }
+    .chat-header h6 { margin:0; font-weight:700; }
+
+    .messages-area {
+      flex:1; overflow-y:auto; padding:16px 20px;
+      display:flex; flex-direction:column; gap:8px;
+      background:#f1f5f9;
+    }
+
+    .msg-bubble {
+      max-width:75%; padding:10px 14px; border-radius:14px;
+      font-size:.875rem; line-height:1.45; word-break:break-word;
+    }
+    .msg-mine  { background:#10b981; color:#fff; margin-left:auto; border-bottom-right-radius:4px; }
+    .msg-other { background:#334155; color:#f1f5f9; border-bottom-left-radius:4px; box-shadow:0 1px 4px rgba(0,0,0,.15); }
+    .msg-feedback { background:#fef3c7; color:#78350f; border-left:4px solid #f59e0b;
+                    border-radius:10px; max-width:90%; width:90%; padding:10px 14px; }
+    .msg-system   { background:#f0fdf4; color:#166534; border-left:4px solid #22c55e;
+                    border-radius:10px; max-width:90%; width:90%; padding:8px 14px; }
+
+    .msg-meta { font-size:.7rem; opacity:.65; margin-top:3px; }
+    .msg-wrap { display:flex; flex-direction:column; }
+    .msg-wrap.mine  { align-items:flex-end; }
+    .msg-wrap.other { align-items:flex-start; }
+
+    /* Attachment bubbles */
+    .attach-image { max-width:220px; max-height:180px; border-radius:10px; cursor:pointer; display:block; margin-top:4px; }
+    .attach-file  { display:inline-flex; align-items:center; gap:6px; padding:6px 10px;
+                    background:rgba(255,255,255,.2); border-radius:8px; text-decoration:none;
+                    color:inherit; font-size:.8rem; margin-top:4px; }
+    .attach-file:hover { background:rgba(255,255,255,.35); }
+    .attach-location { display:inline-flex; align-items:center; gap:6px; padding:6px 10px;
+                       background:rgba(255,255,255,.2); border-radius:8px; text-decoration:none;
+                       color:inherit; font-size:.82rem; margin-top:4px; }
+    .attach-location:hover { background:rgba(255,255,255,.35); }
+    .attach-contact { display:inline-flex; align-items:center; gap:6px; padding:6px 10px;
+                      background:rgba(255,255,255,.15); border-radius:8px; font-size:.82rem; margin-top:4px; }
+
+    /* Input area */
+    .chat-input-area {
+      padding:10px 16px 14px; border-top:1px solid #e2e8f0; background:#fff;
+    }
+    .input-toolbar { display:flex; align-items:center; gap:4px; margin-bottom:6px; }
+    .toolbar-btn {
+      width:34px; height:34px; border-radius:8px; border:1px solid #e2e8f0;
+      background:#f8fafc; color:#64748b; display:flex; align-items:center;
+      justify-content:center; cursor:pointer; transition:.15s; font-size:1rem;
+    }
+    .toolbar-btn:hover { background:#ede9fe; color:#6366f1; border-color:#6366f1; }
+    .toolbar-btn.active { background:#ede9fe; color:#6366f1; border-color:#6366f1; }
+
+    .input-row { display:flex; gap:8px; align-items:flex-end; }
+    .chat-input-area textarea {
+      flex:1; resize:none; border-radius:10px; border:1px solid #e2e8f0;
+      padding:10px 14px; font-size:.875rem; max-height:120px; transition:border-color .2s;
+    }
+    .chat-input-area textarea:focus { outline:none; border-color:var(--primary); }
+    .send-btn {
+      width:42px; height:42px; border-radius:50%; background:var(--primary);
+      border:none; color:#fff; display:flex; align-items:center; justify-content:center;
+      flex-shrink:0; transition:.2s; cursor:pointer;
+    }
+    .send-btn:hover { background:#4f46e5; }
+
+    /* Attachment panels */
+    .attach-panel { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;
+                    padding:10px 14px; margin-bottom:6px; display:none; }
+    .attach-panel.show { display:block; }
+
+    /* Camera preview */
+    #cam-preview { width:100%; max-height:200px; border-radius:8px; background:#000; display:none; }
+    #cam-canvas  { display:none; }
+
+    .recipient-select { border-radius:8px; font-size:.8rem; padding:4px 8px;
+      border:1px solid #e2e8f0; color:#374151; max-width:160px; }
+
+    @media(max-width:600px) {
+      .chat-sidebar { display:none; }
+    }
+  </style>
+</head>
+
+<div class="container-fluid py-3 px-3">
+  <div class="chat-shell">
+
+    <!-- ── SIDEBAR ─────────────────────────────── -->
+    <div class="chat-sidebar">
+      <div class="chat-sidebar-header">Team Members</div>
+      <div class="flex-grow-1 overflow-auto">
+        <button class="user-btn active" data-uid="" data-name="Everyone">
+          <div class="user-avatar" style="background:#10b981;">
+            <i class="bi bi-people-fill"></i>
+          </div>
+          <span>Everyone</span>
+        </button>
+        {% for u in users %}
+        <button class="user-btn" data-uid="{{ u.id }}" data-name="{{ u.get_full_name|default:u.username }}">
+          <div class="user-avatar">{{ u.first_name|first|upper }}{{ u.last_name|first|upper }}</div>
+          <span>{{ u.get_full_name|default:u.username }}</span>
+        </button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ── MAIN CHAT ───────────────────────────── -->
+    <div class="chat-main">
+
+      <div class="chat-header">
+        <div class="user-avatar" id="chat-avatar" style="background:#10b981;"><i class="bi bi-people-fill"></i></div>
+        <div>
+          <h6 id="chat-title">Team Chat — Everyone</h6>
+          <small class="text-muted" id="chat-subtitle">Messages visible to all team members</small>
+        </div>
+        <span id="unread-badge" class="badge bg-danger ms-auto" style="display:none;"></span>
+      </div>
+
+      <!-- Messages -->
+      <div class="messages-area" id="messages-area">
+        {% for msg in messages_list %}
+          {% include "chat/_message_bubble.html" with msg=msg current_user=current_user %}
+        {% endfor %}
+      </div>
+
+      <!-- Input area -->
+      <div class="chat-input-area">
+
+        <!-- Toolbar -->
+        <div class="input-toolbar">
+          <select class="recipient-select" id="recipient-select">
+            <option value="">To: Everyone</option>
+            {% for u in users %}
+            <option value="{{ u.id }}">To: {{ u.get_full_name|default:u.username }}</option>
+            {% endfor %}
+          </select>
+          <div class="ms-auto d-flex gap-1">
+            <button class="toolbar-btn" id="btn-file"    title="Send file/document"><i class="bi bi-paperclip"></i></button>
+            <button class="toolbar-btn" id="btn-image"   title="Send image"><i class="bi bi-image"></i></button>
+            <button class="toolbar-btn" id="btn-camera"  title="Take photo"><i class="bi bi-camera-fill"></i></button>
+            <button class="toolbar-btn" id="btn-location" title="Share location"><i class="bi bi-geo-alt-fill"></i></button>
+            <button class="toolbar-btn" id="btn-contact" title="Share contact"><i class="bi bi-person-badge-fill"></i></button>
+          </div>
+        </div>
+
+        <!-- File attach panel -->
+        <div class="attach-panel" id="panel-file">
+          <div class="small fw-semibold mb-2"><i class="bi bi-paperclip me-1"></i>Attach File / Document</div>
+          <input type="file" class="form-control form-control-sm mb-2" id="file-input"
+                 accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip">
+          <div id="file-preview" class="small text-muted"></div>
+          <button class="btn btn-primary btn-sm mt-2" id="file-send-btn">
+            <i class="bi bi-send me-1"></i>Send File
+          </button>
+        </div>
+
+        <!-- Image attach panel -->
+        <div class="attach-panel" id="panel-image">
+          <div class="small fw-semibold mb-2"><i class="bi bi-image me-1"></i>Send Image</div>
+          <input type="file" class="form-control form-control-sm mb-2" id="image-input"
+                 accept="image/*">
+          <div id="image-preview-wrap"></div>
+          <input class="form-control form-control-sm mt-2" id="image-caption" placeholder="Caption (optional)">
+          <button class="btn btn-primary btn-sm mt-2" id="image-send-btn">
+            <i class="bi bi-send me-1"></i>Send Image
+          </button>
+        </div>
+
+        <!-- Camera panel -->
+        <div class="attach-panel" id="panel-camera">
+          <div class="small fw-semibold mb-2"><i class="bi bi-camera-fill me-1"></i>Take Photo</div>
+          <video id="cam-preview" autoplay playsinline></video>
+          <canvas id="cam-canvas"></canvas>
+          <img id="cam-snap-preview" style="display:none;max-width:100%;border-radius:8px;" alt="">
+          <div class="d-flex gap-2 mt-2">
+            <button class="btn btn-outline-secondary btn-sm" id="cam-start-btn"><i class="bi bi-camera me-1"></i>Start Camera</button>
+            <button class="btn btn-success btn-sm" id="cam-snap-btn" style="display:none;"><i class="bi bi-camera-fill me-1"></i>Snap</button>
+            <button class="btn btn-warning btn-sm" id="cam-retake-btn" style="display:none;"><i class="bi bi-arrow-counterclockwise me-1"></i>Retake</button>
+            <button class="btn btn-primary btn-sm" id="cam-send-btn" style="display:none;"><i class="bi bi-send me-1"></i>Send Photo</button>
+          </div>
+        </div>
+
+        <!-- Location panel -->
+        <div class="attach-panel" id="panel-location">
+          <div class="small fw-semibold mb-2"><i class="bi bi-geo-alt-fill me-1"></i>Share Location</div>
+          <div id="loc-status" class="small text-muted mb-2"><i class="bi bi-hourglass-split me-1"></i>Getting your location…</div>
+          <input type="hidden" id="loc-lat">
+          <input type="hidden" id="loc-lng">
+          <input class="form-control form-control-sm mb-2" id="loc-label" placeholder="Location label (optional)">
+          <button class="btn btn-primary btn-sm" id="loc-send-btn" disabled>
+            <i class="bi bi-send me-1"></i>Send Location
+          </button>
+        </div>
+
+        <!-- Contact panel -->
+        <div class="attach-panel" id="panel-contact">
+          <div class="small fw-semibold mb-2"><i class="bi bi-person-badge-fill me-1"></i>Share Contact</div>
+          <input class="form-control form-control-sm mb-2" id="contact-name" placeholder="Full name *">
+          <input class="form-control form-control-sm mb-2" id="contact-phone" placeholder="Phone number *" type="tel">
+          <button class="btn btn-primary btn-sm" id="contact-send-btn">
+            <i class="bi bi-send me-1"></i>Send Contact
+          </button>
+        </div>
+
+        <!-- Text input row -->
+        <div class="input-row">
+          <textarea id="chat-msg-input" rows="2" placeholder="Type a message… (Enter to send, Shift+Enter for new line)"></textarea>
+          <button class="send-btn" id="send-btn" title="Send">
+            <i class="bi bi-send-fill"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox modal for images -->
+<div class="modal fade" id="img-modal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content bg-dark border-0">
+      <div class="modal-body p-2 text-center">
+        <img id="img-modal-src" src="" class="img-fluid rounded" alt="">
+      </div>
+    </div>
+  </div>
+</div>
+
+{% comment %} <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script> {% endcomment %}
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<script>
+const ME_ID   = {{ current_user.id }};
+const ME_NAME = '{{ current_user.get_full_name|default:current_user.username|escapejs }}';
+let lastTs    = {{ last_ts|default:0 }};
+let pollTimer = null;
+let camStream = null;
+let snapBlob  = null;
+
+// ── Helpers ───────────────────────────────────────────────────────
+function escapeHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function scrollBottom() {
+  const area = document.getElementById('messages-area');
+  area.scrollTop = area.scrollHeight;
+}
+function getRecipient() { return document.getElementById('recipient-select').value; }
+function csrfToken()    { return '{{ csrf_token }}'; }
+
+// ── Render rich bubble ────────────────────────────────────────────
+function renderBubble(msg) {
+  const isMine     = msg.sender_id === ME_ID;
+  const isFeedback = msg.message_type === 'feedback_alert';
+  const isSystem   = msg.message_type === 'system';
+
+  let bubbleClass, wrapClass;
+  if (isFeedback)    { bubbleClass = 'msg-feedback'; wrapClass = 'other'; }
+  else if (isSystem) { bubbleClass = 'msg-system';   wrapClass = 'other'; }
+  else if (isMine)   { bubbleClass = 'msg-mine';     wrapClass = 'mine';  }
+  else               { bubbleClass = 'msg-other';    wrapClass = 'other'; }
+
+  const icon  = isFeedback ? '📋 ' : isSystem ? 'ℹ️ ' : '';
+  const toTag = (!msg.is_broadcast && msg.recipient)
+    ? `<span class="badge bg-light text-dark border me-1" style="font-size:.65rem;">→ ${escapeHtml(msg.recipient)}</span>`
+    : '';
+  const senderTag = !isMine && !isFeedback && !isSystem
+    ? `<div style="font-size:.72rem;font-weight:700;opacity:.7;margin-bottom:2px;">${escapeHtml(msg.sender)}</div>` : '';
+
+  let body = '';
+  const at = msg.attach_type || 'text';
+
+  if (at === 'image' && msg.attachment_url) {
+    body = `<img src="${escapeHtml(msg.attachment_url)}" class="attach-image"
+                 onclick="openImg('${escapeHtml(msg.attachment_url)}')" alt="photo">`;
+    if (msg.message) body += `<div style="margin-top:4px;font-size:.8rem;">${escapeHtml(msg.message)}</div>`;
+  } else if (at === 'file' && msg.attachment_url) {
+    const fname = escapeHtml(msg.attachment_name || 'file');
+    body = `<a href="${escapeHtml(msg.attachment_url)}" target="_blank" class="attach-file">
+              <i class="bi bi-file-earmark-arrow-down-fill"></i>${fname}
+            </a>`;
+    if (msg.message) body += `<div style="margin-top:4px;font-size:.8rem;">${escapeHtml(msg.message)}</div>`;
+  } else if (at === 'location' && msg.latitude) {
+    const label = msg.location_label || `${msg.latitude}, ${msg.longitude}`;
+    const mapsUrl = `https://www.google.com/maps?q=${msg.latitude},${msg.longitude}`;
+    body = `<a href="${mapsUrl}" target="_blank" class="attach-location">
+              <i class="bi bi-geo-alt-fill"></i>${escapeHtml(label)}
+            </a>`;
+  } else if (at === 'contact') {
+    body = `<div class="attach-contact">
+              <i class="bi bi-person-fill"></i>
+              <div>
+                <div class="fw-semibold">${escapeHtml(msg.contact_name)}</div>
+                <a href="tel:${escapeHtml(msg.contact_phone)}" style="color:inherit;text-decoration:none;font-size:.78rem;">${escapeHtml(msg.contact_phone)}</a>
+              </div>
+            </div>`;
+  } else {
+    body = icon + escapeHtml(msg.message);
+  }
+
+  return `
+    <div class="msg-wrap ${wrapClass}" data-msg-id="${msg.id}">
+      <div class="${bubbleClass}">
+        ${senderTag}${toTag}${body}
+        <div class="msg-meta">${msg.created_at}</div>
+      </div>
+    </div>`;
+}
+
+function appendMessage(msg) {
+  const area = document.getElementById('messages-area');
+  area.insertAdjacentHTML('beforeend', renderBubble(msg));
+  if (msg.created_ts) lastTs = Math.max(lastTs, msg.created_ts);
+  scrollBottom();
+}
+
+// ── Send text ─────────────────────────────────────────────────────
+function sendMessage() {
+  const text = document.getElementById('chat-msg-input').value.trim();
+  if (!text) return;
+  const fd = new FormData();
+  fd.append('attach_type', 'text');
+  fd.append('message', text);
+  fd.append('recipient', getRecipient());
+  fd.append('csrfmiddlewaretoken', csrfToken());
+  fetch('{% url "send_internal_message" %}', { method:'POST', body:fd })
+    .then(r=>r.json()).then(data => {
+      document.getElementById('chat-msg-input').value = '';
+      appendMessage(data);
+    }).catch(() => alert('Failed to send message.'));
+}
+
+// ── Generic file/image send ───────────────────────────────────────
+function sendAttachment(attachType, fileOrBlob, filename, extraFields) {
+  const fd = new FormData();
+  fd.append('attach_type', attachType);
+  fd.append('attachment', fileOrBlob, filename || 'upload');
+  fd.append('recipient', getRecipient());
+  fd.append('csrfmiddlewaretoken', csrfToken());
+  for (const [k, v] of Object.entries(extraFields || {})) fd.append(k, v);
+  fetch('{% url "send_internal_message" %}', { method:'POST', body:fd })
+    .then(r=>r.json()).then(data => {
+      closeAllPanels();
+      appendMessage(data);
+    }).catch(() => alert('Upload failed.'));
+}
+
+// ── Toolbar toggle ────────────────────────────────────────────────
+const panels = { file:'panel-file', image:'panel-image', camera:'panel-camera',
+                 location:'panel-location', contact:'panel-contact' };
+function closeAllPanels() {
+  Object.values(panels).forEach(id => document.getElementById(id).classList.remove('show'));
+  document.querySelectorAll('.toolbar-btn').forEach(b => b.classList.remove('active'));
+  stopCamera();
+}
+function togglePanel(key, btnId) {
+  const panel = document.getElementById(panels[key]);
+  const alreadyOpen = panel.classList.contains('show');
+  closeAllPanels();
+  if (!alreadyOpen) {
+    panel.classList.add('show');
+    document.getElementById(btnId).classList.add('active');
+    if (key === 'location') startLocation();
+    if (key === 'camera')   {} // user clicks "Start Camera"
+  }
+}
+
+document.getElementById('btn-file').addEventListener('click',     () => togglePanel('file',     'btn-file'));
+document.getElementById('btn-image').addEventListener('click',    () => togglePanel('image',    'btn-image'));
+document.getElementById('btn-camera').addEventListener('click',   () => togglePanel('camera',   'btn-camera'));
+document.getElementById('btn-location').addEventListener('click', () => togglePanel('location', 'btn-location'));
+document.getElementById('btn-contact').addEventListener('click',  () => togglePanel('contact',  'btn-contact'));
+
+// ── File send ─────────────────────────────────────────────────────
+document.getElementById('file-input').addEventListener('change', function() {
+  const f = this.files[0];
+  document.getElementById('file-preview').textContent = f ? `Selected: ${f.name} (${(f.size/1024).toFixed(1)} KB)` : '';
+});
+document.getElementById('file-send-btn').addEventListener('click', function() {
+  const f = document.getElementById('file-input').files[0];
+  if (!f) { alert('Choose a file first.'); return; }
+  sendAttachment('file', f, f.name, {});
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-preview').textContent = '';
+});
+
+// ── Image send ────────────────────────────────────────────────────
+document.getElementById('image-input').addEventListener('change', function() {
+  const f = this.files[0];
+  if (!f) return;
+  const wrap = document.getElementById('image-preview-wrap');
+  const url = URL.createObjectURL(f);
+  wrap.innerHTML = `<img src="${url}" style="max-width:100%;max-height:140px;border-radius:8px;">`;
+});
+document.getElementById('image-send-btn').addEventListener('click', function() {
+  const f = document.getElementById('image-input').files[0];
+  if (!f) { alert('Choose an image first.'); return; }
+  const caption = document.getElementById('image-caption').value.trim();
+  sendAttachment('image', f, f.name, { message: caption });
+  document.getElementById('image-input').value = '';
+  document.getElementById('image-preview-wrap').innerHTML = '';
+  document.getElementById('image-caption').value = '';
+});
+
+// ── Camera ────────────────────────────────────────────────────────
+function stopCamera() {
+  if (camStream) { camStream.getTracks().forEach(t => t.stop()); camStream = null; }
+  const vid = document.getElementById('cam-preview');
+  vid.style.display = 'none'; vid.srcObject = null;
+  document.getElementById('cam-snap-btn').style.display = 'none';
+  document.getElementById('cam-retake-btn').style.display = 'none';
+  document.getElementById('cam-send-btn').style.display = 'none';
+  document.getElementById('cam-snap-preview').style.display = 'none';
+  snapBlob = null;
+}
+document.getElementById('cam-start-btn').addEventListener('click', async function() {
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment' }, audio:false });
+    const vid = document.getElementById('cam-preview');
+    vid.srcObject = camStream;
+    vid.style.display = 'block';
+    document.getElementById('cam-snap-btn').style.display = '';
+    document.getElementById('cam-snap-preview').style.display = 'none';
+    snapBlob = null;
+  } catch(e) { alert('Camera not available: ' + e.message); }
+});
+document.getElementById('cam-snap-btn').addEventListener('click', function() {
+  const vid = document.getElementById('cam-preview');
+  const canvas = document.getElementById('cam-canvas');
+  canvas.width  = vid.videoWidth;
+  canvas.height = vid.videoHeight;
+  canvas.getContext('2d').drawImage(vid, 0, 0);
+  canvas.toBlob(blob => {
+    snapBlob = blob;
+    const url = URL.createObjectURL(blob);
+    const prev = document.getElementById('cam-snap-preview');
+    prev.src = url; prev.style.display = 'block';
+    vid.style.display = 'none';
+    stopCamera();
+    document.getElementById('cam-retake-btn').style.display = '';
+    document.getElementById('cam-send-btn').style.display = '';
+    document.getElementById('cam-snap-btn').style.display = 'none';
+  }, 'image/jpeg', 0.85);
+});
+document.getElementById('cam-retake-btn').addEventListener('click', function() {
+  document.getElementById('cam-snap-preview').style.display = 'none';
+  document.getElementById('cam-retake-btn').style.display = 'none';
+  document.getElementById('cam-send-btn').style.display = 'none';
+  document.getElementById('cam-start-btn').click();
+});
+document.getElementById('cam-send-btn').addEventListener('click', function() {
+  if (!snapBlob) { alert('Take a photo first.'); return; }
+  sendAttachment('image', snapBlob, 'photo.jpg', {});
+  snapBlob = null;
+});
+
+// ── Location ──────────────────────────────────────────────────────
+function startLocation() {
+  const status = document.getElementById('loc-status');
+  const btn    = document.getElementById('loc-send-btn');
+  status.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Getting your location…';
+  btn.disabled = true;
+  if (!navigator.geolocation) {
+    status.innerHTML = '<i class="bi bi-exclamation-triangle text-warning me-1"></i>Geolocation not supported.';
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      document.getElementById('loc-lat').value = pos.coords.latitude;
+      document.getElementById('loc-lng').value = pos.coords.longitude;
+      status.innerHTML = `<i class="bi bi-geo-alt-fill text-success me-1"></i>
+        ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+      btn.disabled = false;
+      // Reverse geocode
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`)
+        .then(r=>r.json()).then(d => {
+          if (d.display_name && !document.getElementById('loc-label').value) {
+            document.getElementById('loc-label').value = d.display_name.split(',').slice(0,3).join(', ');
+          }
+        }).catch(()=>{});
+    },
+    function() {
+      status.innerHTML = '<i class="bi bi-exclamation-triangle text-warning me-1"></i>GPS unavailable.';
+    },
+    { timeout:10000, enableHighAccuracy:true }
+  );
+}
+document.getElementById('loc-send-btn').addEventListener('click', function() {
+  const lat   = document.getElementById('loc-lat').value;
+  const lng   = document.getElementById('loc-lng').value;
+  const label = document.getElementById('loc-label').value.trim();
+  if (!lat) { alert('Location not captured yet.'); return; }
+  const fd = new FormData();
+  fd.append('attach_type', 'location');
+  fd.append('latitude', lat);
+  fd.append('longitude', lng);
+  fd.append('location_label', label);
+  fd.append('recipient', getRecipient());
+  fd.append('csrfmiddlewaretoken', csrfToken());
+  fetch('{% url "send_internal_message" %}', { method:'POST', body:fd })
+    .then(r=>r.json()).then(data => { closeAllPanels(); appendMessage(data); })
+    .catch(() => alert('Failed to send location.'));
+});
+
+// ── Contact ───────────────────────────────────────────────────────
+document.getElementById('contact-send-btn').addEventListener('click', function() {
+  const name  = document.getElementById('contact-name').value.trim();
+  const phone = document.getElementById('contact-phone').value.trim();
+  if (!name || !phone) { alert('Enter both name and phone.'); return; }
+  const fd = new FormData();
+  fd.append('attach_type', 'contact');
+  fd.append('contact_name', name);
+  fd.append('contact_phone', phone);
+  fd.append('recipient', getRecipient());
+  fd.append('csrfmiddlewaretoken', csrfToken());
+  fetch('{% url "send_internal_message" %}', { method:'POST', body:fd })
+    .then(r=>r.json()).then(data => {
+      closeAllPanels();
+      document.getElementById('contact-name').value = '';
+      document.getElementById('contact-phone').value = '';
+      appendMessage(data);
+    }).catch(() => alert('Failed to send contact.'));
+});
+
+// ── Polling ───────────────────────────────────────────────────────
+function poll() {
+  $.get('{% url "poll_messages" %}', { since: lastTs }, function(data) {
+    data.messages.forEach(msg => {
+      if (!document.querySelector(`[data-msg-id="${msg.id}"]`)) appendMessage(msg);
+      if (msg.created_ts) lastTs = Math.max(lastTs, msg.created_ts);
+    });
+    const badge = document.getElementById('unread-badge');
+    if (data.unread_count > 0) { badge.textContent = data.unread_count; badge.style.display = ''; }
+    else badge.style.display = 'none';
+  });
+}
+
+// ── Image lightbox ────────────────────────────────────────────────
+function openImg(url) {
+  document.getElementById('img-modal-src').src = url;
+  new bootstrap.Modal(document.getElementById('img-modal')).show();
+}
+
+// ── Send on Enter ─────────────────────────────────────────────────
+document.getElementById('send-btn').addEventListener('click', sendMessage);
+document.getElementById('chat-msg-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+});
+
+// ── Sidebar user selection ────────────────────────────────────────
+document.querySelectorAll('.user-btn').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.user-btn').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    const name = this.dataset.name;
+    document.getElementById('chat-title').textContent = name === 'Everyone' ? 'Team Chat — Everyone' : `Chat with ${name}`;
+    document.getElementById('recipient-select').value = this.dataset.uid;
+  });
+});
+
+// ── Init ──────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  scrollBottom();
+  lastTs = lastTs || (Date.now() / 1000);
+  pollTimer = setInterval(poll, 5000);
+});
+</script>
+{% endblock %}

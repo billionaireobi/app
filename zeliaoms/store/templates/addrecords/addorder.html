@@ -1,0 +1,1602 @@
+{% load static %}
+{% load widget_tweaks %}
+
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Order</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --primary-glow: rgba(99, 102, 241, 0.1);
+            --secondary: #64748b;
+            --success: #10b981;
+            --success-dark: #059669;
+            --danger: #ef4444;
+            --danger-dark: #dc2626;
+            --warning: #f59e0b;
+
+            /* Soft eye-friendly page background */
+            --bg-page: #e8ecf4;
+            --bg-page-start: #dfe6f0;
+            --bg-page-end: #e8ecf4;
+
+            /* Card backgrounds - keeping original white */
+            --bg-card: #ffffff;
+            --bg-card-hover: #f8fafc;
+            --bg-input: #ffffff;
+            --bg-secondary: #f1f5f9;
+            --border-color: #e2e8f0;
+            --border-light: #cbd5e1;
+
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+            --radius-sm: 0.375rem;
+            --radius: 0.75rem;
+            --radius-lg: 1rem;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-page-start) 0%, var(--bg-page-end) 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: var(--text-primary);
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Subtle background pattern for visual interest */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image:
+                radial-gradient(circle at 20% 30%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .page-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Page Header */
+        .page-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .page-header h1 i {
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+
+        .page-header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin: 0;
+        }
+
+        /* Step Progress Indicator */
+        .step-progress {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0;
+            margin-bottom: 2.5rem;
+            padding: 0 1rem;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .step-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid var(--border-color);
+            background: var(--bg-card);
+            color: var(--text-muted);
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .step-circle i {
+            font-size: 1.1rem;
+        }
+
+        .step-item.active .step-circle {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-color: var(--primary);
+            color: white;
+            box-shadow: 0 0 20px var(--primary-glow), var(--shadow);
+            transform: scale(1.1);
+        }
+
+        .step-item.completed .step-circle {
+            background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+            border-color: var(--success);
+            color: white;
+        }
+
+        .step-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            display: none;
+        }
+
+        .step-item.active .step-label {
+            color: var(--primary);
+        }
+
+        .step-item.completed .step-label {
+            color: var(--success);
+        }
+
+        .step-connector {
+            width: 60px;
+            height: 3px;
+            background: var(--border-color);
+            margin: 0 0.5rem;
+            border-radius: 2px;
+            transition: all 0.4s ease;
+        }
+
+        .step-connector.completed {
+            background: linear-gradient(90deg, var(--success) 0%, var(--primary) 100%);
+        }
+
+        @media (min-width: 640px) {
+            .step-label {
+                display: block;
+            }
+            .step-connector {
+                width: 80px;
+            }
+        }
+
+        /* Wizard Step Content */
+        .wizard-step {
+            display: none;
+            animation: fadeSlideIn 0.4s ease-out;
+        }
+
+        .wizard-step.active {
+            display: block;
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Modern Card Styles - WHITE BACKGROUNDS */
+        .modern-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modern-card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .card-header-modern {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 1.25rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-header-modern.success {
+            background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+        }
+
+        .card-header-modern.secondary {
+            background: linear-gradient(135deg, var(--secondary) 0%, #475569 100%);
+        }
+
+        .card-header-modern h5 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 1.05rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-header-modern h5 i {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .card-body-modern {
+            padding: 1.5rem;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .form-label i {
+            color: var(--primary);
+            font-size: 0.875rem;
+        }
+
+        .form-control, .form-select {
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 0.75rem 1rem;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .form-control:hover, .form-select:hover {
+            border-color: var(--primary-light);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+            outline: none;
+        }
+
+        .form-control::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-control[readonly] {
+            background-color: var(--bg-secondary);
+            color: var(--text-secondary);
+        }
+
+        /* Select2 Styling */
+        .select2-container .select2-selection--single {
+            height: 48px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 0.5rem 0.75rem;
+            transition: all 0.2s ease;
+        }
+
+        .select2-container--default .select2-selection--single:hover {
+            border-color: var(--primary-light);
+        }
+
+        .select2-container--default.select2-container--focus .select2-selection--single {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 30px;
+            color: var(--text-primary);
+            padding-left: 0;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 46px;
+            right: 10px;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__placeholder {
+            color: var(--text-muted);
+        }
+
+        .select2-dropdown {
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: var(--primary);
+        }
+
+        .select2-container {
+            width: 100% !important;
+        }
+
+        /* Order Item Cards */
+        .order-item-form {
+            background: linear-gradient(135deg, #fafbfc 0%, #f8fafc 100%);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .order-item-form:hover {
+            border-color: var(--primary-light);
+            box-shadow: var(--shadow);
+        }
+
+        .order-item-form::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, var(--primary) 0%, var(--primary-light) 100%);
+            border-radius: var(--radius) 0 0 var(--radius);
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .item-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 0.375rem 0.875rem;
+            border-radius: 2rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Buttons */
+        .btn {
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            padding: 0.75rem 1.5rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px var(--primary-glow);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-outline {
+            background: var(--bg-card);
+            border: 2px solid var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg-secondary);
+            border-color: var(--text-secondary);
+            color: var(--text-primary);
+        }
+
+        .btn-outline-danger {
+            background: transparent;
+            color: var(--danger);
+            border: 2px solid var(--danger);
+        }
+
+        .btn-outline-danger:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-add-item {
+            background: linear-gradient(135deg, var(--success) 0%, var(--success-dark) 100%);
+            color: white;
+            padding: 0.625rem 1.25rem;
+            font-size: 0.9rem;
+        }
+
+        /* No Items Message */
+        .no-items-message {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: var(--text-muted);
+        }
+
+        .no-items-message i {
+            font-size: 3.5rem;
+            color: var(--border-color);
+            margin-bottom: 1rem;
+        }
+
+        .no-items-message h6 {
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Summary Table */
+        .summary-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .summary-table thead th {
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.875rem 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .summary-table tbody td {
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .summary-table tbody tr:hover {
+            background-color: var(--bg-secondary);
+        }
+
+        .summary-table tfoot td {
+            padding: 1rem;
+            font-weight: 600;
+            background: var(--bg-secondary);
+        }
+
+        .summary-table tfoot tr:first-child td {
+            border-top: 2px solid var(--border-color);
+        }
+
+        .summary-row-highlight {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+        }
+
+        .summary-row-total {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%) !important;
+            font-size: 1.1rem;
+        }
+
+        .summary-row-total td {
+            border: none !important;
+            color: white !important;
+            background: transparent !important;
+        }
+
+        /* Step Navigation */
+        .step-navigation {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem 0;
+            margin-top: 1rem;
+        }
+
+        .btn-nav {
+            min-width: 140px;
+        }
+
+        /* Error States */
+        .is-invalid {
+            border-color: var(--danger) !important;
+        }
+
+        .is-invalid:focus {
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1) !important;
+        }
+
+        .invalid-feedback {
+            display: none;
+            color: var(--danger);
+            font-size: 0.8rem;
+            margin-top: 0.375rem;
+            font-weight: 500;
+        }
+
+        .is-invalid ~ .invalid-feedback {
+            display: block;
+        }
+
+        #form-errors {
+            background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+            border: 1px solid #fecaca;
+            border-radius: var(--radius);
+            padding: 1rem 1.25rem;
+            margin-top: 1rem;
+            color: var(--danger);
+        }
+
+        #form-errors:empty {
+            display: none;
+        }
+
+        /* Loading Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .loading-pulse {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        /* Review Section Styling */
+        .review-section {
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .review-section h6 {
+            color: var(--primary);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .review-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .review-row:last-child {
+            border-bottom: none;
+        }
+
+        .review-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .review-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .page-container {
+                padding: 1rem;
+            }
+
+            .page-header h1 {
+                font-size: 1.25rem;
+            }
+
+            .card-body-modern {
+                padding: 1rem;
+            }
+
+            .order-item-form {
+                padding: 1rem;
+            }
+
+            .step-navigation {
+                flex-direction: column;
+            }
+
+            .step-navigation .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .item-header {
+                flex-direction: column;
+                gap: 0.75rem;
+                align-items: flex-start;
+            }
+
+            .step-circle {
+                width: 38px;
+                height: 38px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Success Animation */
+        @keyframes checkmark {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .step-item.completed .step-circle i {
+            animation: checkmark 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1><i class="bi bi-cart-plus"></i> Create New Order</h1>
+            <p>Follow the steps below to create your order</p>
+        </div>
+
+        <!-- Step Progress Indicator -->
+        <div class="step-progress">
+            <div class="step-item active" data-step="1">
+                <div class="step-circle"><i class="bi bi-person"></i></div>
+                <span class="step-label">Customer</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step-item" data-step="2">
+                <div class="step-circle"><i class="bi bi-box-seam"></i></div>
+                <span class="step-label">Products</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step-item" data-step="3">
+                <div class="step-circle"><i class="bi bi-check2-circle"></i></div>
+                <span class="step-label">Review</span>
+            </div>
+        </div>
+
+        <form id="order-form" method="post" action="{% url 'create_order' %}" novalidate>
+            {% csrf_token %}
+
+            <!-- STEP 1: Customer & Order Details -->
+            <div class="wizard-step active" id="step-1">
+                <div class="modern-card">
+                    <div class="card-header-modern">
+                        <h5><i class="bi bi-clipboard-data"></i> Order Details</h5>
+                    </div>
+                    <div class="card-body-modern">
+                        <div class="row g-4">
+                            {% for field in form %}
+                            <div class="col-12 col-md-6">
+                                <div class="form-group">
+                                    <label for="{{ field.id_for_label }}" class="form-label">
+                                        {% if field.name == 'customer' %}<i class="bi bi-person"></i>
+                                        {% elif field.name == 'store' %}<i class="bi bi-shop"></i>
+                                        {% elif field.name == 'customer_category' %}<i class="bi bi-tag"></i>
+                                        {% elif field.name == 'vat_variation' %}<i class="bi bi-percent"></i>
+                                        {% elif field.name == 'address' %}<i class="bi bi-geo-alt"></i>
+                                        {% elif field.name == 'phone' %}<i class="bi bi-telephone"></i>
+                                        {% elif field.name == 'paid_status' %}<i class="bi bi-credit-card"></i>
+                                        {% elif field.name == 'delivery_status' %}<i class="bi bi-truck"></i>
+                                        {% elif field.name == 'order_date' %}<i class="bi bi-calendar3"></i>
+                                        {% elif field.name == 'delivery_fee' %}<i class="bi bi-currency-dollar"></i>
+                                        {% endif %}
+                                        {{ field.label }}
+                                    </label>
+                                    {% if field.name == 'customer' %}
+                                        {{ field|add_class:"form-control customer-select" }}
+                                    {% elif field.name in 'customer_category,vat_variation,store' %}
+                                        {{ field|add_class:"form-control trigger-update" }}
+                                    {% elif field.name == 'address' %}
+                                        <input type="text" id="{{ field.id_for_label }}" name="{{ field.html_name }}" class="form-control" readonly value="{{ field.value|default:'' }}">
+                                    {% else %}
+                                        {{ field|add_class:"form-control" }}
+                                    {% endif %}
+                                    {% if field.errors %}
+                                        <div class="invalid-feedback" style="display: block;">{{ field.errors }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step-navigation">
+                    <a href="{% url 'order_list' %}" class="btn btn-outline btn-nav">
+                        <i class="bi bi-x-lg"></i> Cancel
+                    </a>
+                    <button type="button" class="btn btn-primary btn-nav next-step" data-next="2">
+                        Next: Add Products <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 2: Order Items -->
+            <div class="wizard-step" id="step-2">
+                <div class="modern-card">
+                    <div class="card-header-modern secondary">
+                        <h5><i class="bi bi-box-seam"></i> Order Items</h5>
+                    </div>
+                    <div class="card-body-modern">
+                        {{ formset.management_form }}
+                        <div id="order-items-container">
+                            <!-- Items will be added dynamically via JavaScript -->
+                        </div>
+                        <div id="no-items-message" class="no-items-message">
+                            <i class="bi bi-cart-x"></i>
+                            <h6>No Items Added Yet</h6>
+                            <p>Click the button below to start adding products to this order.</p>
+                        </div>
+                        <div class="text-center mt-3">
+                            <button type="button" id="add-item" class="btn btn-add-item">
+                                <i class="bi bi-plus-lg"></i> Add Product
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hidden template for new item rows -->
+                <script type="text/template" id="item-row-template">
+                    <div class="order-item-form order-item-row">
+                        <div class="item-header">
+                            <span class="item-badge">
+                                <i class="bi bi-box"></i>
+                                Item #<span class="item-number">1</span>
+                            </span>
+                            <div>
+                                <input type="checkbox" name="order_items-__prefix__-DELETE" class="d-none delete-checkbox">
+                                <button type="button" class="btn btn-outline-danger btn-sm delete-item" title="Remove Item">
+                                    <i class="bi bi-trash3"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label"><i class="bi bi-search"></i> Product</label>
+                                <select name="order_items-__prefix__-product" class="form-select product-select">
+                                    <option value="">Search for a product...</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a product.</div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label"><i class="bi bi-123"></i> Quantity</label>
+                                <input type="number" name="order_items-__prefix__-quantity" class="form-control quantity-input" min="1" value="1">
+                                <div class="invalid-feedback">Enter valid quantity.</div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label"><i class="bi bi-tag"></i> Unit Price</label>
+                                <input type="number" name="order_items-__prefix__-unit_price" class="form-control unit-price" readonly step="0.01" value="0.00">
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label"><i class="bi bi-plus-slash-minus"></i> Variance</label>
+                                <input type="number" name="order_items-__prefix__-variance" class="form-control variance-input" min="-50" max="50" step="0.01" value="0.00" placeholder="±50">
+                                <div class="invalid-feedback">Range: -50 to 50</div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <label class="form-label"><i class="bi bi-calculator"></i> Line Total</label>
+                                <input type="number" name="order_items-__prefix__-line_total" class="form-control line-total" readonly step="0.01" value="0.00">
+                            </div>
+                        </div>
+                    </div>
+                </script>
+
+                <div class="step-navigation">
+                    <button type="button" class="btn btn-outline btn-nav prev-step" data-prev="1">
+                        <i class="bi bi-arrow-left"></i> Back
+                    </button>
+                    <button type="button" class="btn btn-primary btn-nav next-step" data-next="3">
+                        Next: Review Order <i class="bi bi-arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 3: Review & Confirm -->
+            <div class="wizard-step" id="step-3">
+                <div class="modern-card">
+                    <div class="card-header-modern success">
+                        <h5><i class="bi bi-receipt"></i> Order Review</h5>
+                    </div>
+                    <div class="card-body-modern">
+                        <!-- Customer Review Section -->
+                        <div class="review-section">
+                            <h6><i class="bi bi-person"></i> Customer Information</h6>
+                            <div class="review-row">
+                                <span class="review-label">Customer</span>
+                                <span class="review-value" id="review-customer">-</span>
+                            </div>
+                            <div class="review-row">
+                                <span class="review-label">Category</span>
+                                <span class="review-value" id="review-category">-</span>
+                            </div>
+                            <div class="review-row">
+                                <span class="review-label">Store</span>
+                                <span class="review-value" id="review-store">-</span>
+                            </div>
+                            <div class="review-row">
+                                <span class="review-label">Address</span>
+                                <span class="review-value" id="review-address">-</span>
+                            </div>
+                            <div class="review-row">
+                                <span class="review-label">GPS Coordinates</span>
+                                <span class="review-value"><a id="review-coordinates" href="#" target="_blank" style="color:#10b981; text-decoration:none;">📍 View on Map</a></span>
+                            </div>
+                        </div>
+
+                        <!-- Items Summary -->
+                        <div class="table-responsive">
+                            <table class="summary-table" id="order-summary-table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Qty</th>
+                                        <th>Var</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="summary-items">
+                                    <!-- Dynamically populated -->
+                                </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td colspan="3"><i class="bi bi-boxes me-2"></i>Total Items</td>
+                                        <td id="total-items">0</td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3"><i class="bi bi-calculator me-2"></i>Items Subtotal</td>
+                                        <td id="items-subtotal">KES 0.00</td>
+                                    </tr>
+                                    <tr class="summary-row-highlight">
+                                        <td colspan="3"><i class="bi bi-truck me-2"></i>Delivery Fee</td>
+                                        <td id="delivery-fee-display">KES 0.00</td>
+                                    </tr>
+                                    <tr class="summary-row-total">
+                                        <td colspan="3"><i class="bi bi-wallet2 me-2"></i>Grand Total</td>
+                                        <td id="total-cost">KES 0.00</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── PAYMENT SECTION ──────────────────────────── -->
+                <div class="modern-card mt-3">
+                  <div class="card-header-modern" style="background:linear-gradient(135deg,#10b981,#059669);">
+                    <h5><i class="bi bi-cash-coin"></i> Payment at Collection</h5>
+                  </div>
+                  <div class="card-body-modern">
+                    <div class="row g-3 align-items-end">
+                      <div class="col-12">
+                        <label class="form-label fw-semibold">Payment Method</label>
+                        <div class="d-flex gap-3 flex-wrap">
+                          <label class="d-flex align-items-center gap-2" style="cursor:pointer;">
+                            <input type="radio" name="pay_method" value="none" checked
+                              onchange="togglePayAmt(this)" class="form-check-input mt-0">
+                            <span>Pay later</span>
+                          </label>
+                          <label class="d-flex align-items-center gap-2" style="cursor:pointer;">
+                            <input type="radio" name="pay_method" value="cash"
+                              onchange="togglePayAmt(this)" class="form-check-input mt-0">
+                            <i class="bi bi-cash-stack text-success"></i><span>Cash</span>
+                          </label>
+                          <label class="d-flex align-items-center gap-2" style="cursor:pointer;">
+                            <input type="radio" name="pay_method" value="mpesa"
+                              onchange="togglePayAmt(this)" class="form-check-input mt-0">
+                            <i class="bi bi-phone-fill text-success"></i><span>M-Pesa</span>
+                          </label>
+                          <label class="d-flex align-items-center gap-2" style="cursor:pointer;">
+                            <input type="radio" name="pay_method" value="buni"
+                              onchange="togglePayAmt(this)" class="form-check-input mt-0">
+                            <i class="bi bi-bank text-info"></i><span>Buni (KCB)</span>
+                          </label>
+                        </div>
+                      </div>
+                      <div class="col-md-6" id="pay-amount-wrap" style="display:none;">
+                        <label class="form-label fw-semibold">Amount Paid (KSh)</label>
+                        <input type="number" name="pay_amount" id="pay_amount_input"
+                          class="form-control" min="0" step="0.01" placeholder="0.00">
+                        <div class="form-text text-muted">Leave 0 for full payment later. Partial amounts auto-set status to "Partially Paid".</div>
+                      </div>
+                      <div class="col-md-6" id="pay-phone-wrap" style="display:none;">
+                        <label class="form-label fw-semibold">M-Pesa Phone Number</label>
+                        <input type="tel" name="pay_phone" id="pay_phone_input"
+                          class="form-control" placeholder="07xxxxxxxx">
+                        <div class="form-text text-muted">STK Push will be sent after order is created.</div>
+                      </div>
+                    </div>
+                    <!-- Summary row -->
+                    <div id="pay-summary-row" class="mt-3 p-2 rounded" style="background:#f0fdf4;border:1px solid #bbf7d0;display:none;font-size:.85rem;">
+                      <i class="bi bi-check-circle-fill text-success me-1"></i>
+                      <span id="pay-summary-text"></span>
+                    </div>
+                  </div>
+                </div>
+
+                <input type="hidden" name="pay_method_hidden" id="pay_method_hidden" value="none">
+
+                <div id="form-errors" role="alert"></div>
+
+                <!-- ── Live Location (auto-captured) ─────────────── -->
+                <input type="hidden" name="latitude"  id="order_latitude">
+                <input type="hidden" name="longitude" id="order_longitude">
+                <input type="hidden" name="location_address" id="order_location_address">
+
+                <div id="geo-status-bar" class="d-flex align-items-center gap-2 mb-3 p-2 rounded"
+                     style="background:#f0fdf4;border:1px solid #bbf7d0;font-size:.83rem;display:none!important;">
+                  <i class="bi bi-geo-alt-fill text-success"></i>
+                  <span id="geo-status-text">Acquiring your location…</span>
+                </div>
+
+                <div class="step-navigation">
+                    <button type="button" class="btn btn-outline btn-nav prev-step" data-prev="2">
+                        <i class="bi bi-arrow-left"></i> Back
+                    </button>
+                    <button type="submit" class="btn btn-success btn-nav" id="submit-button">
+                        <span class="spinner-border spinner-border-sm d-none" id="loading-spinner" role="status"></span>
+                        <i class="bi bi-check2-circle" id="submit-icon"></i>
+                        <span id="button-text">Create Order</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+    $(document).ready(function() {
+        var currentStep = 1;
+        var totalSteps = 3;
+
+        // Helper: Round to nearest whole number
+        function roundPrice(price) {
+            var decimal = price % 1;
+            return decimal >= 0.5 ? Math.ceil(price) : Math.floor(price);
+        }
+
+        // Step Navigation
+        function goToStep(step) {
+            if (step < 1 || step > totalSteps) return;
+
+            // Validate before moving forward
+            if (step > currentStep && !validateCurrentStep()) {
+                return;
+            }
+
+            // Update step indicators
+            $('.step-item').each(function() {
+                var stepNum = $(this).data('step');
+                $(this).removeClass('active completed');
+                if (stepNum < step) {
+                    $(this).addClass('completed');
+                } else if (stepNum === step) {
+                    $(this).addClass('active');
+                }
+            });
+
+            // Update connectors
+            $('.step-connector').each(function(index) {
+                if (index < step - 1) {
+                    $(this).addClass('completed');
+                } else {
+                    $(this).removeClass('completed');
+                }
+            });
+
+            // Show/hide step content
+            $('.wizard-step').removeClass('active');
+            $('#step-' + step).addClass('active');
+
+            // Update review section when entering step 3
+            if (step === 3) {
+                updateReviewSection();
+                updateOrderSummary();
+            }
+
+            currentStep = step;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Validate current step before proceeding
+        function validateCurrentStep() {
+            if (currentStep === 1) {
+                var isValid = true;
+                ['#id_customer', '#id_store', '#id_customer_category'].forEach(function(sel) {
+                    var $el = $(sel);
+                    if (!$el.val()) {
+                        $el.addClass('is-invalid');
+                        isValid = false;
+                    } else {
+                        $el.removeClass('is-invalid');
+                    }
+                });
+                return isValid;
+            }
+            if (currentStep === 2) {
+                var hasValidItem = false;
+                // Check ALL items, not just visible (since step might be hidden)
+                $('.order-item-row').each(function() {
+                    var $row = $(this);
+                    var product = $row.find('.product-select').val();
+                    var qty = parseFloat($row.find('.quantity-input').val()) || 0;
+                    var isDeleted = $row.find('.delete-checkbox').is(':checked');
+                    var isHidden = $row.css('display') === 'none';
+                    if (!isDeleted && !isHidden && product && qty > 0) {
+                        hasValidItem = true;
+                    }
+                });
+                if (!hasValidItem) {
+                    alert('Please add at least one product to continue.');
+                    return false;
+                }
+                return true;
+            }
+            return true;
+        }
+
+        // Update review section
+        function updateReviewSection() {
+            $('#review-customer').text($('#id_customer option:selected').text() || '-');
+            $('#review-category').text($('#id_customer_category option:selected').text() || '-');
+            $('#review-store').text($('#id_store option:selected').text() || '-');
+            $('#review-address').text($('#id_address').val() || '-');
+            
+            // Update Google Maps link with coordinates
+            const lat = $('#order_latitude').val();
+            const lng = $('#order_longitude').val();
+            if (lat && lng) {
+                const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+                const coordText = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)} (View on Map)`;
+                $('#review-coordinates').attr('href', mapsUrl).text(coordText);
+            } else {
+                $('#review-coordinates').attr('href', '#').text('⏳ Acquiring GPS coordinates...');
+            }
+        }
+
+        // Navigation button clicks
+        $(document).on('click', '.next-step', function() {
+            var nextStep = $(this).data('next');
+            goToStep(nextStep);
+        });
+
+        $(document).on('click', '.prev-step', function() {
+            var prevStep = $(this).data('prev');
+            goToStep(prevStep);
+        });
+
+        // Step indicator click
+        $('.step-item').click(function() {
+            var targetStep = $(this).data('step');
+            if (targetStep < currentStep) {
+                goToStep(targetStep);
+            }
+        });
+
+        // Initialize Select2 for customer
+        $('#id_customer').select2({
+            placeholder: "Search for a customer...",
+            allowClear: true,
+            minimumInputLength: 2,
+            ajax: {
+                url: '{% url "search_customers" %}',
+                dataType: 'json',
+                delay: 250,
+                data: function(params) { return { q: params.term }; },
+                processResults: function(data) { return { results: data.results }; },
+                cache: true
+            }
+        }).on('select2:select', function(e) {
+            var data = e.params.data;
+            if (data.id) {
+                $('#id_customer_category').val(data.default_category || '');
+                // DO NOT populate address from stored customer data - let live GPS capture it
+                // $('#id_address').val(data.address || '');
+                $('#id_phone').val(data.phone_number || '');
+                $('#id_customer_category').trigger('change');
+                // Trigger GPS update after customer selection
+                setTimeout(captureOrderLocation, 500);
+            }
+            $(this).removeClass('is-invalid');
+        }).on('select2:clear', function() {
+            $('#id_customer_category').val('');
+            $('#id_address').val('');
+            $('#id_phone').val('');
+            resetAllItems();
+        });
+
+        function resetAllItems() {
+            $('.order-item-row').each(function() {
+                $(this).find('.unit-price').val('0.00');
+                $(this).find('.variance-input').val('0.00');
+                $(this).find('.line-total').val('0.00');
+            });
+            updateOrderSummary();
+        }
+
+        // Initialize product Select2
+        function initializeProductSelect(row) {
+            var productSelect = row.find('.product-select');
+            if (productSelect.hasClass('select2-hidden-accessible')) {
+                productSelect.select2('destroy');
+            }
+
+            productSelect.select2({
+                placeholder: "Search for a product...",
+                allowClear: true,
+                minimumInputLength: 2,
+                width: '100%',
+                ajax: {
+                    url: '{% url "search_products" %}',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            q: params.term,
+                            category: $('#id_customer_category').val() || '',
+                            vat: $('#id_vat_variation').val() || '',
+                            store: $('#id_store').val() || ''
+                        };
+                    },
+                    processResults: function(data) { return { results: data.results }; },
+                    cache: true
+                }
+            }).on('select2:select', function(e) {
+                $(this).attr('data-product-name', e.params.data.text).removeClass('is-invalid');
+                updateProductPrice($(this).closest('.order-item-row'));
+            }).on('select2:clear', function() {
+                $(this).removeAttr('data-product-name').removeClass('is-invalid');
+                var row = $(this).closest('.order-item-row');
+                row.find('.unit-price').val('0.00');
+                row.find('.variance-input').val('0.00');
+                row.find('.line-total').val('0.00');
+                updateLineTotal(row);
+                updateOrderSummary();
+            });
+        }
+
+        $('.product-select').each(function() {
+            initializeProductSelect($(this).closest('.order-item-row'));
+        });
+
+        function updateProductPrice(row) {
+            var productId = row.find('.product-select').val();
+            var category = $('#id_customer_category').val();
+            var vat = $('#id_vat_variation').val();
+            var store = $('#id_store').val();
+
+            if (productId && category && store) {
+                $.ajax({
+                    url: '{% url "get_product_price" %}',
+                    data: { product_id: productId, customer_category: category, vat: vat, store: store },
+                    success: function(data) {
+                        if (data.price !== undefined) {
+                            var roundedPrice = roundPrice(parseFloat(data.price));
+                            row.find('.unit-price').val(roundedPrice);
+                            updateLineTotal(row);
+                            updateOrderSummary();
+                        } else {
+                            row.find('.unit-price').val('0.00');
+                        }
+                    },
+                    error: function() {
+                        row.find('.unit-price').val('0.00');
+                    }
+                });
+            } else {
+                row.find('.unit-price').val('0.00');
+            }
+        }
+
+        function updateLineTotal(row) {
+            var quantity = parseFloat(row.find('.quantity-input').val()) || 0;
+            var unitPrice = parseFloat(row.find('.unit-price').val()) || 0;
+            var variance = parseFloat(row.find('.variance-input').val()) || 0;
+            var lineTotal = quantity * (unitPrice + variance);
+            row.find('.line-total').val(lineTotal.toFixed(2));
+        }
+
+        // FIXED: Check all items, not just visible ones
+        function updateOrderSummary() {
+            var totalItems = 0;
+            var totalCost = 0;
+            var summaryItems = {};
+
+            $('.order-item-row').each(function() {
+                var $row = $(this);
+                var productSelect = $row.find('.product-select');
+                var productId = productSelect.val();
+                var productName = productSelect.attr('data-product-name') || productSelect.find('option:selected').text() || 'Unknown';
+                var quantity = parseFloat($row.find('.quantity-input').val()) || 0;
+                var unitPrice = parseFloat($row.find('.unit-price').val()) || 0;
+                var variance = parseFloat($row.find('.variance-input').val()) || 0;
+                var deleteChecked = $row.find('.delete-checkbox').is(':checked');
+                var isHidden = $row.css('display') === 'none';
+
+                if (productId && !deleteChecked && !isHidden && quantity > 0) {
+                    var lineTotal = quantity * (unitPrice + variance);
+                    if (summaryItems[productId]) {
+                        summaryItems[productId].quantity += quantity;
+                        summaryItems[productId].totalPrice += lineTotal;
+                    } else {
+                        summaryItems[productId] = { name: productName, quantity: quantity, totalPrice: lineTotal, variance: variance };
+                    }
+                    totalItems += quantity;
+                    totalCost += lineTotal;
+                }
+            });
+
+            $('#summary-items').empty();
+            for (var id in summaryItems) {
+                var item = summaryItems[id];
+                var formattedPrice = item.totalPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                $('#summary-items').append(
+                    `<tr>
+                        <td><strong>${item.name}</strong></td>
+                        <td>${item.quantity}</td>
+                        <td>${item.variance >= 0 ? '+' : ''}${item.variance.toFixed(2)}</td>
+                        <td>KES ${formattedPrice}</td>
+                    </tr>`
+                );
+            }
+
+            var deliveryFee = parseFloat($('#id_delivery_fee').val()) || 0;
+            var grandTotal = totalCost + deliveryFee;
+
+            $('#total-items').text(totalItems);
+            $('#items-subtotal').text('KES ' + totalCost.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+            $('#delivery-fee-display').text('KES ' + deliveryFee.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+            $('#total-cost').text('KES ' + grandTotal.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","));
+        }
+
+        $(document).on('input change', '#id_delivery_fee', function() {
+            updateOrderSummary();
+        });
+
+        $(document).on('select2:select change', '.product-select, .trigger-update', function() {
+            var row = $(this).closest('.order-item-row');
+            if ($(this).hasClass('trigger-update')) {
+                $(this).removeClass('is-invalid');
+                $('.order-item-row').each(function() { updateProductPrice($(this)); });
+            } else {
+                updateProductPrice(row);
+            }
+        });
+
+        $(document).on('input change blur', '.quantity-input, .variance-input', function() {
+            var row = $(this).closest('.order-item-row');
+            var $input = $(this);
+            var value = $input.val();
+
+            if ($input.hasClass('variance-input')) {
+                var num = parseFloat(value);
+                if (isNaN(num)) {
+                    $input.val('0.00');
+                } else {
+                    num = Math.max(-50, Math.min(50, num));
+                    $input.val(num.toFixed(2));
+                }
+            }
+
+            $input.removeClass('is-invalid');
+            updateLineTotal(row);
+            updateOrderSummary();
+        });
+
+        function toggleNoItemsMessage() {
+            var visibleItems = 0;
+            $('.order-item-row').each(function() {
+                if ($(this).css('display') !== 'none') {
+                    visibleItems++;
+                }
+            });
+            if (visibleItems === 0) {
+                $('#no-items-message').show();
+            } else {
+                $('#no-items-message').hide();
+            }
+        }
+
+        $('#add-item').click(function() {
+            var formIdx = parseInt($('#id_order_items-TOTAL_FORMS').val()) || 0;
+            var templateHtml = $('#item-row-template').html();
+            templateHtml = templateHtml.replace(/__prefix__/g, formIdx);
+
+            var $newRow = $(templateHtml);
+            $newRow.find('input, select').each(function() {
+                var $el = $(this);
+                var name = $el.attr('name');
+                if (name) {
+                    $el.attr('id', 'id_' + name);
+                }
+            });
+
+            $newRow.find('.item-number').text(formIdx + 1);
+            $('#order-items-container').append($newRow);
+            initializeProductSelect($newRow);
+            $('#id_order_items-TOTAL_FORMS').val(formIdx + 1);
+            toggleNoItemsMessage();
+            updateOrderSummary();
+        });
+
+        $(document).on('click', '.delete-item', function() {
+            var $row = $(this).closest('.order-item-row');
+            $row.find('.delete-checkbox').prop('checked', true);
+            $row.slideUp(300, function() {
+                toggleNoItemsMessage();
+                updateOrderSummary();
+            });
+        });
+
+        // FIXED: Check all items regardless of visibility
+        function validateForm() {
+            var isValid = true;
+            var hasValidItem = false;
+
+            ['#id_customer', '#id_store', '#id_customer_category'].forEach(function(sel) {
+                var $el = $(sel);
+                if (!$el.val()) { $el.addClass('is-invalid'); isValid = false; }
+                else { $el.removeClass('is-invalid'); }
+            });
+
+            $('.order-item-row').each(function() {
+                var $row = $(this);
+                var product = $row.find('.product-select').val();
+                var qty = parseFloat($row.find('.quantity-input').val()) || 0;
+                var variance = parseFloat($row.find('.variance-input').val());
+                var isDeleted = $row.find('.delete-checkbox').is(':checked');
+                var isHidden = $row.css('display') === 'none';
+
+                if (!isDeleted && !isHidden) {
+                    var productOk = !!product;
+                    var qtyOk = qty > 0;
+                    var varianceOk = !isNaN(variance) && variance >= -50 && variance <= 50;
+
+                    if (productOk && qtyOk && varianceOk) {
+                        hasValidItem = true;
+                    }
+                }
+            });
+
+            if (!hasValidItem) {
+                $('#form-errors').html('<p><i class="bi bi-exclamation-circle me-2"></i>Please add at least one valid item.</p>');
+                isValid = false;
+            } else {
+                $('#form-errors').empty();
+            }
+
+            return isValid;
+        }
+
+        $('#order-form').submit(function(e) {
+            e.preventDefault();
+            $('#form-errors').empty();
+
+            if (!validateForm()) {
+                return false;
+            }
+
+            var $submitBtn = $('#submit-button');
+            var $spinner = $('#loading-spinner');
+            var $buttonText = $('#button-text');
+            var $submitIcon = $('#submit-icon');
+            $spinner.removeClass('d-none');
+            $submitIcon.addClass('d-none');
+            $buttonText.text('Creating order...');
+            $submitBtn.prop('disabled', true).addClass('loading-pulse');
+
+            $('.order-item-row').each(function() {
+                var $row = $(this);
+                var isDeleted = $row.find('.delete-checkbox').is(':checked');
+                var isHidden = $row.css('display') === 'none';
+                if (!isDeleted && !isHidden) {
+                    var $v = $row.find('.variance-input');
+                    var $lt = $row.find('.line-total');
+                    var v = parseFloat($v.val());
+                    var lt = parseFloat($lt.val());
+                    if (!isNaN(v)) $v.val(v.toFixed(2));
+                    if (!isNaN(lt)) $lt.val(lt.toFixed(2));
+                }
+            });
+
+            $.ajax({
+                url: $(this).attr('action'),
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    if (response.success) {
+                        // M-Pesa: redirect to STK push page
+                        if (response.mpesa_redirect) {
+                            window.location.href = '/orders/' + response.order_id + '/mpesa/?phone=' + encodeURIComponent(response.pay_phone || '');
+                            return;
+                        }
+                        const blob = new Blob([Uint8Array.from(atob(response.receipt), c => c.charCodeAt(0))], { type: 'application/pdf' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url; a.download = 'receipt.pdf'; a.click();
+                        setTimeout(() => window.location.href = '{% url "order_list" %}', 1000);
+                    } else {
+                        $spinner.addClass('d-none');
+                        $submitIcon.removeClass('d-none');
+                        $buttonText.text('Create Order');
+                        $submitBtn.prop('disabled', false).removeClass('loading-pulse');
+
+                        try {
+                            var err = JSON.parse(response.errors);
+                            var html = '';
+                            if (err.form_errors) html += '<p><strong>Form Errors:</strong></p><ul>' + Object.keys(err.form_errors).map(f => `<li>${f}: ${err.form_errors[f][0].message}</li>`).join('') + '</ul>';
+                            if (err.formset_errors) html += '<p><strong>Item Errors:</strong></p><ul>' + err.formset_errors.map((e, i) => Object.keys(e).map(f => `<li>Item ${i+1} ${f}: ${e[f][0].message}</li>`).join('')).join('') + '</ul>';
+                            $('#form-errors').html(html);
+                        } catch { $('#form-errors').html(response.errors || 'Error'); }
+                    }
+                },
+                error: function() {
+                    $spinner.addClass('d-none');
+                    $submitIcon.removeClass('d-none');
+                    $buttonText.text('Create Order');
+                    $submitBtn.prop('disabled', false).removeClass('loading-pulse');
+                    $('#form-errors').html('<p><i class="bi bi-exclamation-triangle me-2"></i>Server error. Please try again.</p>');
+                }
+            });
+
+            return false;
+        });
+
+        toggleNoItemsMessage();
+        updateOrderSummary();
+    });
+
+    // ── Payment section toggle ────────────────────────────────────────
+    function togglePayAmt(radio) {
+      const val = radio.value;
+      document.getElementById('pay_method_hidden').value = val;
+      const amtWrap   = document.getElementById('pay-amount-wrap');
+      const phoneWrap = document.getElementById('pay-phone-wrap');
+      const summRow   = document.getElementById('pay-summary-row');
+      const summText  = document.getElementById('pay-summary-text');
+
+      amtWrap.style.display   = (val === 'cash') ? '' : 'none';
+      phoneWrap.style.display = (val === 'mpesa') ? '' : 'none';
+      summRow.style.display   = 'none';
+
+      if (val === 'cash') {
+        summText.textContent = 'Cash payment will be recorded when you submit the order.';
+        summRow.style.display = '';
+      } else if (val === 'mpesa') {
+        summText.textContent = 'M-Pesa STK Push will be triggered after order is saved.';
+        summRow.style.display = '';
+      }
+    }
+
+    // ── Live GPS location capture for order address ────────────────────
+    function captureOrderLocation() {
+        const geoBar   = document.getElementById('geo-status-bar');
+        const geoText  = document.getElementById('geo-status-text');
+        const latField = document.getElementById('order_latitude');
+        const lngField = document.getElementById('order_longitude');
+        const addrField= document.getElementById('order_location_address');
+        const addressInput = document.getElementById('id_address');
+
+        if (!navigator.geolocation) return;
+
+        if (geoBar) geoBar.style.setProperty('display','flex','important');
+        if (geoText) geoText.textContent = 'Acquiring your GPS location…';
+
+        navigator.geolocation.getCurrentPosition(
+            function(pos) {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                if (latField)  latField.value  = lat;
+                if (lngField)  lngField.value  = lng;
+
+                const coordStr = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                if (addrField) addrField.value = coordStr;
+
+                // ALWAYS overwrite delivery address with live GPS location - this is the main order address
+                if (addressInput) addressInput.value = coordStr;
+                if (geoText) geoText.textContent = `📍 Location captured: ${coordStr}`;
+
+                // Reverse geocode via OpenStreetMap Nominatim — always update with human-readable address
+                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+                    .then(r => r.json())
+                    .then(data => {
+                        const display = data.display_name || coordStr;
+                        if (addrField) addrField.value = display;
+                        if (geoText)  geoText.textContent = `📍 ${display}`;
+                        // ALWAYS OVERWRITE: Set address field to the live reverse-geocoded location
+                        // This ensures orders always have current location instead of stale customer address
+                        if (addressInput) addressInput.value = display;
+                        // Update review section with coordinates for Google Maps link
+                        updateReviewSection();
+                    })
+                    .catch(() => {
+                        // Even if reverse geocoding fails, update review with coordinates
+                        updateReviewSection();
+                    });
+            },
+            function() {
+                if (geoText) geoText.textContent = '⚠️ Location unavailable — please enter address manually.';
+            },
+            { timeout: 10000, enableHighAccuracy: true }
+        );
+    }
+    
+    // Capture location on page load
+    captureOrderLocation();
+    </script>
+{% endblock %}

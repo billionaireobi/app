@@ -1,0 +1,618 @@
+{% load static %}
+
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Order #{{ order.id }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/css/iziToast.css" />
+    <style>
+        .form-control, .form-select {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            padding: 0.5rem 0.75rem;
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13,110,253,0.25);
+        }
+        .is-invalid {
+            border-color: #dc3545 !important;
+        }
+        .invalid-feedback {
+            display: none;
+            color: #dc3545;
+            font-size: 0.875rem;
+        }
+        .is-invalid ~ .invalid-feedback {
+            display: block;
+        }
+        .order-item-form {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Edit Order #{{ order.id }}</h2>
+        <div>
+            <a href="{% url 'order_detail' order.id %}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Order
+            </a>
+        </div>
+    </div>
+
+    <!-- Order Balance Alert -->
+    <div class="alert alert-info">
+        <strong>Order Total:</strong> {{ order.total_amount|floatformat:2 }} | 
+        <strong>Amount Paid:</strong> {{ order.amount_paid|floatformat:2 }} | 
+        <strong>Balance:</strong> {{ order.get_balance|floatformat:2 }}
+    </div>
+
+    <!-- Display Form Errors -->
+    {% if form.errors or formset.errors or formset.non_form_errors %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <h5 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Please correct the following errors:</h5>
+        
+        {% if form.errors %}
+        <h6>Order Details Errors:</h6>
+        <ul>
+            {% for field in form %}
+                {% if field.errors %}
+                    <li><strong>{{ field.label }}:</strong>
+                        <ul>
+                            {% for error in field.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+            {% endif %}
+        </ul>
+        {% endif %}
+
+        {% if formset.errors %}
+        <h6>Order Items Errors:</h6>
+        <ul>
+            {% for item_form in formset %}
+                {% if item_form.errors %}
+                    <li><strong>Item #{{ forloop.counter }}:</strong>
+                        <ul>
+                            {% for field, errors in item_form.errors.items %}
+                                <li><strong>{{ field }}:</strong>
+                                    <ul>
+                                        {% for error in errors %}
+                                            <li>{{ error }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {% if formset.non_form_errors %}
+        <h6>General Formset Errors:</h6>
+        <ul>
+            {% for error in formset.non_form_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endif %}
+
+    <form id="order-edit-form" method="post">
+        {% csrf_token %}
+        
+        <!-- Order Details Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Order Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label for="{{ form.customer.id_for_label }}" class="form-label">{{ form.customer.label }}</label>
+                        <select name="{{ form.customer.name }}" id="{{ form.customer.id_for_label }}" class="form-control">
+                            {% for choice in form.customer %}
+                                {{ choice }}
+                            {% endfor %}
+                        </select>
+                        {% if form.customer.errors %}
+                            <div class="text-danger small mt-1">{{ form.customer.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="{{ form.store.id_for_label }}" class="form-label">{{ form.store.label }}</label>
+                        <select name="{{ form.store.name }}" id="{{ form.store.id_for_label }}" class="form-control trigger-update">
+                            {% for value, label in form.store.field.choices %}
+                                <option value="{{ value }}" {% if form.store.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.store.errors %}
+                            <div class="text-danger small mt-1">{{ form.store.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="{{ form.customer_category.id_for_label }}" class="form-label">{{ form.customer_category.label }}</label>
+                        <select name="{{ form.customer_category.name }}" id="{{ form.customer_category.id_for_label }}" class="form-control trigger-update">
+                            {% for value, label in form.customer_category.field.choices %}
+                                <option value="{{ value }}" {% if form.customer_category.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.customer_category.errors %}
+                            <div class="text-danger small mt-1">{{ form.customer_category.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="{{ form.vat_variation.id_for_label }}" class="form-label">{{ form.vat_variation.label }}</label>
+                        <select name="{{ form.vat_variation.name }}" id="{{ form.vat_variation.id_for_label }}" class="form-control trigger-update">
+                            {% for value, label in form.vat_variation.field.choices %}
+                                <option value="{{ value }}" {% if form.vat_variation.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.vat_variation.errors %}
+                            <div class="text-danger small mt-1">{{ form.vat_variation.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="{{ form.address.id_for_label }}" class="form-label">{{ form.address.label }}</label>
+                        <input type="text" name="{{ form.address.name }}" id="{{ form.address.id_for_label }}" value="{{ form.address.value|default:'' }}" class="form-control" placeholder="Delivery Address">
+                        {% if form.address.errors %}
+                            <div class="text-danger small mt-1">{{ form.address.errors }}</div>
+                        {% endif %}
+                        {% if order.latitude and order.longitude %}
+                        <div class="mt-2 p-2 rounded" style="background: #f0fdf4; border: 1px solid #bbf7d0;">
+                            <small><strong>📍 GPS Coordinates:</strong></small><br>
+                            <small>
+                                <a href="https://www.google.com/maps?q={{ order.latitude }},{{ order.longitude }}" 
+                                   target="_blank" style="color: #10b981; text-decoration: none;">
+                                   {{ order.latitude|floatformat:5 }}, {{ order.longitude|floatformat:5 }} (View on Google Maps)
+                                </a>
+                            </small>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="{{ form.phone.id_for_label }}" class="form-label">{{ form.phone.label }}</label>
+                        <input type="text" name="{{ form.phone.name }}" id="{{ form.phone.id_for_label }}" value="{{ form.phone.value|default:'' }}" class="form-control" placeholder="Contact Phone">
+                        {% if form.phone.errors %}
+                            <div class="text-danger small mt-1">{{ form.phone.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="{{ form.paid_status.id_for_label }}" class="form-label">{{ form.paid_status.label }}</label>
+                        <select name="{{ form.paid_status.name }}" id="{{ form.paid_status.id_for_label }}" class="form-control">
+                            {% for value, label in form.paid_status.field.choices %}
+                                <option value="{{ value }}" {% if form.paid_status.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.paid_status.errors %}
+                            <div class="text-danger small mt-1">{{ form.paid_status.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="{{ form.delivery_status.id_for_label }}" class="form-label">{{ form.delivery_status.label }}</label>
+                        <select name="{{ form.delivery_status.name }}" id="{{ form.delivery_status.id_for_label }}" class="form-control">
+                            {% for value, label in form.delivery_status.field.choices %}
+                                <option value="{{ value }}" {% if form.delivery_status.value == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if form.delivery_status.errors %}
+                            <div class="text-danger small mt-1">{{ form.delivery_status.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="{{ form.order_date.id_for_label }}" class="form-label">{{ form.order_date.label }}</label>
+                        <input type="datetime-local" name="{{ form.order_date.name }}" id="{{ form.order_date.id_for_label }}" value="{{ form.order_date.value|date:'Y-m-d\TH:i' }}" class="form-control">
+                        {% if form.order_date.errors %}
+                            <div class="text-danger small mt-1">{{ form.order_date.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label for="{{ form.delivery_fee.id_for_label }}" class="form-label">{{ form.delivery_fee.label }}</label>
+                        <input type="number" name="{{ form.delivery_fee.name }}" id="{{ form.delivery_fee.id_for_label }}" value="{{ form.delivery_fee.value|default:'0.00' }}" class="form-control" step="0.01" min="0" placeholder="0.00">
+                        {% if form.delivery_fee.errors %}
+                            <div class="text-danger small mt-1">{{ form.delivery_fee.errors }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Items Card -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Order Items</h5>
+            </div>
+            <div class="card-body">
+                {{ formset.management_form }}
+                <div id="order-items-container">
+                    {% for item_form in formset %}
+                    <div class="order-item-form border rounded p-3 mb-3 order-item-row" data-item-id="{{ item_form.instance.pk|default:'' }}">
+                        <!-- Hidden fields for formset (REQUIRED by Django) -->
+                        {% if item_form.instance.pk %}
+                            <input type="hidden" name="order_items-{{ forloop.counter0 }}-id" value="{{ item_form.instance.pk }}">
+                        {% endif %}
+                        <input type="hidden" name="order_items-{{ forloop.counter0 }}-order" value="{{ order.pk }}">
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">Item #<span class="item-number">{{ forloop.counter }}</span></h6>
+                            <div>
+                                <input type="checkbox" name="order_items-{{ forloop.counter0 }}-DELETE" id="id_order_items-{{ forloop.counter0 }}-DELETE" class="d-none delete-checkbox">
+                                <button type="button" class="btn btn-outline-danger btn-sm delete-item">
+                                    <i class="bi bi-trash"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label">Product</label>
+                                <select name="order_items-{{ forloop.counter0 }}-product" id="id_order_items-{{ forloop.counter0 }}-product" class="form-control product-select">
+                                    {% for choice in item_form.product %}
+                                        {{ choice }}
+                                    {% endfor %}
+                                </select>
+                                <div class="invalid-feedback">Please select a product.</div>
+                            </div>
+                            <div class="col-12 col-sm-3">
+                                <label class="form-label">Quantity</label>
+                                <input type="number" name="order_items-{{ forloop.counter0 }}-quantity" id="id_order_items-{{ forloop.counter0 }}-quantity" value="{{ item_form.quantity.value|default:'1' }}" class="form-control quantity-input" min="1">
+                                <small class="text-muted stock-info"></small>
+                                <div class="invalid-feedback">Please enter a valid quantity.</div>
+                            </div>
+                            <div class="col-12 col-sm-3">
+                                <label class="form-label">Unit Price</label>
+                                <input type="number" name="order_items-{{ forloop.counter0 }}-unit_price" id="id_order_items-{{ forloop.counter0 }}-unit_price" value="{{ item_form.unit_price.value|default:'0.00' }}" class="form-control unit-price" readonly step="0.01">
+                            </div>
+                            <div class="col-12 col-sm-3">
+                                <label class="form-label">Variance</label>
+                                <input type="number" name="order_items-{{ forloop.counter0 }}-variance" id="id_order_items-{{ forloop.counter0 }}-variance" value="{{ item_form.variance.value|default:'0.00' }}" class="form-control variance-input" min="-50" max="50" step="0.01" placeholder="-50 to 50">
+                                <div class="invalid-feedback">Variance must be between -50 and 50.</div>
+                            </div>
+                            <div class="col-12 col-sm-3">
+                                <label class="form-label">Line Total</label>
+                                <input type="number" name="order_items-{{ forloop.counter0 }}-line_total" id="id_order_items-{{ forloop.counter0 }}-line_total" value="{{ item_form.line_total.value|default:'0.00' }}" class="form-control line-total" readonly step="0.01">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% comment %} <button type="button" id="add-item" class="btn btn-outline-secondary btn-sm mt-3">
+                    <i class="bi bi-plus-circle me-1"></i>Add Item
+                </button> {% endcomment %}
+            </div>
+        </div>
+
+        <!-- Order Summary -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Order Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th>Variance</th>
+                                <th>Total Price</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summary-items"></tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="3" class="fw-bold">Total Items</td>
+                                <td id="total-items" class="fw-bold">0</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="fw-bold">Items Subtotal</td>
+                                <td id="items-subtotal" class="fw-bold">0.00</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="fw-bold">Delivery Fee</td>
+                                <td id="delivery-fee-display" class="fw-bold">0.00</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="fw-bold">Total Cost</td>
+                                <td id="total-cost" class="fw-bold">0.00</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="d-flex justify-content-between mb-4">
+            <a href="{% url 'order_detail' order.id %}" class="btn btn-danger">
+                <i class="bi bi-x-circle me-1"></i>Cancel
+            </a>
+            <button type="submit" class="btn btn-success" id="submit-button">
+                <span class="spinner-border spinner-border-sm d-none" id="loading-spinner"></span>
+                <span id="button-text"><i class="bi bi-check-circle me-1"></i>Update Order</span>
+            </button>
+        </div>
+    </form>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/js/iziToast.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    function roundPrice(price) {
+        var decimal = price % 1;
+        return decimal >= 0.5 ? Math.ceil(price) : Math.floor(price);
+    }
+
+    // Initialize product Select2
+    function initializeProductSelect(row) {
+        var productSelect = row.find('.product-select');
+        if (productSelect.hasClass('select2-hidden-accessible')) {
+            productSelect.select2('destroy');
+        }
+
+        productSelect.select2({
+            placeholder: "Search for a product...",
+            allowClear: true,
+            minimumInputLength: 2,
+            width: '100%',
+            ajax: {
+                url: '{% url "search_products" %}',
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return {
+                        q: params.term,
+                        category: $('#id_customer_category').val() || '',
+                        vat: $('#id_vat_variation').val() || '',
+                        store: $('#id_store').val() || ''
+                    };
+                },
+                processResults: function(data) { return { results: data.results }; },
+                cache: true
+            }
+        }).on('select2:select', function(e) {
+            $(this).attr('data-product-name', e.params.data.text).removeClass('is-invalid');
+            updateProductPrice($(this).closest('.order-item-row'));
+        });
+    }
+
+    // Initialize existing selects
+    $('.product-select').each(function() {
+        var row = $(this).closest('.order-item-row');
+        var productName = $(this).find('option:selected').text();
+        if (productName && productName !== '---------') {
+            $(this).attr('data-product-name', productName);
+        }
+        initializeProductSelect(row);
+    });
+
+    // Update product price
+    function updateProductPrice(row) {
+        var productId = row.find('.product-select').val();
+        var category = $('#id_customer_category').val();
+        var vat = $('#id_vat_variation').val();
+        var store = $('#id_store').val();
+        var itemId = row.data('item-id');
+
+        if (productId && category && store) {
+            $.ajax({
+                url: '{% url "get_product_details_for_edit" %}',
+                data: { 
+                    product_id: productId, 
+                    customer_category: category, 
+                    vat: vat, 
+                    store: store,
+                    item_id: itemId
+                },
+                success: function(data) {
+                    if (data.price !== undefined) {
+                        var roundedPrice = roundPrice(parseFloat(data.price));
+                        row.find('.unit-price').val(roundedPrice);
+                        row.find('.stock-info').text('Stock available: ' + data.stock);
+                        updateLineTotal(row);
+                        updateOrderSummary();
+                    }
+                },
+                error: function() {
+                    row.find('.unit-price').val('0.00');
+                    alert('Error fetching price.');
+                }
+            });
+        }
+    }
+
+    // Update line total
+    function updateLineTotal(row) {
+        var quantity = parseFloat(row.find('.quantity-input').val()) || 0;
+        var unitPrice = parseFloat(row.find('.unit-price').val()) || 0;
+        var variance = parseFloat(row.find('.variance-input').val()) || 0;
+        var lineTotal = quantity * (unitPrice + variance);
+        row.find('.line-total').val(lineTotal.toFixed(2));
+    }
+
+    // Update order summary
+    function updateOrderSummary() {
+        var totalItems = 0;
+        var totalCost = 0;
+        var summaryItems = {};
+
+        $('.order-item-row').each(function() {
+            var productSelect = $(this).find('.product-select');
+            var productId = productSelect.val();
+            var productName = productSelect.attr('data-product-name') || 'Unknown';
+            var quantity = parseFloat($(this).find('.quantity-input').val()) || 0;
+            var unitPrice = parseFloat($(this).find('.unit-price').val()) || 0;
+            var variance = parseFloat($(this).find('.variance-input').val()) || 0;
+            var deleteChecked = $(this).find('.delete-checkbox').is(':checked');
+
+            if (productId && !deleteChecked && quantity > 0) {
+                var lineTotal = quantity * (unitPrice + variance);
+                if (summaryItems[productId]) {
+                    summaryItems[productId].quantity += quantity;
+                    summaryItems[productId].totalPrice += lineTotal;
+                } else {
+                    summaryItems[productId] = { 
+                        name: productName, 
+                        quantity: quantity, 
+                        totalPrice: lineTotal, 
+                        variance: variance 
+                    };
+                }
+                totalItems += quantity;
+                totalCost += lineTotal;
+            }
+        });
+
+        $('#summary-items').empty();
+        for (var id in summaryItems) {
+            var item = summaryItems[id];
+            $('#summary-items').append(
+                `<tr>
+                    <td>${item.name}</td>
+                    <td>${item.quantity}</td>
+                    <td>${item.variance.toFixed(2)}</td>
+                    <td>${item.totalPrice.toFixed(2)}</td>
+                </tr>`
+            );
+        }
+
+        var deliveryFee = parseFloat($('#id_delivery_fee').val()) || 0;
+        var grandTotal = totalCost + deliveryFee;
+
+        $('#total-items').text(totalItems);
+        $('#items-subtotal').text(totalCost.toFixed(2));
+        $('#delivery-fee-display').text(deliveryFee.toFixed(2));
+        $('#total-cost').text(grandTotal.toFixed(2));
+    }
+
+    // Update summary when delivery fee changes
+    $(document).on('input change', '#id_delivery_fee', function() {
+        updateOrderSummary();
+    });
+
+    // Handle input changes
+    $(document).on('input change blur', '.quantity-input, .variance-input', function() {
+        var row = $(this).closest('.order-item-row');
+        var $input = $(this);
+        
+        if ($input.hasClass('variance-input')) {
+            var num = parseFloat($input.val());
+            if (isNaN(num)) {
+                $input.val('0.00');
+            } else {
+                num = Math.max(-50, Math.min(50, num));
+                $input.val(num.toFixed(2));
+            }
+        }
+        
+        $input.removeClass('is-invalid');
+        updateLineTotal(row);
+        updateOrderSummary();
+    });
+
+    // Trigger price update on global changes
+    $(document).on('change', '.trigger-update', function() {
+        $('.order-item-row').each(function() { 
+            updateProductPrice($(this)); 
+        });
+    });
+
+    // Add new item
+    $('#add-item').click(function() {
+        var formIdx = parseInt($('#id_order_items-TOTAL_FORMS').val()) || 0;
+        var $template = $('#order-items-container .order-item-row:first').clone(true);
+
+        $template.find('.select2-container').remove();
+        $template.find('.product-select').removeClass('select2-hidden-accessible').removeAttr('data-select2-id');
+        $template.removeAttr('data-item-id');
+        
+        // Remove the hidden ID field for new items
+        $template.find('input[type="hidden"][name*="-id"]').remove();
+        
+        $template.find('input, select').each(function() {
+            var $el = $(this);
+            var name = $el.attr('name');
+            if (name) {
+                var newName = name.replace(/order_items-\d+-/, 'order_items-' + formIdx + '-');
+                var newId = 'id_' + newName;
+                $el.attr({ name: newName, id: newId });
+                if ($el.hasClass('product-select')) $el.val('');
+                else if ($el.hasClass('quantity-input')) $el.val('1');
+                else if ($el.hasClass('unit-price') || $el.hasClass('line-total')) $el.val('0.00');
+                else if ($el.hasClass('variance-input')) $el.val('0.00');
+                else if ($el.hasClass('delete-checkbox')) $el.prop('checked', false);
+                else if (!$el.attr('type') || $el.attr('type') !== 'hidden') $el.val('');
+            }
+        });
+
+        $template.find('.item-number').text(formIdx + 1);
+        $('#order-items-container').append($template);
+        initializeProductSelect($template);
+        $('#id_order_items-TOTAL_FORMS').val(formIdx + 1);
+        updateOrderSummary();
+    });
+
+    // Delete item
+    $(document).on('click', '.delete-item', function() {
+        var $row = $(this).closest('.order-item-row');
+        $row.find('.delete-checkbox').prop('checked', true);
+        $row.fadeOut(300, function() {
+            $(this).hide();
+            updateOrderSummary();
+        });
+    });
+
+    // Form submission
+    $('#order-edit-form').submit(function(e) {
+        $('#loading-spinner').removeClass('d-none');
+        $('#button-text').html('<i class="bi bi-hourglass-split me-1"></i>Updating...');
+        $('#submit-button').prop('disabled', true);
+    });
+
+    // Show messages
+    {% if messages %}
+        {% for message in messages %}
+            iziToast.{% if message.tags == 'success' %}success{% else %}error{% endif %}({
+                title: '{{ message.tags|title }}',
+                message: '{{ message }}',
+                position: 'topRight'
+            });
+        {% endfor %}
+    {% endif %}
+
+    // Initial update
+    updateOrderSummary();
+});
+</script>
+{% endblock %}

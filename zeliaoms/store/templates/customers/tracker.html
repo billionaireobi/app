@@ -1,0 +1,269 @@
+{% extends "partials/base.html" %}
+{% load static %}
+
+{% block content %}
+<head>
+  <meta charset="UTF-8">
+  <title>Customer Tracker</title>
+  <style>
+    body { background:#e8ecf4; }
+    .tracker-card { background:#fff; border-radius:14px; box-shadow:0 2px 12px rgba(0,0,0,.07); }
+    .filter-bar { background:#fff; border-radius:14px; box-shadow:0 2px 8px rgba(0,0,0,.06); padding:14px 18px; margin-bottom:16px; }
+    .stat-card { border-radius:14px; padding:18px 20px; color:#fff; }
+    .stat-card.total  { background:linear-gradient(135deg,#6366f1,#818cf8); }
+    .stat-card.active { background:linear-gradient(135deg,#10b981,#34d399); }
+    .stat-card.inactive { background:linear-gradient(135deg,#f59e0b,#fbbf24); }
+    .stat-card.none   { background:linear-gradient(135deg,#94a3b8,#cbd5e1); }
+    .badge-active   { background:#dcfce7; color:#166534; font-size:.72rem; }
+    .badge-inactive { background:#fef3c7; color:#92400e; font-size:.72rem; }
+    .badge-none     { background:#f1f5f9; color:#64748b; font-size:.72rem; }
+    .avatar { width:34px; height:34px; border-radius:50%; background:#6366f1;
+              display:flex; align-items:center; justify-content:center;
+              color:#fff; font-weight:700; font-size:.8rem; flex-shrink:0; }
+    .days-ago { font-size:.72rem; }
+    .table > :not(caption) > * > * { padding:.55rem .75rem; vertical-align:middle; }
+    .cat-pill { font-size:.72rem; padding:2px 8px; border-radius:20px; font-weight:600; }
+    .cat-factory     { background:#dbeafe; color:#1e40af; }
+    .cat-distributor { background:#fce7f3; color:#9d174d; }
+    .cat-wholesale   { background:#dcfce7; color:#166534; }
+    .cat-towns       { background:#fef3c7; color:#92400e; }
+    .cat-retail      { background:#ede9fe; color:#5b21b6; }
+    .progress { height:6px; }
+  </style>
+</head>
+
+<div class="container py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="bi bi-people-fill text-primary me-2"></i>Customer Tracker</h4>
+      <small class="text-muted">Active vs Inactive outlets · {{ inactive_days }}-day window</small>
+    </div>
+    <a href="{% url 'sales_analytics' %}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-graph-up-arrow me-1"></i>Sales Analytics
+    </a>
+  </div>
+
+  <!-- Summary strip -->
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+      <div class="stat-card total">
+        <div class="fw-bold" style="font-size:1.6rem;">{{ total_customers }}</div>
+        <div style="font-size:.8rem;opacity:.85;">Total Customers</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card active">
+        <div class="fw-bold" style="font-size:1.6rem;">{{ active_count }}</div>
+        <div style="font-size:.8rem;opacity:.85;">Active (≤{{ inactive_days }}d)</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card inactive">
+        <div class="fw-bold" style="font-size:1.6rem;">{{ inactive_count }}</div>
+        <div style="font-size:.8rem;opacity:.85;">Inactive (>{{ inactive_days }}d)</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="stat-card none">
+        <div class="fw-bold" style="font-size:1.6rem;">{{ no_orders_count }}</div>
+        <div style="font-size:.8rem;opacity:.85;">Never Ordered</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Category breakdown mini bar -->
+  {% if category_stats %}
+  <div class="tracker-card p-3 mb-3">
+    <h6 class="fw-bold small text-muted text-uppercase mb-2">Breakdown by Category</h6>
+    <div class="row g-2">
+      {% for cs in category_stats %}
+      <div class="col-auto">
+        <span class="cat-pill cat-{{ cs.default_category|lower }}">
+          {{ cs.default_category|default:"Unset"|capfirst }} — {{ cs.count }}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <form method="get" class="row g-2 align-items-end">
+      <div class="col-sm-6 col-md-3">
+        <label class="form-label small fw-semibold mb-1">Search</label>
+        <input type="text" name="q" value="{{ search }}" class="form-control form-control-sm" placeholder="Name, phone, address…">
+      </div>
+      <div class="col-sm-6 col-md-2">
+        <label class="form-label small fw-semibold mb-1">Category</label>
+        <select name="category" class="form-select form-select-sm">
+          <option value="">All categories</option>
+          {% for c in category_choices %}
+          <option value="{{ c }}" {% if category_filter == c %}selected{% endif %}>{{ c|capfirst }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% if is_admin %}
+      <div class="col-sm-6 col-md-2">
+        <label class="form-label small fw-semibold mb-1">Salesperson</label>
+        <select name="sp" class="form-select form-select-sm">
+          <option value="">All reps</option>
+          {% for sp in salespersons %}
+          <option value="{{ sp.id }}" {% if sp_filter == sp.id|stringformat:"s" %}selected{% endif %}>
+            {{ sp.get_full_name|default:sp.username }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-sm-4 col-md-2">
+        <label class="form-label small fw-semibold mb-1">Status</label>
+        <select name="status" class="form-select form-select-sm">
+          <option value="">All</option>
+          <option value="active"   {% if status_filter == 'active'   %}selected{% endif %}>Active</option>
+          <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Inactive</option>
+        </select>
+      </div>
+      <div class="col-sm-4 col-md-2">
+        <label class="form-label small fw-semibold mb-1">Inactive after (days)</label>
+        <input type="number" name="inactive_days" value="{{ inactive_days }}" min="1" class="form-control form-control-sm">
+      </div>
+      <div class="col-sm-6 col-md-2">
+        <label class="form-label small fw-semibold mb-1">Sort by</label>
+        <select name="order" class="form-select form-select-sm">
+          <option value="-last_order_date" {% if ordering == '-last_order_date' %}selected{% endif %}>Last Order ↓</option>
+          <option value="last_order_date"  {% if ordering == 'last_order_date'  %}selected{% endif %}>Last Order ↑</option>
+          <option value="-total_orders"    {% if ordering == '-total_orders'    %}selected{% endif %}>Most Orders</option>
+          <option value="-total_value"     {% if ordering == '-total_value'     %}selected{% endif %}>Highest Value</option>
+          <option value="first_name"       {% if ordering == 'first_name'       %}selected{% endif %}>Name A-Z</option>
+          <option value="default_category" {% if ordering == 'default_category' %}selected{% endif %}>Category</option>
+        </select>
+      </div>
+      <div class="col-auto d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-funnel me-1"></i>Filter</button>
+        <a href="{% url 'customer_tracker' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div class="tracker-card">
+    {% if not customers %}
+      <div class="text-center py-5">
+        <i class="bi bi-people" style="font-size:3rem;color:#94a3b8;"></i>
+        <p class="text-muted mt-2">No customers found.</p>
+      </div>
+    {% else %}
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Customer</th>
+            <th>Category</th>
+            {% if is_admin %}<th>Rep</th>{% endif %}
+            <th>Orders</th>
+            <th>Total Value</th>
+            <th>First Order</th>
+            <th>Last Order</th>
+            <th>Status</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in customers %}
+          {% with days_since=c.last_order_date|timesince %}
+          <tr>
+            <td>
+              <div class="d-flex align-items-center gap-2">
+                <div class="avatar">{{ c.first_name|first|upper }}{{ c.last_name|first|upper }}</div>
+                <div>
+                  <div class="fw-semibold" style="font-size:.88rem;">{{ c.first_name }} {{ c.last_name }}</div>
+                  <div class="text-muted" style="font-size:.75rem;">{{ c.phone_number|default:"—" }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="cat-pill cat-{{ c.default_category|lower }}">
+                {{ c.default_category|default:"—"|capfirst }}
+              </span>
+            </td>
+            {% if is_admin %}
+            <td class="small text-muted">{{ c.sales_person.get_full_name|default:c.sales_person.username|default:"—" }}</td>
+            {% endif %}
+            <td>
+              <span class="fw-semibold">{{ c.total_orders }}</span>
+              <span class="text-muted small"> orders</span>
+            </td>
+            <td class="fw-semibold small">KSh {{ c.total_value|floatformat:0 }}</td>
+            <td class="small text-muted">
+              {% if c.first_order_date %}{{ c.first_order_date|date:"d M Y" }}{% else %}—{% endif %}
+            </td>
+            <td>
+              {% if c.last_order_date %}
+              <div class="fw-semibold" style="font-size:.85rem;">{{ c.last_order_date|date:"d M Y" }}</div>
+              <div class="days-ago text-muted">{{ c.last_order_date|timesince }} ago</div>
+              {% else %}
+              <span class="text-muted small">No orders</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if not c.last_order_date %}
+                <span class="badge badge-none rounded-pill px-2">No Orders</span>
+              {% elif c.last_order_date >= cutoff %}
+                <span class="badge badge-active rounded-pill px-2"><i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>Active</span>
+              {% else %}
+                <span class="badge badge-inactive rounded-pill px-2"><i class="bi bi-circle me-1" style="font-size:.5rem;"></i>Inactive</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'customer_detail-view' c.pk %}" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-eye"></i>
+              </a>
+            </td>
+          </tr>
+          {% endwith %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="px-3 py-3 border-top">
+      <nav>
+        <ul class="pagination justify-content-center flex-wrap gap-1 mb-0">
+          {% if page_obj.has_previous %}
+          <li class="page-item">
+            <a class="page-link rounded" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          </li>
+          {% endif %}
+          {% for p in page_obj.paginator.page_range %}
+            {% if p == page_obj.number %}
+            <li class="page-item active"><span class="page-link rounded">{{ p }}</span></li>
+            {% elif p >= page_obj.number|add:"-2" and p <= page_obj.number|add:"2" %}
+            <li class="page-item">
+              <a class="page-link rounded" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ p }}">{{ p }}</a>
+            </li>
+            {% endif %}
+          {% endfor %}
+          {% if page_obj.has_next %}
+          <li class="page-item">
+            <a class="page-link rounded" href="?{% for k,v in request.GET.items %}{% if k != 'page' %}{{ k }}={{ v }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+        <p class="text-center text-muted small mt-2 mb-0">
+          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }} | {{ page_obj.paginator.count }} customers
+        </p>
+      </nav>
+    </div>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

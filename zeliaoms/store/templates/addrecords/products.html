@@ -1,0 +1,223 @@
+               {% comment %} {% extends "partials/base.html" %} {% endcomment %}
+{% load static %}
+               {% comment %} {% block title %}MCDAVE QUALITY CRQS ASSESSMENT-FM-01-MDL-QA{% endblock %} {% endcomment %}
+{% block title%}{% endblock%}
+{% block content %}
+               <html lang="en" dir="ltr" data-nav-layout="vertical" data-theme-mode="light" data-header-styles="light" data-menu-styles="dark" data-toggled="close">
+
+           <head>
+
+               <!-- Meta Data -->
+               <meta charset="UTF-8">
+               <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>
+               <meta http-equiv="X-UA-Compatible" content="IE=edge">
+               <meta name="Description" content="Bootstrap Responsive Admin Web Dashboard HTML5 Template">
+               <meta name="Author" content="Spruko Technologies Private Limited">
+               <meta name="keywords" content="admin,admin dashboard,admin panel,admin template,bootstrap,clean,dashboard,flat,jquery,modern,responsive,premium admin templates,responsive admin,ui,ui kit.">
+               
+           <!-- Favicon -->
+           <link rel="icon" href="{% static 'assets/images/mcdave/logo.png'%}" type="image/x-icon">
+               
+           <!-- Choices JS -->
+           <script src="{% static 'assets/libs/choices.js/public/assets/scripts/choices.min.js'%}"></script>
+
+           <!-- Main Theme Js -->
+           <script src="{% static 'assets/js/main.js'%}"></script>
+           
+           <!-- Bootstrap Css -->
+           <link id="style" href="{% static 'assets/libs/bootstrap/css/bootstrap.min.css'%}" rel="stylesheet" >
+
+           <!-- Style Css -->
+           <link href="{% static 'assets/css/styles.min.css'%}" rel="stylesheet" >
+
+           <!-- Icons Css -->
+           <link href="{% static 'assets/css/icons.css'%}" rel="stylesheet" >
+
+           <!-- Node Waves Css -->
+           <link href="{% static 'assets/libs/node-waves/waves.min.css'%}" rel="stylesheet" > 
+
+           
+           
+           <!-- Color Picker Css -->
+           <link rel="stylesheet" href="{% static 'assets/libs/flatpickr/flatpickr.min.css'%}">
+           <link rel="stylesheet" href="{% static 'assets/libs/@simonwep/pickr/themes/nano.min.css'%}">
+
+           <!-- Choices Css -->
+           <link rel="stylesheet" href="{% static 'assets/libs/choices.js/public/assets/styles/choices.min.css'%}">
+           <style>
+            body {
+                background: linear-gradient(120deg, #0f2027, #203a43, #2c5364);
+                min-height: 100vh;
+                font-family: 'Segoe UI', sans-serif;
+                color: #fff;
+            }
+        
+            .glass-card {
+                backdrop-filter: blur(14px) saturate(180%);
+                -webkit-backdrop-filter: blur(14px) saturate(180%);
+                background-color: rgba(255, 255, 255, 0.08);
+                border-radius: 20px;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                box-shadow: 0 8px 40px rgba(0, 255, 255, 0.15), 0 0 10px rgba(0, 255, 255, 0.2);
+                padding: 2rem;
+                transition: all 0.4s ease;
+            }
+        
+            .glass-card:hover {
+                transform: scale(1.01);
+                box-shadow: 0 12px 50px rgba(0, 255, 255, 0.25), 0 0 20px rgba(0, 255, 255, 0.4);
+            }
+        
+            .card-title {
+                font-size: 1.5rem;
+                font-weight: bold;
+                color: #0ff;
+                letter-spacing: 1px;
+                margin-bottom: 1.2rem;
+                text-align: center;
+            }
+        
+            .form-group label {
+                font-weight: 600;
+                color: #cfd8dc;
+                font-size: 0.95rem;
+            }
+        
+            .form-control {
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                border-radius: 12px;
+                color: #fff;
+                transition: border 0.3s ease, box-shadow 0.3s ease;
+            }
+        
+            .form-control:focus {
+                border-color: #0ff;
+                box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+                background-color: rgba(255, 255, 255, 0.15);
+            }
+        
+/* Custom styles for the select box */
+select.form-control {
+    color: #fff;  /* Make sure text is visible */
+    background-color: rgba(255, 255, 255, 0.2);  /* Make sure background color is set */
+    border-color: rgba(255, 255, 255, 0.3); /* Border visibility */
+}
+
+/* Adjust dropdown options */
+select.form-control option {
+    color: #000; /* Set option text color to black or any contrasting color */
+    background-color: #fff; /* Set a contrasting background for the options */
+}
+
+select.form-control:hover {
+    border-color: #0ff; /* Highlight border on hover */
+}
+
+/* Focus state to make it more prominent */
+select.form-control:focus {
+    background-color: rgba(255, 255, 255, 0.3); /* Slightly lighter background on focus */
+    color: #0ff; /* Highlight text color on focus */
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}
+            .btn-glow {
+                border-radius: 25px;
+                padding: 0.6rem 1.5rem;
+                font-weight: 600;
+                color: #fff;
+                background: linear-gradient(135deg, #0ff, #1affd5);
+                box-shadow: 0 0 12px rgba(0, 255, 255, 0.3);
+                border: none;
+                transition: all 0.3s ease;
+            }
+        
+            .btn-glow:hover {
+                box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
+                transform: translateY(-2px);
+            }
+        
+            .alert-info {
+                background-color: rgba(0, 255, 255, 0.1);
+                border: 1px solid rgba(0, 255, 255, 0.3);
+                color: #0ff;
+                border-radius: 10px;
+            }
+        </style>
+        
+        
+        <div class="row justify-content-center">
+            <div class="col-xl-6 col-md-10">
+                <div class="glass-card mt-5">
+                    <div class="card-title">Zelia Product Form</div>
+                    <div class="card-body">
+                        <form method="POST" action="{% url 'addproduct' %}" enctype="multipart/form-data" class="row g-3 mt-0">
+                            {% csrf_token %}
+                            {% if messages %}
+                                <div class="col-md-12">
+                                    <ul class="alert alert-info p-2">
+                                        {% for message in messages %}
+                                            <li class="{{ message.tags }}">{{ message }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% endif %}
+        
+                            {% for field in form %}
+                                <div class="col-md-6">
+                                    <div class="form-group mb-3">
+                                        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                                        {{ field }}
+                                        {% if field.help_text %}
+                                            <small class="form-text text-muted text-light">{{ field.help_text }}</small>
+                                        {% endif %}
+                                        {% if field.errors %}
+                                            <div class="text-danger small">
+                                                {{ field.errors|join:", " }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+        
+                            <div class="col-12 d-flex justify-content-between">
+                                <button type="submit" class="btn-glow">Add Product</button>
+                                <a href="{% url 'products' %}" class="btn-glow">Back</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+           
+
+       <div class="scrollToTop">
+        <span class="arrow"><i class="ri-arrow-up-s-fill fs-20"></i></span>
+    </div>
+    <div id="responsive-overlay"></div>
+
+    <!-- Popper JS -->
+    <script src="{% static 'assets/libs/@popperjs/core/umd/popper.min.js'%}"></script>
+
+    <!-- Bootstrap JS -->
+    <script src="{% static 'assets/libs/bootstrap/js/bootstrap.bundle.min.js'%}"></script>
+
+   
+    <!-- Node Waves JS-->
+    <script src="{% static 'assets/libs/node-waves/waves.min.js'%}"></script>
+
+    
+
+    
+
+    <!-- Color Picker JS -->
+    <script src="{% static 'assets/libs/@simonwep/pickr/pickr.es5.min.js'%}"></script>
+
+
+    
+    <!-- Used For Sessions By Device Chart -->
+    <script src="{% static 'assets/libs/moment/moment.js'%}"></script>
+    
+
+    
+{% endblock%}

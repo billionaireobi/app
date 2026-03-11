@@ -1,0 +1,321 @@
+{% extends "partials/base.html" %}
+{% load static %}
+{% block content %}
+
+<html >
+<head>
+    <meta charset="UTF-8">
+    <meta name='viewport' content='width=device-width, initial-scale=1.0, user-scalable=no'>
+    <title>Orders Report - McDave Sales</title>
+    <link rel="icon" href="{% static 'assets/images/mcdave/logo.png' %}" type="image/x-icon">
+    <!--<link id="style" href="{% static 'assets/libs/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/css/styles.min.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/css/icons.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/libs/node-waves/waves.min.css' %}" rel="stylesheet">-->
+    <!--<link href="{% static 'assets/libs/simplebar/simplebar.min.css' %}" rel="stylesheet">-->
+    <!--<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/css/iziToast.css" />-->
+    <style>
+        :root { --accent: #0369a1; --accent-light: #e0f2fe; --accent-mid: #0ea5e9; }
+
+        .page-accent-bar {
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent) 0%, var(--accent-mid) 60%, #7dd3fc 100%);
+            border-radius: 2px; margin-bottom: 28px;
+        }
+        .filter-card {
+            background: #f8fafc; border: 1px solid #e2e8f0;
+            border-left: 4px solid var(--accent);
+            border-radius: 10px; padding: 20px 24px; margin-bottom: 24px;
+        }
+        .filter-title {
+            font-size: 12px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .8px; color: var(--accent); margin-bottom: 14px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
+        .stat-box {
+            background: white; border-radius: 10px; padding: 18px 16px;
+            border: 1px solid #e2e8f0; position: relative; overflow: hidden;
+            transition: box-shadow .2s, transform .2s;
+        }
+        .stat-box:hover { box-shadow: 0 6px 20px rgba(0,0,0,.07); transform: translateY(-2px); }
+        .stat-box::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; border-radius: 0 0 10px 10px; }
+        .stat-box.sky::after    { background: var(--accent-mid); }
+        .stat-box.green::after  { background: #22c55e; }
+        .stat-box.violet::after { background: #8b5cf6; }
+        .stat-box.red::after    { background: #ef4444; }
+        .stat-box.amber::after  { background: #f59e0b; }
+        .stat-box.teal::after   { background: #14b8a6; }
+        .stat-icon { width: 38px; height: 38px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 10px; }
+        .stat-box.sky    .stat-icon { background: var(--accent-light); color: var(--accent); }
+        .stat-box.green  .stat-icon { background: #f0fdf4; color: #16a34a; }
+        .stat-box.violet .stat-icon { background: #f5f3ff; color: #7c3aed; }
+        .stat-box.red    .stat-icon { background: #fef2f2; color: #dc2626; }
+        .stat-box.amber  .stat-icon { background: #fffbeb; color: #d97706; }
+        .stat-box.teal   .stat-icon { background: #f0fdfa; color: #0f766e; }
+        .stat-value { font-size: 20px; font-weight: 800; color: #1e293b; line-height: 1; margin-bottom: 4px; }
+        .stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
+
+        .table-wrap { border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+        .table-head-bar {
+            background: #f8fafc; padding: 14px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .table-head-bar h6 { margin: 0; font-weight: 700; color: #1e293b; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+        .rpt-table { margin: 0; }
+        .rpt-table thead th {
+            background: #f1f5f9; border-bottom: 2px solid #e2e8f0;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .5px; color: #475569; padding: 11px 14px; white-space: nowrap;
+        }
+        .rpt-table tbody td { padding: 11px 14px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+        .rpt-table tbody tr:last-child td { border-bottom: none; }
+        .rpt-table tbody tr:hover { background: #fafafa; }
+        .rpt-table tfoot td { background: #f1f5f9; font-weight: 700; font-size: 13px; padding: 11px 14px; border-top: 2px solid #e2e8f0; }
+
+        /* payment badges */
+        .pay-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .pay-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+        .pay-completed    { background: #dcfce7; color: #15803d; }
+        .pay-completed::before { background: #22c55e; }
+        .pay-pending      { background: #fff7ed; color: #c2410c; }
+        .pay-pending::before { background: #fb923c; }
+        .pay-partially_paid { background: #f5f3ff; color: #6d28d9; }
+        .pay-partially_paid::before { background: #a78bfa; }
+        .pay-cancelled    { background: #fef2f2; color: #b91c1c; }
+        .pay-cancelled::before { background: #f87171; }
+
+        /* delivery badges */
+        .del-badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .del-completed { background: #e0f2fe; color: #0369a1; }
+        .del-pending   { background: #fefce8; color: #854d0e; }
+        .del-returned  { background: #fce7f3; color: #9d174d; }
+        .del-cancelled { background: #f3f4f6; color: #374151; }
+
+        /* store chip */
+        .store-chip { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .store-chip.mcdave  { background: #dbeafe; color: #1e40af; }
+        .store-chip.kisii   { background: #fef9c3; color: #713f12; }
+        .store-chip.offshore { background: #dcfce7; color: #14532d; }
+
+        .balance-due   { color: #dc2626; font-weight: 700; }
+        .balance-clear { color: #16a34a; }
+        .btn-xs { padding: 3px 9px; font-size: 12px; border-radius: 6px; }
+        .empty-state { text-align: center; padding: 56px 20px; color: #94a3b8; }
+        .empty-state i { font-size: 52px; opacity: .35; display: block; margin-bottom: 14px; }
+        .empty-state h5 { color: #64748b; }
+    </style>
+</head>
+<body>
+    <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+        <h1 class="page-title fw-semibold fs-18 mb-0">
+            <i class="ri-shopping-bag-3-line me-2" style="color:var(--accent)"></i>Orders Report
+        </h1>
+        <nav><ol class="breadcrumb mb-0">
+            {% if request.user.is_superuser %}
+            <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+            {% else %}
+            <li class="breadcrumb-item"><a href="{% url 'salesperson_dashboard' %}">Dashboard</a></li>
+            {% endif %}
+            <li class="breadcrumb-item">Reports</li>
+            <li class="breadcrumb-item active">Orders</li>
+        </ol></nav>
+    </div>
+
+    <div class="page-accent-bar"></div>
+
+    <!-- Filters -->
+    <div class="filter-card">
+        <div class="filter-title"><i class="ri-filter-3-line"></i> Filter Orders</div>
+        <form method="GET">
+            <div class="row">
+                <div class="col-md-2 mb-2">
+                    <label class="form-label fw-semibold small">Store</label>
+                    <select name="store" class="form-select form-select-sm">
+                        <option value="">All Stores</option>
+                        <option value="mcdave"  {% if request.GET.store == "mcdave" %}selected{% endif %}>McDave</option>
+                        <option value="kisii"   {% if request.GET.store == "kisii" %}selected{% endif %}>Mombasa</option>
+                        <option value="offshore"{% if request.GET.store == "offshore" %}selected{% endif %}>Offshore</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="form-label fw-semibold small">Payment Status</label>
+                    <select name="paid_status" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        <option value="pending"        {% if request.GET.paid_status == "pending" %}selected{% endif %}>Pending</option>
+                        <option value="partially_paid" {% if request.GET.paid_status == "partially_paid" %}selected{% endif %}>Partially Paid</option>
+                        <option value="completed"      {% if request.GET.paid_status == "completed" %}selected{% endif %}>Completed</option>
+                        <option value="cancelled"      {% if request.GET.paid_status == "cancelled" %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="form-label fw-semibold small">Delivery Status</label>
+                    <select name="delivery_status" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        <option value="pending"   {% if request.GET.delivery_status == "pending" %}selected{% endif %}>Pending</option>
+                        <option value="completed" {% if request.GET.delivery_status == "completed" %}selected{% endif %}>Completed</option>
+                        <option value="returned"  {% if request.GET.delivery_status == "returned" %}selected{% endif %}>Returned</option>
+                        <option value="cancelled" {% if request.GET.delivery_status == "cancelled" %}selected{% endif %}>Cancelled</option>
+                    </select>
+                </div>
+                {% if is_admin %}
+                <div class="col-md-2 mb-2">
+                    <label class="form-label fw-semibold small">Salesperson</label>
+                    <select name="salesperson" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        {% for sp in salespersons %}
+                        <option value="{{ sp.id }}" {% if request.GET.salesperson == sp.id|stringformat:"s" %}selected{% endif %}>
+                            {{ sp.get_full_name|default:sp.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+                <div class="col-md-2 mb-2">
+                    <label class="form-label fw-semibold small">From Date</label>
+                    <input type="date" name="date_from" class="form-control form-control-sm" value="{{ request.GET.date_from }}">
+                </div>
+                <div class="col-md-2 mb-2">
+                    <label class="form-label fw-semibold small">To Date</label>
+                    <input type="date" name="date_to" class="form-control form-control-sm" value="{{ request.GET.date_to }}">
+                </div>
+            </div>
+            <div class="d-flex gap-2 mt-1">
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="ri-search-line me-1"></i>Apply Filters
+                </button>
+                <a href="{% url 'order_report' %}" class="btn btn-sm btn-secondary">
+                    <i class="ri-refresh-line me-1"></i>Reset
+                </a>
+                <div class="ms-auto d-flex gap-2">
+                    <button type="submit" name="download" value="pdf" class="btn btn-sm btn-success">
+                        <i class="ri-file-pdf-line me-1"></i>Export PDF
+                    </button>
+                    <button type="submit" name="download" value="excel" class="btn btn-sm btn-info text-white">
+                        <i class="ri-file-excel-line me-1"></i>Export Excel
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-grid">
+        <div class="stat-box sky">
+            <div class="stat-icon"><i class="ri-shopping-bag-3-line"></i></div>
+            <div class="stat-value">{{ stats.total }}</div>
+            <div class="stat-label">Total Orders</div>
+        </div>
+        <div class="stat-box violet">
+            <div class="stat-icon"><i class="ri-funds-line"></i></div>
+            <div class="stat-value">{{ stats.total_revenue|floatformat:0 }}</div>
+            <div class="stat-label">Revenue (Ksh)</div>
+        </div>
+        <div class="stat-box green">
+            <div class="stat-icon"><i class="ri-check-double-line"></i></div>
+            <div class="stat-value">{{ stats.collected|floatformat:0 }}</div>
+            <div class="stat-label">Collected (Ksh)</div>
+        </div>
+        <div class="stat-box red">
+            <div class="stat-icon"><i class="ri-time-line"></i></div>
+            <div class="stat-value">{{ stats.outstanding|floatformat:0 }}</div>
+            <div class="stat-label">Outstanding (Ksh)</div>
+        </div>
+        <div class="stat-box amber">
+            <div class="stat-icon"><i class="ri-hourglass-line"></i></div>
+            <div class="stat-value">{{ stats.pending_delivery }}</div>
+            <div class="stat-label">Pending Delivery</div>
+        </div>
+        <div class="stat-box teal">
+            <div class="stat-icon"><i class="ri-map-pin-line"></i></div>
+            <div class="stat-value">{{ stats.with_fee }}</div>
+            <div class="stat-label">With Delivery Fee</div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+        <div class="table-head-bar">
+            <h6><i class="ri-shopping-bag-3-line" style="color:var(--accent)"></i> Orders Report</h6>
+            <span class="badge bg-primary rounded-pill">{{ orders|length }} orders</span>
+        </div>
+        {% if orders %}
+        <div class="table-responsive">
+            <table class="table rpt-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Order ID</th>
+                        <th>Customer</th>
+                        <th>Salesperson</th>
+                        <th>Store</th>
+                        <th>Category</th>
+                        <th>Date</th>
+                        <th>Payment</th>
+                        <th>Delivery</th>
+                        <th class="text-end">Total</th>
+                        <th class="text-end">Paid</th>
+                        <th class="text-end">Balance</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for o in orders %}
+                    <tr>
+                        <td class="text-muted small">{{ forloop.counter }}</td>
+                        <td><span class="fw-bold text-primary">#Mc{{ o.id }}Z</span></td>
+                        <td>
+                            <div class="fw-semibold" style="font-size:13px;">{{ o.customer.first_name }}</div>
+                            <div class="text-muted" style="font-size:11px;">{{ o.customer.phone_number|default:"" }}</div>
+                        </td>
+                        <td style="font-size:12px;">{{ o.sales_person.get_full_name|default:o.sales_person.username }}</td>
+                        <td><span class="store-chip {{ o.store }}">{{ o.get_store_display }}</span></td>
+                        <td><span class="badge bg-light text-dark" style="font-size:11px;">{{ o.get_customer_category_display }}</span></td>
+                        <td style="font-size:12px;">{{ o.order_date|date:"M d, Y" }}</td>
+                        <td><span class="pay-badge pay-{{ o.paid_status }}">{{ o.get_paid_status_display }}</span></td>
+                        <td><span class="del-badge del-{{ o.delivery_status }}">{{ o.get_delivery_status_display }}</span></td>
+                        <td class="text-end fw-semibold">{{ o.total_amount|floatformat:2 }}</td>
+                        <td class="text-end text-success">{{ o.amount_paid|floatformat:2 }}</td>
+                        <td class="text-end {% if o.get_balance > 0 %}balance-due{% else %}balance-clear{% endif %}">
+                            {{ o.get_balance|floatformat:2 }}
+                        </td>
+                        <td>
+                            <a href="{% url 'order_detail' o.id %}" class="btn btn-primary btn-xs">
+                                <i class="ri-eye-line"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="9" class="text-end">Totals</td>
+                        <td class="text-end">Ksh {{ stats.total_revenue|floatformat:2 }}</td>
+                        <td class="text-end text-success">Ksh {{ stats.collected|floatformat:2 }}</td>
+                        <td class="text-end balance-due">Ksh {{ stats.outstanding|floatformat:2 }}</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="ri-shopping-bag-3-line"></i>
+            <h5>No Orders Found</h5>
+            <p class="text-muted">Adjust your filters to see orders.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!--<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>-->
+    <!--<script src="{% static 'assets/libs/bootstrap/js/bootstrap.bundle.min.js' %}"></script>-->
+    <!--<script src="{% static 'assets/js/defaultmenu.min.js' %}"></script>-->
+    <!--<script src="{% static 'assets/libs/node-waves/waves.min.js' %}"></script>-->
+    <!--<script src="{% static 'assets/js/sticky.js' %}"></script>-->
+    <!--<script src="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/js/iziToast.min.js"></script>-->
+    <!--<script src="{% static 'assets/libs/simplebar/simplebar.min.js' %}"></script>-->
+    <!--<script src="{% static 'assets/js/custom.js' %}"></script>-->
+</body>
+</html>
+{% endblock %}

@@ -1,0 +1,371 @@
+{% extends "partials/base.html" %}
+{% load static %}
+
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.12.1/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.3.0/css/responsive.bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.2.3/css/buttons.bootstrap5.min.css">
+
+<!-- Prism CSS -->
+<link rel="stylesheet" href="{% static 'assets/libs/prismjs/themes/prism-coy.min.css' %}">
+
+<!-- Page Header -->
+<div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
+    <h1 class="page-title fw-semibold fs-18 mb-0">PRODUCTS</h1>
+    <div class="ms-md-1 ms-0">
+        <nav>
+            <ol class="breadcrumb mb-0">
+                {% if user.is_superuser or user.userprofile.is_admin %}
+                <li class="breadcrumb-item"><a href="{% url 'admin_dashboard' %}">Dashboard</a></li>
+                {% else %}
+                <li class="breadcrumb-item"><a href="{% url 'salesperson_dashboard' %}">Dashboard</a></li>
+                {% endif %}
+                <li class="breadcrumb-item active" aria-current="page">Products</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+<!-- Page Header Close -->
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card custom-card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Products Overview</h5>
+                {% if is_admin %}
+                <a href="{% url 'addproduct' %}" class="btn btn-sm btn-primary">
+                    <i class="ri-add-line me-1"></i> Add Product
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if products %}
+                <div class="table-responsive">
+                    <table id="file-export" class="table table-bordered table-hover text-nowrap w-100">
+                        <thead class="table-light">
+                            <tr>
+                                {% if is_admin %}
+                                <th scope="col">Name & Category</th>
+                                <!--<th scope="col">Barcode</th>-->
+                                <th scope="col">SKU</th>
+                                <!--<th scope="col">Factory Price</th>-->
+                                <!--<th scope="col">Distributor Price</th>-->
+                                <!--<th scope="col">Wholesale Price</th>-->
+                                <!--<th scope="col">Towns Price</th>-->
+                                <!--<th scope="col">Retail Price</th>-->
+                                
+                                <th scope="col">Stock (McDave/Mombasa/Offshore)</th>
+                                <th scope="col">Status</th>
+                                <!--<th scope="col">Sales</th>-->
+                                <th scope="col">Revenue</th>
+                                <th scope="col">Actions</th>
+                                {% else %}
+                                <!--<th scope="col">Actions</th>-->
+                                <th scope="col">Name & Category</th>
+                                <th scope="col">Barcode</th>
+                                <th scope="col">SKU</th>
+                                
+                                <th scope="col">Wholesale Price</th>
+                                
+                                
+                                <th scope="col">Stock (McDave/Mombasa/Offshore)</th>
+                                <th scope="col">Status</th>
+                                {% endif%}
+                            </tr>
+                        </thead>
+                        <tbody>
+    {% for product in products %}
+    <tr data-bs-toggle="modal" data-bs-target="#productModal" 
+        data-product-id="{{ product.id }}"
+        data-product-name="{{ product.name }}"
+        data-product-image="{% if product.image %}{{ product.image.url }}{% else %}{% static 'assets/images/mcdave/logo.png' %}{% endif %}"
+        data-product-category="{{ product.category.name }}"
+        data-product-barcode="{{ product.barcode|default:'N/A' }}"
+        data-product-description="{{ product.description|default:'N/A' }}"
+        data-product-factory-price="{{ product.factory_price|floatformat:2 }}"
+        data-product-distributor-price="{{ product.distributor_price|floatformat:2 }}"
+        data-product-wholesale-price="{{ product.wholesale_price|floatformat:2 }}"
+        data-product-offshore-price="{{ product.offshore_price|floatformat:2 }}"
+        data-product-retail-price="{{ product.retail_price|floatformat:2 }}"
+        data-product-stock="{{ product.mcdave_stock }}/{{ product.kisii_stock }}/{{ product.offshore_stock }} (Total: {{ product.total_stock }})"
+        data-product-status="{{ product.status }}"
+        
+        data-is-admin="{% if is_admin %}true{% else %}false{% endif %}"
+        style="cursor: pointer;">
+        {% if is_admin %}
+        <td>
+            <div class="d-flex align-items-center">
+                <div class="me-2">
+                    <span class="avatar avatar-sm">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                        {% else %}
+                            <img src="{% static 'assets/images/mcdave/logo.png' %}" alt="No Image">
+                        {% endif %}
+                    </span>
+                </div>
+                <div>
+                    <span class="fs-14">{{ product.name }}</span><br>
+                    <small class="text-muted">{{ product.category.name }}</small>
+                </div>
+            </div>
+        </td>
+        <!--<td>{{ product.barcode|default:"N/A" }}</td>-->
+        <td>{{ product.description|default:"N/A" }}</td>
+        <!--<td>KES {{ product.factory_price|floatformat:2 }}</td>-->
+        <!--<td>KES {{ product.distributor_price|floatformat:2 }}</td>-->
+        <!--<td>KES {{ product.wholesale_price|floatformat:2 }}</td>-->
+        <!--<td>KES {{ product.offshore_price|floatformat:2 }}</td>-->
+        <!--<td>KES {{ product.retail_price|floatformat:2 }}</td>-->
+        <td>{{ product.mcdave_stock }}/{{ product.kisii_stock }}/{{ product.offshore_stock }} (Total: {{ product.total_stock }})</td>
+        <td>
+            {% if product.status == 'available' %}
+                <span class="badge bg-success">instock</span>
+            {% elif product.status == 'not_available' %}
+                <span class="badge bg-danger">out of stock</span>
+            {% elif product.status == 'limited' %}
+                <span class="badge bg-warning">Limited Deal</span>
+            {% elif product.status == 'offer' %}
+                <span class="badge bg-primary">In Offer</span>
+            {% else %}
+                <span class="badge bg-secondary">{{ product.status }}</span>
+            {% endif %}
+        </td>
+        <!--<td>{{ product.sales }}</td>-->
+        <td>KES {{ product.revenue|floatformat:2 }}</td>
+        <td>
+            <div class="d-flex gap-2" onclick="event.stopPropagation();">
+                <a href="{% url 'product_detail' product.id %}" class="btn btn-sm btn-info">Edit</a>
+                <a href="{% url 'delete_product' product.id %}" class="btn btn-sm btn-danger">Delete</a>
+            </div>
+        </td>
+        {% else %}
+        <!--<td>-->
+        <!--    <div class="d-flex gap-2" onclick="event.stopPropagation();">-->
+        <!--        <a href="{% url 'product_detail' product.id %}" class="btn btn-sm btn-info">Edit</a>-->
+        <!--    </div>-->
+        <!--</td>-->
+        <td>
+            <div class="d-flex align-items-center">
+                <div class="me-2">
+                    <span class="avatar avatar-sm">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}">
+                        {% else %}
+                            <img src="{% static 'assets/images/placeholder.jpg' %}" alt="No Image">
+                        {% endif %}
+                    </span>
+                </div>
+                <div>
+                    <span class="fs-14">{{ product.name }}</span><br>
+                    <small class="text-muted">{{ product.category.name }}</small>
+                </div>
+            </div>
+        </td>
+        <td>{{ product.barcode|default:"N/A" }}</td>
+        <td>{{ product.description|default:"N/A" }}</td>
+        <td>KES {{ product.wholesale_price|floatformat:2 }}</td>
+        <td>{{ product.mcdave_stock }}/{{ product.kisii_stock }}/{{ product.offshore_stock }} (Total: {{ product.total_stock }})</td>
+        <td>
+            {% if product.status == 'available' %}
+                <span class="badge bg-success">in stock</span>
+            {% elif product.status == 'not_available' %}
+                <span class="badge bg-danger">out of stock</span>
+            {% elif product.status == 'limited' %}
+                <span class="badge bg-warning">Limited Deal</span>
+            {% elif product.status == 'offer' %}
+                <span class="badge bg-primary">In Offer</span>
+            {% else %}
+                <span class="badge bg-secondary">{{ product.status }}</span>
+            {% endif %}
+        </td>
+        {% endif %}
+    </tr>
+    {% endfor %}
+</tbody>
+
+<!-- Bootstrap Modal -->
+<div class="modal fade" id="productModal" tabindex="-1" aria-labelledby="productModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="productModalLabel">Product Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <img id="modalProductImage" src="" alt="Product Image" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px;">
+                </div>
+                <h6 id="modalProductName"></h6>
+                <p><strong>Category:</strong> <span id="modalProductCategory"></span></p>
+                <p><strong>Barcode:</strong> <span id="modalProductBarcode"></span></p>
+                <p><strong>Description:</strong> <span id="modalProductDescription"></span></p>
+                <div id="adminFields" style="display: none;">
+                    <p><strong>Factory Price:</strong> KES <span id="modalProductFactoryPrice"></span></p>
+                    <p><strong>Distributor Price:</strong> KES <span id="modalProductDistributorPrice"></span></p>
+                    <p><strong>Towns Price:</strong> KES <span id="modalProductOffshorePrice"></span></p>
+                    <p><strong>Retail Price:</strong> KES <span id="modalProductRetailPrice"></span></p>
+                    
+                </div>
+                <p><strong>Wholesale Price:</strong> KES <span id="modalProductWholesalePrice"></span></p>
+                <p><strong>Stock:</strong> <span id="modalProductStock"></span></p>
+                <p><strong>Status:</strong> <span id="modalProductStatus"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="#" id="modalProductLink" class="btn btn-primary">View Full Details</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const productRows = document.querySelectorAll('tr[data-bs-toggle="modal"]');
+    productRows.forEach(row => {
+        row.addEventListener('click', function () {
+            const productId = this.getAttribute('data-product-id');
+            const productName = this.getAttribute('data-product-name');
+            const productImage = this.getAttribute('data-product-image');
+            const productCategory = this.getAttribute('data-product-category');
+            const productBarcode = this.getAttribute('data-product-barcode');
+            const productDescription = this.getAttribute('data-product-description');
+            const productFactoryPrice = this.getAttribute('data-product-factory-price');
+            const productDistributorPrice = this.getAttribute('data-product-distributor-price');
+            const productWholesalePrice = this.getAttribute('data-product-wholesale-price');
+            const productOffshorePrice = this.getAttribute('data-product-offshore-price');
+            const productRetailPrice = this.getAttribute('data-product-retail-price');
+            const productStock = this.getAttribute('data-product-stock');
+            let productStatus = this.getAttribute('data-product-status');
+            // const productSales = this.getAttribute('data-product-sales');
+            // const productRevenue = this.getAttribute('data-product-revenue');
+            const isAdmin = this.getAttribute('data-is-admin') === 'true';
+
+            // Map status to display text and badge class
+            const statusMap = {
+                'available': '<span class="badge bg-success">Available</span>',
+                'not_available': '<span class="badge bg-danger">Not Available</span>',
+                'limited': '<span class="badge bg-warning">Limited Deal</span>',
+                'offer': '<span class="badge bg-primary">In Offer</span>'
+            };
+            productStatus = statusMap[productStatus] || '<span class="badge bg-secondary">' + productStatus + '</span>';
+
+            // Update modal content
+            document.getElementById('modalProductName').textContent = productName;
+            document.getElementById('modalProductImage').src = productImage;
+            document.getElementById('modalProductCategory').textContent = productCategory;
+            document.getElementById('modalProductBarcode').textContent = productBarcode;
+            document.getElementById('modalProductDescription').textContent = productDescription;
+            document.getElementById('modalProductWholesalePrice').textContent = productWholesalePrice;
+            document.getElementById('modalProductStock').textContent = productStock;
+            document.getElementById('modalProductStatus').innerHTML = productStatus;
+            document.getElementById('modalProductLink').href = `/product/${productId}/`; // Adjust URL pattern as needed
+
+            // Show/hide admin fields
+            const adminFields = document.getElementById('adminFields');
+            if (isAdmin) {
+                adminFields.style.display = 'block';
+                document.getElementById('modalProductFactoryPrice').textContent = productFactoryPrice;
+                document.getElementById('modalProductDistributorPrice').textContent = productDistributorPrice;
+                document.getElementById('modalProductOffshorePrice').textContent = productOffshorePrice;
+                document.getElementById('modalProductRetailPrice').textContent = productRetailPrice;
+                // document.getElementById('modalProductSales').textContent = productSales;
+                // document.getElementById('modalProductRevenue').textContent = productRevenue;
+            } else {
+                adminFields.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+                    </table>
+                </div>
+                {% else %}
+                {% if is_admin %}
+                <div class="alert alert-info text-center">
+                    No products found. <a href="{% url 'addproduct' %}">Add a product</a> to get started.
+                </div>
+                {% else %}
+                <div class="alert alert-info text-center">
+                    No products available. Please contact your administrator.
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/responsive/2.3.0/js/dataTables.responsive.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.print.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.6/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.2.3/js/buttons.html5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<!-- Prism -->
+<script src="{% static 'assets/libs/prismjs/prism.js' %}"></script>
+<script src="{% static 'assets/js/prism-custom.js' %}"></script>
+
+<script>
+$(document).ready(function () {
+    if ($.fn.DataTable.isDataTable("#file-export")) {
+        $("#file-export").DataTable().destroy();
+    }
+
+    $('#file-export').DataTable({
+    dom: 'lBfrtip',
+    buttons: [
+        {
+            extend: 'copy',
+            exportOptions: {
+                columns: ':not(:last-child)'  // Exclude the last column (Actions)
+            }
+        },
+        {
+            extend: 'csv',
+            exportOptions: {
+                columns: ':not(:last-child)'  // Exclude the last column (Actions)
+            }
+        },
+        {
+            extend: 'excel',
+            exportOptions: {
+                columns: ':not(:last-child)'  // Exclude the last column (Actions)
+            }
+        },
+        {
+            extend: 'pdf',
+            exportOptions: {
+                columns: ':not(:last-child)'  // Exclude the last column (Actions)
+            }
+        },
+        {
+            extend: 'print',
+            exportOptions: {
+                columns: ':not(:last-child)'  // Exclude the last column (Actions)
+            }
+        }
+    ],
+    scrollX: true,
+    scrollY: "500px",
+    scrollCollapse: true,
+    paging: true,
+    pageLength: 20,
+    lengthMenu: [[5, 50, 100, 200, -1], [5, 50, 100, 200, "All"]],
+    order: [[0, 'asc']],  // Changed to sort by "Name & Category" column (index 0) in ascending order
+    columnDefs: [
+        { targets: [3, 4, 5, 6], orderable: false },
+    ]
+    });
+});
+</script>
+{% endblock %}

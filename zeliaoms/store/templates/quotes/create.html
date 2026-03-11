@@ -1,0 +1,256 @@
+<!-- quotes/create_quote.html -->
+{% extends 'partials/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Create New Quote</h2>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    <form method="post" class="mt-4" id="quoteForm">
+        {% csrf_token %}
+        <div class="mb-3">
+            {{ quote_form.customer.label_tag }}
+            {{ quote_form.customer }}
+            {% if quote_form.customer.errors %}
+                <div class="text-danger">{{ quote_form.customer.errors }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ quote_form.customer_category.label_tag }}
+            {{ quote_form.customer_category }}
+            {% if quote_form.customer_category.errors %}
+                <div class="text-danger">{{ quote_form.customer_category.errors }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ quote_form.vat_variation.label_tag }}
+            {{ quote_form.vat_variation }}
+            {% if quote_form.vat_variation.errors %}
+                <div class="text-danger">{{ quote_form.vat_variation.errors }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ quote_form.expiry_date.label_tag }}
+            {{ quote_form.expiry_date }}
+            {% if quote_form.expiry_date.errors %}
+                <div class="text-danger">{{ quote_form.expiry_date.errors }}</div>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ quote_form.notes.label_tag }}
+            {{ quote_form.notes }}
+            {% if quote_form.notes.errors %}
+                <div class="text-danger">{{ quote_form.notes.errors }}</div>
+            {% endif %}
+        </div>
+        <input type="hidden" id="customerCategory" value="">
+        <h3>Quote Items</h3>
+        {{ quote_item_formset.management_form }}
+        <div id="formset-container">
+            {% for form in quote_item_formset %}
+                <div class="card mb-3 p-3 quote-item-form">
+                    {% if form.instance.pk %}
+                        <input type="hidden" name="{{ form.prefix }}-id" value="{{ form.instance.pk }}">
+                    {% endif %}
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            {{ form.product.label_tag }}
+                            {{ form.product }}
+                            {% if form.product.errors %}
+                                <div class="text-danger">{{ form.product.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            {{ form.quantity.label_tag }}
+                            {{ form.quantity }}
+                            {% if form.quantity.errors %}
+                                <div class="text-danger">{{ form.quantity.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            {{ form.unit_price.label_tag }}
+                            {{ form.unit_price }}
+                            {% if form.unit_price.errors %}
+                                <div class="text-danger">{{ form.unit_price.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            {{ form.variance.label_tag }}
+                            {{ form.variance }}
+                            {% if form.variance.errors %}
+                                <div class="text-danger">{{ form.variance.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-1 mb-3">
+                            <label class="form-label">&nbsp;</label>
+                            {{ form.DELETE }}
+                            <label for="{{ form.DELETE.id_for_label }}" class="form-check-label">Delete</label>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Create Quote</button>
+        <a href="{% url 'quote_list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        console.log('JavaScript loaded, initializing Select2...');
+
+        // Store Django URLs in JavaScript variables
+        const CUSTOMER_SEARCH_URL = "{% url 'customer_search' %}";
+        const CUSTOMER_DETAIL_URL_BASE = "{% url 'customer_detail' customer_id=0 %}".replace('0', '');
+        const PRODUCT_SEARCH_URL = "{% url 'product_search' %}";
+        const PRODUCT_PRICE_URL_BASE = "{% url 'product_price' product_id=0 %}".replace('0', '');
+
+        // Initialize Select2 for customer
+        $('#quoteCustomer').select2({
+            placeholder: 'Search for a customer',
+            ajax: {
+                url: CUSTOMER_SEARCH_URL,
+                dataType: 'json',
+                delay: 250,
+                data: function(params) {
+                    return { q: params.term || '' };
+                },
+                processResults: function(data) {
+                    console.log('Customer search response:', data);
+                    return { results: data.results };
+                },
+                error: function(xhr, status, error) {
+                    console.error('Customer search error:', {
+                        status: xhr.status,
+                        error: error,
+                        responseText: xhr.responseText,
+                        url: CUSTOMER_SEARCH_URL
+                    });
+                },
+                cache: true
+            },
+            minimumInputLength: 1
+        });
+
+        // When customer changes, fetch category and set both hidden and form fields
+        $('#quoteCustomer').on('change', function() {
+            var customerId = $(this).val();
+            console.log('Customer selected:', customerId);
+            if (customerId) {
+                var customerDetailUrl = CUSTOMER_DETAIL_URL_BASE + customerId + '/';
+                $.get(customerDetailUrl, function(data) {
+                    console.log('Customer detail response:', data);
+                    $('#customerCategory').val(data.category);
+                    $('#quoteCustomerCategory').val(data.category).trigger('change');
+                }).fail(function(xhr, status, error) {
+                    console.error('Customer detail error:', {
+                        status: xhr.status,
+                        error: error,
+                        responseText: xhr.responseText,
+                        url: customerDetailUrl
+                    });
+                });
+            } else {
+                $('#customerCategory').val('');
+                $('#quoteCustomerCategory').val('wholesale').trigger('change');
+                console.log('No customer selected, resetting category to wholesale');
+            }
+        });
+
+        // Function to initialize Select2 for product fields
+        function initializeProductSelect2(element) {
+            element.select2({
+                placeholder: 'Search for a product',
+                ajax: {
+                    url: PRODUCT_SEARCH_URL,
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) {
+                        return {
+                            q: params.term || '',
+                            category: $('#quoteCustomerCategory').val() || 'wholesale',
+                            vat: $('#quoteVatVariation').val() || 'with_vat'
+                        };
+                    },
+                    processResults: function(data) {
+                        console.log('Product search response:', data);
+                        return { results: data.results };
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Product search error:', {
+                            status: xhr.status,
+                            error: error,
+                            responseText: xhr.responseText,
+                            url: PRODUCT_SEARCH_URL
+                        });
+                    },
+                    cache: true
+                },
+                minimumInputLength: 1
+            });
+        }
+
+        // Initialize Select2 for existing product fields
+        $('.product-select').each(function() {
+            initializeProductSelect2($(this));
+        });
+
+        // When product changes, fetch and set unit price
+        $(document).on('change', '.product-select', function() {
+            var productId = $(this).val();
+            var row = $(this).closest('.quote-item-form');
+            console.log('Product selected:', productId);
+            if (productId) {
+                var productPriceUrl = PRODUCT_PRICE_URL_BASE + productId + '/price/';
+                $.get(productPriceUrl, {
+                    category: $('#quoteCustomerCategory').val() || 'wholesale',
+                    vat: $('#quoteVatVariation').val() || 'with_vat'
+                }, function(data) {
+                    console.log('Product price response:', data);
+                    row.find('.unit-price-input').val(data.price);
+                }).fail(function(xhr, status, error) {
+                    console.error('Product price error:', {
+                        status: xhr.status,
+                        error: error,
+                        responseText: xhr.responseText,
+                        url: productPriceUrl
+                    });
+                });
+            } else {
+                row.find('.unit-price-input').val('');
+                console.log('No product selected, clearing unit price');
+            }
+        });
+
+        // When customer category changes, update prices
+        $('#quoteCustomerCategory').on('change', function() {
+            console.log('Customer category changed:', $(this).val());
+            $('.product-select').each(function() {
+                $(this).trigger('change');
+            });
+        });
+
+        // When VAT changes, update prices
+        $('#quoteVatVariation').on('change', function() {
+            console.log('VAT variation changed:', $(this).val());
+            $('.product-select').each(function() {
+                $(this).trigger('change');
+            });
+        });
+
+        
+    });
+</script>
+{% endblock %}

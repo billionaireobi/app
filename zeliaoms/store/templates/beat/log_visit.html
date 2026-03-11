@@ -1,0 +1,104 @@
+{% extends "partials/base.html" %}
+{% load static %}
+
+{% block content %}
+<head>
+  <meta charset="UTF-8">
+  <title>Log Visit</title>
+  <style>
+    body { background:#e8ecf4; }
+    .log-card { background:#fff; border-radius:14px; box-shadow:0 4px 20px rgba(0,0,0,.08); }
+    .outcome-btn { border:2px solid #e2e8f0; border-radius:10px; padding:10px 14px; cursor:pointer;
+                   transition:.2s; text-align:center; }
+    .outcome-btn:hover { border-color:#6366f1; background:#f5f3ff; }
+    .outcome-btn input:checked + .outcome-btn,
+    input[name=outcome]:checked ~ .outcome-btn { border-color:#10b981; background:#f0fdf4; }
+    .outcome-label { cursor:pointer; }
+    .outcome-label input { display:none; }
+    .outcome-label.selected .outcome-btn { border-color:#10b981; background:#f0fdf4; color:#065f46; }
+  </style>
+</head>
+
+<div class="container py-4" style="max-width:600px;">
+  <div class="log-card p-4">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <div style="width:48px;height:48px;border-radius:50%;background:#6366f1;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:1.1rem;">
+        {{ plan.customer.first_name|first|upper }}
+      </div>
+      <div>
+        <h5 class="fw-bold mb-0">{{ plan.customer.first_name }} {{ plan.customer.last_name }}</h5>
+        <div class="text-muted small">
+          <i class="bi bi-geo-alt me-1"></i>{{ plan.customer.address|default:"No address" }}
+        </div>
+      </div>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="latitude"  id="vis_lat">
+      <input type="hidden" name="longitude" id="vis_lng">
+
+      <!-- GPS capture status -->
+      <div id="gps-status" class="small text-muted mb-3">
+        <i class="bi bi-hourglass-split"></i> Capturing your GPS location…
+      </div>
+
+      <!-- Outcome selection -->
+      <div class="mb-4">
+        <label class="form-label fw-semibold">Visit Outcome <span class="text-danger">*</span></label>
+        <div class="row g-2">
+          {% for val, label in outcomes %}
+          <div class="col-6">
+            <label class="outcome-label d-block" id="lbl_{{ val }}">
+              <input type="radio" name="outcome" value="{{ val }}" required
+                     onchange="document.querySelectorAll('.outcome-label').forEach(l=>l.classList.remove('selected')); document.getElementById('lbl_{{ val }}').classList.add('selected');">
+              <div class="outcome-btn">
+                {% if val == 'order_placed' %}<i class="bi bi-cart-check-fill text-success d-block mb-1 fs-5"></i>
+                {% elif val == 'follow_up' %}<i class="bi bi-alarm-fill text-warning d-block mb-1 fs-5"></i>
+                {% elif val == 'no_contact' %}<i class="bi bi-x-circle-fill text-danger d-block mb-1 fs-5"></i>
+                {% elif val == 'info_gathered' %}<i class="bi bi-info-circle-fill text-primary d-block mb-1 fs-5"></i>
+                {% else %}<i class="bi bi-dash-circle text-secondary d-block mb-1 fs-5"></i>
+                {% endif %}
+                <div class="fw-semibold" style="font-size:.82rem;">{{ label }}</div>
+              </div>
+            </label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="mb-4">
+        <label class="form-label fw-semibold">Notes / Remarks</label>
+        <textarea name="notes" class="form-control" rows="3" placeholder="e.g. customer out of stock, interested in new product line…"></textarea>
+      </div>
+
+      <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-success btn-lg">
+          <i class="bi bi-clipboard-check me-2"></i>Save Visit
+        </button>
+        <a href="{% url 'beat_today' %}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+// Auto-capture GPS
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      document.getElementById('vis_lat').value = pos.coords.latitude;
+      document.getElementById('vis_lng').value = pos.coords.longitude;
+      document.getElementById('gps-status').innerHTML =
+        '<i class="bi bi-geo-alt-fill text-success"></i> GPS: ' +
+        pos.coords.latitude.toFixed(5) + ', ' + pos.coords.longitude.toFixed(5);
+    },
+    function() {
+      document.getElementById('gps-status').innerHTML =
+        '<i class="bi bi-exclamation-triangle text-warning"></i> GPS unavailable';
+    },
+    { timeout: 10000, enableHighAccuracy: true }
+  );
+}
+</script>
+{% endblock %}

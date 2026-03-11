@@ -1,0 +1,366 @@
+
+{% load static %}
+
+{% block content %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order #{{ order.id }} Details</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/css/iziToast.css" />
+</head>
+
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Order #{{ order.id }} Details</h2>
+        <a href="{% url 'order_list' %}" class="btn btn-secondary">
+            All Orders
+        </a>
+    </div>
+
+    <!-- Payment Status Alert -->
+    {% if remaining_balance > 0 %}
+    <div class="alert alert-warning d-flex justify-content-between align-items-center">
+        <div>
+            <strong>Payment Pending</strong>
+            <p class="mb-0">Outstanding Balance: <strong>KSh {{ remaining_balance|floatformat:2 }}</strong></p>
+        </div>
+        <a href="{% url 'add_payment' order.id %}" class="btn btn-success">Add Payment</a>
+    </div>
+    {% else %}
+    <div class="alert alert-success">
+        <strong>Fully Paid</strong>
+        <p class="mb-0">This order has been fully paid.</p>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <!-- LEFT: Order Info + Items -->
+        <div class="col-lg-8">
+            <!-- Order Info -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-info d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Order Information</h5>
+                    <a href="{% url 'edit_order' order.id %}" class="btn btn-sm btn-light">Edit Order</a>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Customer:</strong> {{ order.customer }}</p>
+                            <p><strong>Category:</strong> {{ order.get_customer_category_display }}</p>
+                            <p><strong>Store:</strong> {{ order.get_store_display }}</p>
+                            <p><strong>VAT:</strong> {{ order.get_vat_variation_display }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Order Date:</strong> {{ order.order_date|date:"Y-m-d H:i" }}</p>
+                            <p><strong>Sales Person:</strong> {{ order.sales_person }}</p>
+                            <p><strong>Delivery Status:</strong>
+                                <span class="badge bg-{% if order.delivery_status == 'completed' %}success{% elif order.delivery_status == 'cancelled' %}danger{% else %}warning{% endif %}">
+                                    {{ order.get_delivery_status_display }}
+                                </span>
+                            </p>
+                            <p><strong>Payment Status:</strong>
+                                <span class="badge bg-{% if order.paid_status == 'completed' %}success{% elif order.paid_status == 'partially_paid' %}warning{% else %}secondary{% endif %}">
+                                    {{ order.get_paid_status_display }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    {% if order.address %}
+                    <hr>
+                    <p><strong>Delivery Address:</strong> {{ order.address }}</p>
+                    <p><strong>Contact Phone:</strong> {{ order.phone }}</p>
+                    {% if order.latitude and order.longitude %}
+                    <p>
+                        <strong>GPS Coordinates:</strong>
+                        <a href="https://www.google.com/maps?q={{ order.latitude }},{{ order.longitude }}" 
+                           target="_blank" style="color: #10b981; text-decoration: none; font-weight: 500;">
+                            📍 {{ order.latitude|floatformat:5 }}, {{ order.longitude|floatformat:5 }} (View on Google Maps)
+                        </a>
+                    </p>
+                    {% endif %}
+
+                    {% comment %} MPesa transaction history for this order {% endcomment %}
+                    {% if order.mpesa_transactions.exists %}
+                    <h5 class="mt-3">M-Pesa Transactions</h5>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Amount</th>
+                                    <th>Phone</th>
+                                    <th>Status</th>
+                                    <th>Receipt</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for txn in order.mpesa_transactions.all %}
+                                <tr>
+                                    <td>{{ txn.id }}</td>
+                                    <td>KSh {{ txn.amount|floatformat:2 }}</td>
+                                    <td>{{ txn.phone_number }}</td>
+                                    <td>{{ txn.get_status_display }}</td>
+                                    <td>{{ txn.mpesa_receipt_number|default:'-' }}</td>
+                                    <td>
+                                        {% if txn.status == 'pending' %}
+                                        <a href="{% url 'mpesa_check_status' txn.id %}" class="btn btn-sm btn-info" target="_blank">
+                                            Check Status
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Order Items -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Order Items</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Variance</th>
+                                    <th class="text-end">Line Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item_data in items_with_vat %}
+                                <tr>
+                                    <td>{{ item_data.item.product.name }}</td>
+                                    <td class="text-center">{{ item_data.item.quantity }}</td>
+                                    <td class="text-end">{{ item_data.item.unit_price|floatformat:2 }}</td>
+                                    <td class="text-end">
+                                        {% if item_data.item.variance != 0 %}
+                                            <span class="{% if item_data.item.variance > 0 %}text-success{% else %}text-danger{% endif %}">
+                                                {{ item_data.item.variance|floatformat:2 }}
+                                            </span>
+                                        {% else %}0.00{% endif %}
+                                    </td>
+                                    <td class="text-end fw-bold">{{ item_data.line_total|floatformat:2 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="5" class="text-center">No items</td></tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="4" class="text-end fw-bold">Total:</td>
+                                    <td class="text-end fw-bold fs-5">KSh {{ total_amount|floatformat:2 }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Payments -->
+        <div class="col-lg-4">
+            <!-- Financial Summary -->
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Financial Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Order Total:</span>
+                        <strong>KSh {{ total_amount|floatformat:2 }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2 text-success">
+                        <span>Amount Paid:</span>
+                        <strong>KSh {{ order.amount_paid|floatformat:2 }}</strong>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <span class="fw-bold">Balance:</span>
+                        <strong class="fs-5 {% if remaining_balance > 0 %}text-danger{% else %}text-success{% endif %}">
+                            KSh {{ remaining_balance|floatformat:2 }}
+                        </strong>
+                    </div>
+                    {% if remaining_balance > 0 %}
+                    <div class="d-grid mt-3">
+                        <a href="{% url 'add_payment' order.id %}" class="btn btn-success">Add Payment</a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Payment History -->
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Payment History</h5>
+                </div>
+                <div class="card-body">
+                    {% if payments %}
+                        <div class="list-group list-group-flush">
+                            {% for payment in payments %}
+                            <div class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="mb-1">KSh {{ payment.amount|floatformat:2 }}</h6>
+                                        <small class="text-muted">
+                                            {{ payment.payment_date|date:"Y-m-d H:i" }}
+                                        </small>
+                                    </div>
+                                    {% if is_admin %}
+                                    <button class="btn btn-sm btn-outline-danger delete-payment"
+                                            data-payment-id="{{ payment.id }}"
+                                            data-url="{% url 'delete_payment' payment.id %}">
+                                        Delete
+                                    </button>
+                                    {% endif %}
+                                </div>
+                                <p class="mb-1"><small><strong>Method:</strong> {{ payment.get_payment_method_display }}</small></p>
+                                {% if payment.reference_number %}
+                                <p class="mb-1"><small><strong>Ref:</strong> {{ payment.reference_number }}</small></p>
+                                {% endif %}
+                                {% if payment.notes %}
+                                <p class="mb-1"><small class="text-muted">{{ payment.notes }}</small></p>
+                                {% endif %}
+                                <small class="text-muted">Recorded by: {{ payment.recorded_by }}</small>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center mb-0">No payments recorded yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BUNI/KCB TRANSACTIONS SECTION -->
+    {% if order.buni_transactions.exists %}
+    <div class="row mt-4">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Buni (KCB) Transactions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Amount</th>
+                                    <th>Phone</th>
+                                    <th>Status</th>
+                                    <th>Transaction ID</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for txn in order.buni_transactions.all %}
+                                <tr>
+                                    <td>#{{ txn.id }}</td>
+                                    <td>KSh {{ txn.amount|floatformat:2 }}</td>
+                                    <td>{{ txn.phone_number }}</td>
+                                    <td>
+                                        <span class="badge bg-{% if txn.status == 'success' %}success{% elif txn.status == 'pending' %}warning{% elif txn.status == 'failed' %}danger{% else %}secondary{% endif %}">
+                                            {{ txn.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td><small>{{ txn.transaction_id|default:"-" }}</small></td>
+                                    <td>
+                                        {% if txn.payment_url %}
+                                        <a href="{{ txn.payment_url }}" class="btn btn-sm btn-primary" target="_blank">
+                                            Pay Now
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- RECEIPT SECTION -->
+<div class="mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-semibold mb-0">Receipt</h5>
+        {% if pdf_base64 %}
+        <a href="data:application/pdf;base64,{{ pdf_base64 }}"
+           download="Receipt-Mc{{ order.id }}Z.pdf"
+           class="btn btn-success btn-sm">
+            Download Receipt
+        </a>
+        {% endif %}
+    </div>
+    <div class="card">
+        <div class="card-body p-0">
+            {% if pdf_base64 %}
+                <iframe src="data:application/pdf;base64,{{ pdf_base64 }}"
+                        width="100%" height="800" style="border:none;"></iframe>
+            {% else %}
+                <div class="alert alert-warning text-center m-3">
+                    Receipt generation failed. Please contact support.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/izitoast/1.4.0/js/iziToast.min.js"></script>
+
+<script>
+$(function () {
+    // === DELETE PAYMENT (Admin Only) ===
+    $('.delete-payment').on('click', function () {
+        if (!confirm('Are you sure you want to delete this payment? This cannot be undone.')) return;
+        const url = $(this).data('url');
+        $.ajax({
+            url: url,
+            type: 'POST',
+            data: { csrfmiddlewaretoken: '{{ csrf_token }}' },
+            success: function (resp) {
+                if (resp.success) {
+                    iziToast.success({ title: 'Success', message: 'Payment deleted', position: 'topRight' });
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    iziToast.error({ title: 'Error', message: resp.error || 'Failed', position: 'topRight' });
+                }
+            },
+            error: function () {
+                iziToast.error({ title: 'Error', message: 'Request failed', position: 'topRight' });
+            }
+        });
+    });
+
+    // === DJANGO MESSAGES ===
+    {% if messages %}
+        {% for msg in messages %}
+            iziToast.{% if msg.tags == 'success' %}success{% elif msg.tags == 'error' %}error{% else %}info{% endif %}({
+                title: '{{ msg.tags|title }}',
+                message: '{{ msg|escapejs }}',
+                position: 'topRight'
+            });
+        {% endfor %}
+    {% endif %}
+});
+</script>
+{% endblock %}

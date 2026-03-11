@@ -1,0 +1,128 @@
+{% extends "partials/base.html" %}
+{% load static %}
+
+{% block title %}Stock Adjustment - Zelia{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h4 class="fw-bold mb-1">Stock Adjustment</h4>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a href="{% url 'stock_dashboard' %}">Stock</a></li>
+                <li class="breadcrumb-item active">Adjustment</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-warning bg-opacity-10 border-bottom">
+                <h5 class="mb-0"><i class="ri-equalizer-line me-2 text-warning"></i>Manual Stock Adjustment</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" id="adjustmentForm">
+                    {% csrf_token %}
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium">Product *</label>
+                            <select name="product" id="productSelect" class="form-select" required>
+                                <option value="">Select a product...</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}"
+                                    data-mcdave="{{ product.mcdave_stock }}"
+                                    data-kisii="{{ product.kisii_stock }}"
+                                    data-offshore="{{ product.offshore_stock }}">
+                                    {{ product.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-medium">Store *</label>
+                            <select name="store" id="storeSelect" class="form-select" required>
+                                <option value="">Select store...</option>
+                                {% for key, name in stores %}
+                                <option value="{{ key }}">{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-medium">Current Stock</label>
+                            <input type="text" id="currentStock" class="form-control" readonly value="-">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-medium">New Quantity *</label>
+                            <input type="number" name="new_quantity" id="newQuantity" class="form-control" min="0" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-medium">Difference</label>
+                            <input type="text" id="difference" class="form-control" readonly value="-">
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label fw-medium">Reason *</label>
+                            <select name="reason" class="form-select" required>
+                                <option value="">Select reason...</option>
+                                {% for key, label in reasons %}
+                                <option value="{{ key }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-medium">Notes</label>
+                            <textarea name="notes" class="form-control" rows="3" placeholder="Detailed explanation for this adjustment..."></textarea>
+                        </div>
+                    </div>
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="ri-check-line me-1"></i> Apply Adjustment
+                        </button>
+                        <a href="{% url 'stock_list' %}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productSelect = document.getElementById('productSelect');
+    const storeSelect = document.getElementById('storeSelect');
+    const currentStock = document.getElementById('currentStock');
+    const newQuantity = document.getElementById('newQuantity');
+    const difference = document.getElementById('difference');
+
+    function updateCurrentStock() {
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        const store = storeSelect.value;
+
+        if (selectedOption.value && store) {
+            const stock = selectedOption.getAttribute('data-' + store) || 0;
+            currentStock.value = stock;
+            updateDifference();
+        } else {
+            currentStock.value = '-';
+            difference.value = '-';
+        }
+    }
+
+    function updateDifference() {
+        const current = parseInt(currentStock.value) || 0;
+        const newVal = parseInt(newQuantity.value) || 0;
+        const diff = newVal - current;
+
+        if (currentStock.value !== '-') {
+            difference.value = (diff > 0 ? '+' : '') + diff;
+            difference.className = 'form-control ' + (diff > 0 ? 'text-success' : diff < 0 ? 'text-danger' : '');
+        }
+    }
+
+    productSelect.addEventListener('change', updateCurrentStock);
+    storeSelect.addEventListener('change', updateCurrentStock);
+    newQuantity.addEventListener('input', updateDifference);
+});
+</script>
+{% endblock %}
