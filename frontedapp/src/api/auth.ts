@@ -3,8 +3,20 @@ import type { LoginCredentials, LoginResponse, UserProfile } from '../types';
 
 // POST /api/auth/login/post/
 export async function login(credentials: LoginCredentials): Promise<LoginResponse> {
-  const { data } = await apiClient.post<LoginResponse>('auth/login/post/', credentials);
-  return data;
+  try {
+    const { data } = await apiClient.post<LoginResponse>('auth/login/post/', credentials);
+    return data;
+  } catch (error) {
+    // Re-throw with enhanced message for debugging
+    if (error instanceof Error) {
+      console.error('Login API error:', {
+        message: error.message,
+        status: (error as any).status,
+        data: (error as any).data,
+      });
+    }
+    throw error;
+  }
 }
 
 // POST /api/auth/logout/post/
@@ -39,5 +51,16 @@ export async function confirmPasswordReset(payload: {
   new_password: string;
 }): Promise<{ message: string }> {
   const { data } = await apiClient.post<{ message: string }>('auth/password-reset/confirm/', payload);
+  return data;
+}
+// POST /api/auth/login-session/save/
+export async function saveLoginSession(payload: {
+  latitude?: number;
+  longitude?: number;
+  photo_base64?: string;
+  photo_uri?: string;
+  timestamp?: string;
+}): Promise<{ message: string }> {
+  const { data } = await apiClient.post<{ message: string }>('auth/login-session/save/', payload);
   return data;
 }

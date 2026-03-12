@@ -370,10 +370,11 @@ class Order(models.Model):
             return f"Order #{self.id} (Error fetching customer)"
 
     def calculate_total(self):
-        total = sum(item.line_total for item in self.order_items.all())
-        self.total_amount = total
+        subtotal = sum(item.line_total for item in self.order_items.all())
+        delivery_fee = self.delivery_fee or Decimal('0')
+        self.total_amount = subtotal + delivery_fee
         self.save()
-        return total
+        return self.total_amount
     def __str__(self):
         quote_info = f" from Quote #{self.quote.id}" if self.quote else ""
         try:
@@ -417,7 +418,12 @@ class OrderItem(models.Model):
         # Store original quantity on first save
         if not self.pk:
             self.original_quantity = self.quantity
+        # Calculate line total before saving
+        self.line_total = (self.unit_price + self.variance) * self.quantity
         super().save(*args, **kwargs)
+        # Update order total after saving item
+        if self.order:
+            self.order.calculate_total()
 
 
 class Deal(models.Model):

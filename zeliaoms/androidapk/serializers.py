@@ -223,15 +223,25 @@ class DealSerializer(serializers.ModelSerializer):
 
 class PaymentSerializer(serializers.ModelSerializer):
     """Serialize Payments"""
-    order_id = serializers.IntegerField(read_only=True)
+    order_id = serializers.IntegerField(write_only=True, required=False)
+    order_number = serializers.SerializerMethodField()
     
     class Meta:
         model = Payment
         fields = [
-            'id', 'order', 'order_id', 'amount', 'payment_method',
-            'transaction_id', 'status', 'created_at'
+            'id', 'order', 'order_id', 'order_number', 'amount', 'payment_method',
+            'payment_date', 'reference_number', 'notes', 'recorded_by', 'created_at'
         ]
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ['id', 'order', 'recorded_by', 'created_at']
+    
+    def get_order_number(self, obj):
+        return f"#{obj.order.id}" if obj.order else None
+    
+    def create(self, validated_data):
+        order_id = validated_data.pop('order_id', None)
+        if order_id:
+            validated_data['order_id'] = order_id
+        return super().create(validated_data)
 
 
 class ActivityLogSerializer(serializers.ModelSerializer):
@@ -383,11 +393,11 @@ class StockAdjustmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = StockAdjustment
         fields = [
-            'id', 'product', 'product_name', 'store', 'quantity_change',
-            'old_quantity', 'new_quantity', 'reason', 'notes',
+            'id', 'product', 'product_name', 'store', 'adjustment_quantity',
+            'previous_quantity', 'new_quantity', 'reason', 'notes',
             'adjusted_by', 'adjusted_by_name', 'created_at'
         ]
-        read_only_fields = ['id', 'created_at', 'old_quantity', 'new_quantity']
+        read_only_fields = ['id', 'created_at', 'previous_quantity', 'new_quantity']
 
 
 class StockAlertSerializer(serializers.ModelSerializer):

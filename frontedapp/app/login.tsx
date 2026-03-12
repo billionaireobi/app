@@ -18,12 +18,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
+import * as FileSystem from 'expo-file-system';
 import { useAuthStore } from '../src/store/authStore';
 import { Input } from '../src/components/ui/Input';
 import { Button } from '../src/components/ui/Button';
 import { CameraCapture, type CaptureResult } from '../src/components/CameraCapture';
 import { Colors, FontSize, Spacing, BorderRadius } from '../src/constants/colors';
-import apiClient from '../src/api/client';
+import { saveLoginSession } from '../src/api/auth';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -61,13 +62,24 @@ export default function LoginScreen() {
     return Object.keys(e).length === 0;
   };
 
-  const saveLoginSession = async () => {
+  const saveLoginSessionData = async () => {
     if (!photoResult) return;
     try {
-      await apiClient.post('auth/login-session/', {
-        latitude: photoResult.latitude ?? gpsCoords?.lat ?? null,
-        longitude: photoResult.longitude ?? gpsCoords?.lng ?? null,
-        photo_uri: photoResult.uri,
+      // Convert image URI to base64
+      let photoBase64: string | undefined;
+      try {
+        const base64 = await FileSystem.readAsStringAsync(photoResult.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        photoBase64 = base64;
+      } catch {
+        // If conversion fails, still continue without the photo
+      }
+      
+      await saveLoginSession({
+        latitude: photoResult.latitude ?? gpsCoords?.lat ?? undefined,
+        longitude: photoResult.longitude ?? gpsCoords?.lng ?? undefined,
+        photo_base64: photoBase64,
         timestamp: photoResult.timestamp,
       });
     } catch {
@@ -79,11 +91,15 @@ export default function LoginScreen() {
     if (!validate()) return;
     setSubmitting(true);
     try {
+      console.log('Attempting login with username:', username);
       await login({ username: username.trim(), password });
-      await saveLoginSession();
+      console.log('Login successful, saving session...');
+      await saveLoginSessionData();
+      console.log('Session saved, navigating to tabs...');
       router.replace('/(tabs)');
     } catch (err) {
       const message = (err as Error).message ?? 'Login failed. Please try again.';
+      console.error('Login error:', message, err);
       Toast.show({ type: 'error', text1: 'Login Failed', text2: message });
     } finally {
       setSubmitting(false);

@@ -183,7 +183,7 @@ export interface Payment {
 }
 
 export interface AddPaymentPayload {
-  order: number;
+  order_id: number;
   amount: number;
   payment_method: PaymentMethod;
   payment_date: string;

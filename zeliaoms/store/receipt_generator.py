@@ -182,7 +182,13 @@ def generate_receipt_pdf(order):
     
     elements.append(Spacer(1, 0.1*inch))
     
-    terms_text = "Payment Status: <b>" + order.get_paid_status_display() if hasattr(order, 'get_paid_status_display') else order.paid_status + "</b>"
+    # Payment status footer
+    try:
+        paid_status_display = order.get_paid_status_display() if hasattr(order, 'get_paid_status_display') else order.paid_status
+    except:
+        paid_status_display = order.paid_status
+    
+    terms_text = f"Payment Status: <b>{paid_status_display}</b>"
     elements.append(Paragraph(terms_text, ParagraphStyle(
         'Terms',
         parent=styles['Normal'],

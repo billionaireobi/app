@@ -17,9 +17,9 @@ export async function getFeedbackDetail(id: number): Promise<CustomerFeedback> {
   return data;
 }
 
-// POST /api/feedback/  (multipart/form-data for photo)
+// POST /api/feedback/submit_feedback/ - Submit customer feedback
 export async function submitFeedback(payload: {
-  customer: number;
+  customer_id: number;
   shop_name: string;
   contact_person: string;
   exact_location: string;
@@ -31,6 +31,6 @@ export async function submitFeedback(payload: {
   latitude?: number;
   longitude?: number;
 }): Promise<CustomerFeedback> {
-  const { data } = await apiClient.post<CustomerFeedback>('feedback/', payload);
+  const { data } = await apiClient.post<CustomerFeedback>('feedback/submit_feedback/', payload);
   return data;
 }

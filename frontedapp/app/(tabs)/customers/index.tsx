@@ -71,23 +71,28 @@ export default function CustomersScreen() {
         )}
       </View>
 
-      <FlatList
-        data={CATEGORY_FILTERS}
-        keyExtractor={(item) => item.value}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            onPress={() => setCategoryFilter(item.value)}
-            style={[styles.filterPill, categoryFilter === item.value && styles.filterPillActive]}
-          >
-            <Text style={[styles.filterText, categoryFilter === item.value && styles.filterTextActive]}>
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        )}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filters}
-      />
+      <View style={styles.filterSection}>
+        <Text style={styles.filterLabel}>Filter by Category</Text>
+        <FlatList
+          data={CATEGORY_FILTERS}
+          keyExtractor={(item) => item.value}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              onPress={() => setCategoryFilter(item.value)}
+              style={[styles.filterPill, categoryFilter === item.value && styles.filterPillActive]}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.filterText, categoryFilter === item.value && styles.filterTextActive]}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          )}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filters}
+          scrollEventThrottle={16}
+        />
+      </View>
 
       {!isLoading && data && (
         <Text style={styles.count}>{data.count} customer{data.count !== 1 ? 's' : ''}</Text>
@@ -162,19 +167,52 @@ const styles = StyleSheet.create({
   filters: {
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.md,
-    gap: Spacing.sm,
+    gap: Spacing.md,
+  },
+  filterSection: {
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.gray100,
+    paddingTop: Spacing.md,
+  },
+  filterLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+    paddingHorizontal: Spacing.md,
+    marginBottom: Spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   filterPill: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.sm,
     borderRadius: BorderRadius.full,
-    backgroundColor: Colors.gray100,
-    borderWidth: 1,
+    backgroundColor: Colors.white,
+    borderWidth: 1.5,
     borderColor: Colors.gray200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 36,
   },
-  filterPillActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  filterText: { fontSize: FontSize.sm, color: Colors.textSecondary, fontWeight: '500' },
-  filterTextActive: { color: Colors.white, fontWeight: '700' },
+  filterPillActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  filterText: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+  },
+  filterTextActive: {
+    color: Colors.white,
+    fontWeight: '700',
+  },
   count: {
     fontSize: FontSize.sm,
     color: Colors.textSecondary,

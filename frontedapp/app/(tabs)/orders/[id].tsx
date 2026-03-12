@@ -8,6 +8,7 @@ import {
   Alert,
   Modal,
   TextInput,
+  Share,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +16,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import Toast from 'react-native-toast-message';
-import { getOrder, getOrderItems, updateOrderStatus } from '../../../src/api/orders';
+import { getOrder, getOrderItems, updateOrderStatus, downloadOrderReceipt, deleteOrder } from '../../../src/api/orders';
 import { addPayment, getOrderPayments, initiateSTKPush } from '../../../src/api/payments';
 import { Card } from '../../../src/components/ui/Card';
 import { Badge, getOrderStatusVariant, formatOrderStatus } from '../../../src/components/ui/Badge';
@@ -33,6 +34,7 @@ export default function OrderDetailScreen() {
   const [paymentModal, setPaymentModal] = useState(false);
   const [mpesaModal, setMpesaModal] = useState(false);
   const [deliveryModal, setDeliveryModal] = useState(false);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState(false);
   const [payAmount, setPayAmount] = useState('');
   const [payMethod, setPayMethod] = useState<PaymentMethod>('cash');
   const [payRef, setPayRef] = useState('');
@@ -56,9 +58,18 @@ export default function OrderDetailScreen() {
 
   const { mutate: addPay, isPending: payPending } = useMutation({
     mutationFn: addPayment,
-    onSuccess: () => {
+    onSuccess: (response) => {
       Toast.show({ type: 'success', text1: 'Payment recorded!' });
-      queryClient.invalidateQueries({ queryKey: ['order', orderId] });
+      
+      // Immediately update the order query with the new payment status
+      if (response.order_update) {
+        queryClient.setQueryData(['order', orderId], (oldData: any) => ({
+          ...oldData,
+          paid_status: response.order_update.paid_status,
+          amount_paid: response.order_update.amount_paid,
+        }));
+      }
+      
       queryClient.invalidateQueries({ queryKey: ['order-payments', orderId] });
       setPaymentModal(false);
       setPayAmount('');
@@ -92,13 +103,24 @@ export default function OrderDetailScreen() {
     onError: () => Toast.show({ type: 'error', text1: 'STK Push Failed' }),
   });
 
+  const { mutate: delOrder, isPending: deletePending } = useMutation({
+    mutationFn: () => deleteOrder(orderId),
+    onSuccess: () => {
+      Toast.show({ type: 'success', text1: 'Order deleted successfully' });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
+      router.back();
+    },
+    onError: (err: Error) =>
+      Toast.show({ type: 'error', text1: 'Delete failed', text2: err.message }),
+  });
+
   const handleAddPayment = () => {
     if (!payAmount || isNaN(Number(payAmount))) {
       Toast.show({ type: 'error', text1: 'Enter a valid amount' });
       return;
     }
     addPay({
-      order: orderId,
+      order_id: orderId,
       amount: Number(payAmount),
       payment_method: payMethod,
       payment_date: new Date().toISOString().split('T')[0],
@@ -112,6 +134,22 @@ export default function OrderDetailScreen() {
       return;
     }
     stkPush({ order: orderId, phone_number: mpesaPhone, amount: Number(mpesaAmount) });
+  };
+
+  const handlePrintReceipt = async () => {
+    try {
+      Toast.show({ type: 'info', text1: 'Loading receipt...' });
+      await downloadOrderReceipt(orderId);
+      Toast.show({
+        type: 'success',
+        text1: 'Receipt Ready',
+        text2: 'Use your device print or email options',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Receipt download error:', error);
+      Toast.show({ type: 'error', text1: 'Failed to load receipt' });
+    }
   };
 
   if (isLoading || !order) {
@@ -135,9 +173,17 @@ export default function OrderDetailScreen() {
           <Ionicons name="arrow-back" size={22} color={Colors.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Order #{order.id}</Text>
-        <TouchableOpacity onPress={() => setDeliveryModal(true)} style={styles.backBtn}>
-          <Ionicons name="bicycle-outline" size={22} color={Colors.white} />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={handlePrintReceipt} style={styles.backBtn}>
+            <Ionicons name="print" size={22} color={Colors.white} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setDeliveryModal(true)} style={styles.backBtn}>
+            <Ionicons name="bicycle-outline" size={22} color={Colors.white} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setDeleteConfirmModal(true)} style={styles.backBtn}>
+            <Ionicons name="trash-outline" size={22} color={Colors.error} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -251,7 +297,7 @@ export default function OrderDetailScreen() {
         )}
 
         {/* Actions */}
-        {balance > 0 && (
+        {balance > 0 && order.delivery_status !== 'delivered' && order.delivery_status !== 'cancelled' && (
           <View style={styles.actions}>
             <Button
               onPress={() => {
@@ -262,6 +308,7 @@ export default function OrderDetailScreen() {
               variant="primary"
               fullWidth
               style={styles.actionBtn}
+              disabled={balance <= 0 || order.paid_status === 'completed'}
             />
             <Button
               onPress={() => {
@@ -272,6 +319,7 @@ export default function OrderDetailScreen() {
               label="M-Pesa STK Push"
               variant="secondary"
               fullWidth
+              disabled={balance <= 0 || order.paid_status === 'completed'}
             />
           </View>
         )}
@@ -416,6 +464,36 @@ export default function OrderDetailScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal visible={deleteConfirmModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modal}>
+            <View style={styles.deleteWarningIcon}>
+              <Ionicons name="warning" size={48} color={Colors.error} />
+            </View>
+            <Text style={styles.modalTitle}>Delete Order?</Text>
+            <Text style={styles.deleteWarningText}>
+              Are you sure you want to delete Order #{order.id}? This action cannot be undone.
+            </Text>
+            <View style={styles.modalActions}>
+              <Button
+                onPress={() => setDeleteConfirmModal(false)}
+                label="Cancel"
+                variant="outline"
+                style={{ flex: 1 }}
+              />
+              <Button
+                onPress={() => delOrder()}
+                label="Delete"
+                variant="primary"
+                loading={deletePending}
+                style={{ flex: 1, backgroundColor: Colors.error }}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -462,6 +540,7 @@ const styles = StyleSheet.create({
   },
   backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: FontSize.lg, fontWeight: '700', color: Colors.white },
+  headerActions: { flexDirection: 'row', gap: Spacing.sm },
   content: { padding: Spacing.md, paddingBottom: Spacing.xxl },
   statusCard: { marginBottom: Spacing.md },
   statusRow: { flexDirection: 'row', justifyContent: 'space-around' },
@@ -599,5 +678,16 @@ const styles = StyleSheet.create({
   },
   deliveryOptionTextActive: {
     color: Colors.white,
+  },
+  deleteWarningIcon: {
+    alignSelf: 'center',
+    marginBottom: Spacing.md,
+  },
+  deleteWarningText: {
+    fontSize: FontSize.md,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+    lineHeight: 24,
   },
 });

@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authtoken.models import Token
+from rest_framework.pagination import PageNumberPagination
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.db.models import Q, Sum, Count
@@ -70,14 +71,34 @@ class LoginView(viewsets.ViewSet):
                 status=status.HTTP_401_UNAUTHORIZED
             )
         
-        token, _ = Token.objects.get_or_create(user=user)
-        user_profile = UserProfile.objects.get(user=user)
-        
-        return Response({
-            'token': token.key,
-            'user': UserProfileSerializer(user_profile).data,
-            'message': 'Login successful'
-        })
+        try:
+            token, _ = Token.objects.get_or_create(user=user)
+            
+            # Ensure UserProfile exists - create if missing
+            try:
+                user_profile = UserProfile.objects.get(user=user)
+            except UserProfile.DoesNotExist:
+                # Auto-create profile if it doesn't exist
+                from django.contrib.auth.models import Group
+                if user.is_superuser:
+                    user_profile = UserProfile.objects.create(user=user, department='Executive')
+                    admin_group, _ = Group.objects.get_or_create(name='Admins')
+                    user.groups.add(admin_group)
+                else:
+                    user_profile = UserProfile.objects.create(user=user, department='Sales')
+                    sales_group, _ = Group.objects.get_or_create(name='Salespersons')
+                    user.groups.add(sales_group)
+            
+            return Response({
+                'token': token.key,
+                'user': UserProfileSerializer(user_profile).data,
+                'message': 'Login successful'
+            })
+        except Exception as e:
+            return Response(
+                {'error': f'Login failed: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class LogoutView(viewsets.ViewSet):
@@ -146,12 +167,24 @@ class CategoryViewSet(viewsets.ModelViewSet):
         return Category.objects.all().order_by('name')
 
 
+# ==================== Custom Pagination ====================
+
+class MobileAppPagination(PageNumberPagination):
+    """Custom pagination for mobile app - 15 items per page"""
+    page_size = 15
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+# ==================== Product Management ====================
+
 class ProductViewSet(viewsets.ModelViewSet):
     """ViewSet for Products"""
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = MobileAppPagination
     filterset_fields = ['category', 'status']
     search_fields = ['name', 'description', 'barcode']
     ordering_fields = ['name', 'created_at', 'retail_price']
@@ -178,32 +211,44 @@ class ProductViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['get'])
     def price_by_category(self, request, pk=None):
         """Get product price based on customer category with VAT options"""
-        from decimal import Decimal
-        product = self.get_object()
-        category = request.query_params.get('category', 'wholesale')
-        vat_variation = request.query_params.get('vat_variation', 'with_vat')
-        
-        VAT_RATE = Decimal('0.16')
-        base_price = product.get_price_by_category(category)
-        
-        price_with_vat = base_price * (1 + VAT_RATE) if base_price else 0
-        price_without_vat = base_price
-        
-        return Response({
-            'product_id': product.id,
-            'product_name': product.name,
-            'customer_category': category,
-            'price_without_vat': float(price_without_vat),
-            'price_with_vat': float(price_with_vat),
-            'vat_variation': vat_variation,
-            'selected_price': float(price_with_vat) if vat_variation == 'with_vat' else float(price_without_vat),
-            'stock': {
-                'mcdave': product.mcdave_stock,
-                'kisii': product.kisii_stock,
-                'offshore': product.offshore_stock,
-                'total': product.mcdave_stock + product.kisii_stock + product.offshore_stock
-            }
-        })
+        try:
+            from decimal import Decimal
+            product = self.get_object()
+            category = request.query_params.get('category', 'wholesale')
+            vat_variation = request.query_params.get('vat_variation', 'with_vat')
+            
+            VAT_RATE = Decimal('0.16')
+            base_price = product.get_price_by_category(category)
+            
+            # Handle None or Decimal prices
+            if base_price is None:
+                base_price = Decimal('0')
+            else:
+                base_price = Decimal(str(base_price))
+            
+            price_with_vat = base_price * (1 + VAT_RATE) if base_price else 0
+            price_without_vat = base_price
+            
+            return Response({
+                'product_id': product.id,
+                'product_name': product.name,
+                'customer_category': category,
+                'price_without_vat': float(price_without_vat),
+                'price_with_vat': float(price_with_vat),
+                'vat_variation': vat_variation,
+                'selected_price': float(price_with_vat) if vat_variation == 'with_vat' else float(price_without_vat),
+                'stock': {
+                    'mcdave': product.mcdave_stock,
+                    'kisii': product.kisii_stock,
+                    'offshore': product.offshore_stock,
+                    'total': product.mcdave_stock + product.kisii_stock + product.offshore_stock
+                }
+            })
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to calculate price: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
     @action(detail=False, methods=['get'])
     def low_stock(self, request):
@@ -227,6 +272,7 @@ class CustomerViewSet(viewsets.ModelViewSet):
     serializer_class = CustomerSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = MobileAppPagination
     filterset_fields = ['default_category', 'sales_person']
     search_fields = ['first_name', 'last_name', 'phone_number', 'email']
     ordering_fields = ['first_name', 'created_at']
@@ -318,6 +364,7 @@ class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = MobileAppPagination
     filterset_fields = ['customer', 'delivery_status', 'paid_status', 'store']
     search_fields = ['id', 'customer__first_name', 'customer__phone_number']
     ordering_fields = ['order_date', 'created_at', 'total_amount']
@@ -349,6 +396,21 @@ class OrderViewSet(viewsets.ModelViewSet):
                 )
             
             customer = Customer.objects.get(id=customer_id)
+            
+            # Validate stock availability BEFORE creating order
+            store = order_data.get('store', 'mcdave').lower()
+            stock_field = f'{store}_stock'
+            
+            for item in order_data.get('items', []):
+                product = Product.objects.get(id=item['product_id'])
+                quantity_ordered = item.get('quantity', 1)
+                current_stock = getattr(product, stock_field, 0)
+                
+                if current_stock < quantity_ordered:
+                    return Response(
+                        {'error': f'Insufficient stock: {product.name} has {current_stock} units available, but {quantity_ordered} requested'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
             
             # Check permissions - salesperson can only order for their own customers or admin customers
             user = request.user
@@ -395,15 +457,70 @@ class OrderViewSet(viewsets.ModelViewSet):
                 else:
                     unit_price = Decimal(str(unit_price))
                 
+                quantity_ordered = item.get('quantity', 1)
+                
                 OrderItem.objects.create(
                     order=order,
                     product=product,
-                    quantity=item.get('quantity', 1),
+                    quantity=quantity_ordered,
                     unit_price=unit_price,
                     variance=Decimal(str(item.get('variance', 0)))
                 )
+                
+                # Decrement stock based on store location
+                if hasattr(product, stock_field):
+                    # Get current stock
+                    current_stock = getattr(product, stock_field, 0)
+                    new_stock = max(0, current_stock - quantity_ordered)
+                    
+                    # Update product stock
+                    setattr(product, stock_field, new_stock)
+                    product.save()
+                    
+                    # Create stock movement record for audit trail
+                    from store.models import StockMovement
+                    try:
+                        StockMovement.objects.create(
+                            product=product,
+                            store=store,
+                            movement_type='out',
+                            quantity=-quantity_ordered,  # Negative for outgoing stock
+                            previous_stock=current_stock,
+                            new_stock=new_stock,
+                            order=order,
+                            reference_number=f"ORD-{order.id}",
+                            notes=f"Order item stock deduction",
+                            recorded_by=request.user
+                        )
+                    except Exception as e:
+                        # Log error but continue - stock is already decremented
+                        print(f"StockMovement creation error: {e}")
             
             order.calculate_total()
+            
+            # Create notifications for admins and the salesperson about new order
+            admin_users = User.objects.filter(
+                Q(is_superuser=True) | Q(groups__name='Admins')
+            ).distinct()
+            
+            customer_name = order.customer.get_full_name() if hasattr(order.customer, 'get_full_name') else str(order.customer)
+            
+            # Get list of users to notify (admins + salesperson)
+            users_to_notify = list(admin_users) + [request.user]
+            # Remove duplicates if user is both admin and salesperson
+            users_to_notify = list(set(users_to_notify))
+            
+            for user in users_to_notify:
+                Notification.objects.create(
+                    user=user,
+                    event_type='order_created',
+                    title=f'New Order #{order.id}',
+                    body=f'Order from {customer_name} - KSh {order.total_amount:.2f}',
+                    url=f'/orders/{order.id}/'
+                )
+            
+            # Refresh order to ensure all calculated fields are current
+            order.refresh_from_db()
             serializer = OrderDetailSerializer(order, context={'request': request})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         
@@ -425,22 +542,83 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
     
-    @action(detail=True, methods=['put'])
+    def destroy(self, request, pk=None):
+        """Delete an order"""
+        try:
+            order = self.get_object()
+            order_id = order.id
+            order_number = getattr(order, 'order_number', f'#{order_id}')
+            order.delete()
+            return Response(
+                {'message': f'Order {order_number} deleted successfully'},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to delete order: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @action(detail=True, methods=['post', 'put', 'patch'])
     def update_status(self, request, pk=None):
         """Update order delivery or payment status"""
-        order = self.get_object()
-        
-        delivery_status = request.data.get('delivery_status')
-        paid_status = request.data.get('paid_status')
-        
-        if delivery_status:
-            order.delivery_status = delivery_status
-        if paid_status:
-            order.paid_status = paid_status
-        
-        order.save()
-        serializer = self.get_serializer(order)
-        return Response(serializer.data)
+        try:
+            order = self.get_object()
+            
+            delivery_status = request.data.get('delivery_status')
+            paid_status = request.data.get('paid_status')
+            
+            # Status mapping for frontend compatibility
+            delivery_status_map = {
+                'pending': 'pending',
+                'in_transit': 'completed',
+                'processing': 'completed',
+                'shipped': 'completed',
+                'delivered': 'completed',
+                'completed': 'completed',
+                'cancelled': 'cancelled',
+                'returned': 'returned'
+            }
+            
+            paid_status_map = {
+                'pending': 'pending',
+                'unpaid': 'pending',
+                'partial': 'partially_paid',
+                'partially_paid': 'partially_paid',
+                'paid': 'completed',
+                'completed': 'completed'
+            }
+            
+            if delivery_status:
+                mapped_status = delivery_status_map.get(delivery_status, delivery_status)
+                valid_statuses = ['pending', 'completed', 'cancelled', 'returned']
+                if mapped_status not in valid_statuses:
+                    return Response(
+                        {'error': f'Invalid delivery_status: {delivery_status}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                order.delivery_status = mapped_status
+            
+            if paid_status:
+                mapped_status = paid_status_map.get(paid_status, paid_status)
+                valid_statuses = ['pending', 'partially_paid', 'completed']
+                if mapped_status not in valid_statuses:
+                    return Response(
+                        {'error': f'Invalid paid_status: {paid_status}'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                order.paid_status = mapped_status
+            
+            order.save()
+            serializer = self.get_serializer(order)
+            return Response(serializer.data)
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {'error': f'Failed to update order status: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
     @action(detail=True, methods=['get'])
     def items(self, request, pk=None):
@@ -729,21 +907,91 @@ class PaymentViewSet(viewsets.ModelViewSet):
     def add_payment(self, request):
         """Add payment to order"""
         try:
+            order_id = request.data.get('order_id')
+            if not order_id:
+                return Response(
+                    {'error': 'order_id is required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Verify order exists
+            from store.models import Order
+            try:
+                order = Order.objects.get(id=order_id)
+            except Order.DoesNotExist:
+                return Response(
+                    {'error': f'Order {order_id} not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
             payment = Payment.objects.create(
-                order_id=request.data['order_id'],
-                amount=Decimal(str(request.data['amount'])),
+                order=order,
+                amount=Decimal(str(request.data.get('amount', 0))),
                 payment_method=request.data.get('payment_method', 'cash'),
-                transaction_id=request.data.get('transaction_id', ''),
-                status='completed'
+                payment_date=request.data.get('payment_date') or timezone.now(),
+                reference_number=request.data.get('reference_number', ''),
+                notes=request.data.get('notes', ''),
+                recorded_by=request.user
             )
             
-            # Update order payment status
-            order = payment.order
-            order.amount_paid += payment.amount
-            order.update_paid_status()
+            # Update order payment tracking with proper Decimal handling
+            # Ensure both values are Decimal for accurate comparison
+            new_amount_paid = Decimal(str(order.amount_paid)) + payment.amount
+            order.amount_paid = new_amount_paid
+            order.update_paid_status()  # This will save the order with updated status
             
-            serializer = self.get_serializer(payment)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            # Create payment notification
+            admin_users = User.objects.filter(
+                Q(is_superuser=True) | Q(groups__name='Admins')
+            ).distinct()
+            
+            for admin in admin_users:
+                Notification.objects.create(
+                    user=admin,
+                    event_type='payment_new',
+                    title=f'Payment Recorded - Order #{order.id}',
+                    body=f'KSh {payment.amount:.2f} received',
+                    url=f'/orders/{order.id}/'
+                )
+            
+            # Return payment with updated order data in response
+            payment_serializer = self.get_serializer(payment)
+            response_data = {
+                'payment': payment_serializer.data,
+                'order_update': {
+                    'id': order.id,
+                    'paid_status': order.paid_status,
+                    'amount_paid': float(order.amount_paid),
+                    'total_amount': float(order.total_amount)
+                }
+            }
+            return Response(response_data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    def list(self, request, *args, **kwargs):
+        """List payments - supports both 'order' and 'order_id' parameters"""
+        try:
+            # Accept both 'order' and 'order_id' query parameters
+            order_id = request.query_params.get('order_id') or request.query_params.get('order')
+            
+            if order_id:
+                try:
+                    order_id = int(order_id)
+                    queryset = self.queryset.filter(order_id=order_id)
+                    serializer = self.get_serializer(queryset, many=True)
+                    return Response(serializer.data)
+                except ValueError:
+                    return Response(
+                        {'error': 'Invalid order_id parameter'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # If no order filter, return all payments
+            return super().list(request, *args, **kwargs)
         except Exception as e:
             return Response(
                 {'error': str(e)},
@@ -753,11 +1001,17 @@ class PaymentViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'])
     def by_order(self, request):
         """Get payments for specific order"""
-        order_id = request.query_params.get('order_id')
+        order_id = request.query_params.get('order_id') or request.query_params.get('order')
         if order_id:
-            payments = Payment.objects.filter(order_id=order_id)
-            serializer = self.get_serializer(payments, many=True)
-            return Response(serializer.data)
+            try:
+                payments = Payment.objects.filter(order_id=int(order_id))
+                serializer = self.get_serializer(payments, many=True)
+                return Response(serializer.data)
+            except ValueError:
+                return Response(
+                    {'error': 'Invalid order_id parameter'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
         
         return Response(
             {'error': 'order_id parameter required'},
@@ -804,6 +1058,7 @@ class StockMovementViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = StockMovementSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
+    pagination_class = MobileAppPagination
     filterset_fields = ['product', 'store', 'movement_type']
     search_fields = ['product__name', 'reference_number']
     ordering_fields = ['created_at']
@@ -918,29 +1173,64 @@ class StockAdjustmentViewSet(viewsets.ModelViewSet):
     def adjust_stock(self, request):
         """Create stock adjustment"""
         try:
+            product_id = request.data.get('product_id')
+            store = request.data.get('store')
+            new_quantity = request.data.get('new_quantity')
+            reason = request.data.get('reason', 'other')
+            notes = request.data.get('notes', '')
+            
+            if not product_id or not store or new_quantity is None:
+                return Response(
+                    {'error': 'product_id, store, and new_quantity are required'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            product = Product.objects.get(id=product_id)
+            
+            # Get current stock
+            stock_field = f'{store}_stock'
+            previous_quantity = getattr(product, stock_field, 0)
+            adjustment_quantity = int(new_quantity) - int(previous_quantity)
+            
+            # Create adjustment record
             adjustment = StockAdjustment.objects.create(
-                product_id=request.data['product_id'],
-                store=request.data['store'],
-                adjustment_type=request.data.get('adjustment_type', 'manual'),
-                old_quantity=request.data['old_quantity'],
-                new_quantity=request.data['new_quantity'],
-                reason=request.data.get('reason', ''),
+                product=product,
+                store=store,
+                previous_quantity=previous_quantity,
+                new_quantity=int(new_quantity),
+                adjustment_quantity=adjustment_quantity,
+                reason=reason,
+                notes=notes,
                 adjusted_by=request.user
             )
             
             # Update product stock
-            product = adjustment.product
-            if adjustment.store == 'mcdave':
-                product.mcdave_stock = adjustment.new_quantity
-            elif adjustment.store == 'kisii':
-                product.kisii_stock = adjustment.new_quantity
-            elif adjustment.store == 'offshore':
-                product.offshore_stock = adjustment.new_quantity
+            setattr(product, stock_field, int(new_quantity))
             product.save()
+            
+            # Create stock movement record
+            StockMovement.objects.create(
+                product=product,
+                store=store,
+                movement_type='adjustment',
+                quantity=abs(adjustment_quantity),
+                previous_stock=previous_quantity,
+                new_stock=int(new_quantity),
+                reference_number=f"ADJ-{adjustment.id}",
+                notes=f"Stock adjustment: {reason} - {notes}",
+                recorded_by=request.user
+            )
             
             serializer = self.get_serializer(adjustment)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Product.DoesNotExist:
+            return Response(
+                {'error': f'Product with id {product_id} not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -1079,13 +1369,14 @@ class CustomerFeedbackViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if user.is_superuser or user.groups.filter(name='Admins').exists():
             return CustomerFeedback.objects.all()
-        return CustomerFeedback.objects.filter(created_by=user)
+        return CustomerFeedback.objects.filter(salesperson=user)
     
     @action(detail=False, methods=['post'])
     def submit_feedback(self, request):
-        """Submit new feedback"""
+        """Submit new feedback with optional photo"""
         try:
-            customer_id = request.data.get('customer_id')
+            # Accept both customer_id and customer parameters
+            customer_id = request.data.get('customer_id') or request.data.get('customer')
             if not customer_id:
                 return Response(
                     {'error': 'customer_id is required'},
@@ -1104,11 +1395,53 @@ class CustomerFeedbackViewSet(viewsets.ModelViewSet):
                 phone_number=request.data.get('phone_number') or customer.phone_number or '',
                 feedback_type=request.data.get('feedback_type', 'quality'),
                 rating=int(request.data.get('rating', 5)),
-                message=request.data.get('message', ''),
+                comment=request.data.get('comment', ''),
                 latitude=request.data.get('latitude'),
-                longitude=request.data.get('longitude'),
-                created_by=request.user
+                longitude=request.data.get('longitude')
             )
+            
+            # Handle photo upload (either from FILES or base64 from data)
+            if 'photo' in request.FILES:
+                feedback.photo = request.FILES['photo']
+                feedback.save()
+            elif 'photo_base64' in request.data:
+                import base64
+                import uuid
+                from django.core.files.base import ContentFile
+                
+                photo_base64 = request.data.get('photo_base64')
+                if photo_base64:
+                    try:
+                        # Remove data URI prefix if present
+                        if ',' in photo_base64:
+                            photo_base64 = photo_base64.split(',')[1]
+                        
+                        # Decode base64
+                        image_data = base64.b64decode(photo_base64)
+                        filename = f'feedback_{uuid.uuid4()}.jpg'
+                        feedback.photo.save(filename, ContentFile(image_data), save=True)
+                    except Exception as e:
+                        # Log but don't fail if photo processing fails
+                        print(f"Photo upload error: {e}")
+            
+            # Create notification for admins
+            admin_users = User.objects.filter(
+                Q(is_superuser=True) | Q(groups__name='Admins')
+            ).distinct()
+            
+            # Get list of users to notify (admins + salesperson who submitted feedback)
+            users_to_notify = list(admin_users) + [request.user]
+            # Remove duplicates if user is both admin and salesperson
+            users_to_notify = list(set(users_to_notify))
+            
+            for user in users_to_notify:
+                Notification.objects.create(
+                    user=user,
+                    event_type='feedback_new',
+                    title=f'New Feedback from {feedback.shop_name}',
+                    body=f'Rating: {feedback.rating}/5 - {feedback.get_feedback_type_display()}',
+                    url=f'/feedback/{feedback.id}/'
+                )
             
             serializer = self.get_serializer(feedback)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -1153,22 +1486,22 @@ class InternalMessageViewSet(viewsets.ModelViewSet):
     serializer_class = InternalMessageSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-    filterset_fields = ['sender', 'receiver', 'is_read']
+    filterset_fields = ['sender', 'recipient', 'is_read']
     ordering_fields = ['created_at']
     ordering = ['-created_at']
     
     def get_queryset(self):
-        """Get messages where user is sender or receiver"""
+        """Get messages where user is sender or recipient"""
         user = self.request.user
         return InternalMessage.objects.filter(
-            Q(sender=user) | Q(receiver=user)
+            Q(sender=user) | Q(recipient=user)
         )
     
     @action(detail=False, methods=['post'])
     def send_message(self, request):
         """Send internal message"""
         try:
-            receiver_id = request.data.get('receiver_id')  # Optional for broadcasts
+            recipient_id = request.data.get('recipient_id')  # Optional for broadcasts
             message_text = request.data.get('message')
             
             if not message_text:
@@ -1177,19 +1510,19 @@ class InternalMessageViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Allow broadcast if receiver_id is None, otherwise validate receiver exists
-            if receiver_id:
+            # Allow broadcast if recipient_id is None, otherwise validate recipient exists
+            if recipient_id:
                 try:
-                    User.objects.get(id=receiver_id)
+                    User.objects.get(id=recipient_id)
                 except User.DoesNotExist:
                     return Response(
-                        {'error': f'User with id {receiver_id} not found'},
+                        {'error': f'User with id {recipient_id} not found'},
                         status=status.HTTP_404_NOT_FOUND
                     )
             
             message = InternalMessage.objects.create(
                 sender=request.user,
-                receiver_id=receiver_id,  # Can be None for broadcasts
+                recipient_id=recipient_id,  # Can be None for broadcasts
                 message=message_text
             )
             
@@ -1202,7 +1535,7 @@ class InternalMessageViewSet(viewsets.ModelViewSet):
     def unread(self, request):
         """Get unread messages for current user"""
         unread = InternalMessage.objects.filter(
-            receiver=request.user,
+            recipient=request.user,
             is_read=False
         ).order_by('-created_at')
         
@@ -1214,7 +1547,6 @@ class InternalMessageViewSet(viewsets.ModelViewSet):
         """Mark message as read"""
         message = self.get_object()
         message.is_read = True
-        message.read_at = timezone.now()
         message.save()
         
         serializer = self.get_serializer(message)
@@ -1231,8 +1563,8 @@ class InternalMessageViewSet(viewsets.ModelViewSet):
             )
         
         messages = InternalMessage.objects.filter(
-            (Q(sender=request.user) & Q(receiver_id=other_user_id)) |
-            (Q(sender_id=other_user_id) & Q(receiver=request.user))
+            (Q(sender=request.user) & Q(recipient_id=other_user_id)) |
+            (Q(sender_id=other_user_id) & Q(recipient=request.user))
         ).order_by('created_at')
         
         serializer = self.get_serializer(messages, many=True)
@@ -1245,7 +1577,8 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = NotificationSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
-    filterset_fields = ['user', 'notification_type', 'is_read']
+    pagination_class = MobileAppPagination
+    filterset_fields = ['user', 'event_type', 'is_read']
     ordering_fields = ['created_at']
     ordering = ['-created_at']
     
@@ -1639,15 +1972,40 @@ class LoginSessionViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def save(self, request):
-        """Record login GPS + device info."""
+        """Record login GPS + device info + optional photo."""
         try:
-            LoginSession.objects.create(
+            login_session = LoginSession.objects.create(
                 user=request.user,
                 latitude=request.data.get('latitude'),
                 longitude=request.data.get('longitude'),
                 ip_address=request.META.get('REMOTE_ADDR', ''),
                 device_info=request.META.get('HTTP_USER_AGENT', ''),
             )
+            
+            # Handle login photo (either from FILES or base64 from data)
+            if 'login_photo' in request.FILES:
+                login_session.login_photo = request.FILES['login_photo']
+                login_session.save()
+            elif 'photo_uri' in request.data or 'photo_base64' in request.data:
+                import base64
+                import uuid
+                from django.core.files.base import ContentFile
+                
+                photo_base64 = request.data.get('photo_base64') or request.data.get('photo_uri')
+                if photo_base64:
+                    try:
+                        # Remove data URI prefix if present
+                        if ',' in photo_base64:
+                            photo_base64 = photo_base64.split(',')[1]
+                        
+                        # Decode base64
+                        image_data = base64.b64decode(photo_base64)
+                        filename = f'login_{uuid.uuid4()}.jpg'
+                        login_session.login_photo.save(filename, ContentFile(image_data), save=True)
+                    except Exception as e:
+                        # Log but don't fail if photo processing fails
+                        print(f"Login photo error: {e}")
+            
             return Response({'message': 'Login session saved'})
         except Exception as exc:
             return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
