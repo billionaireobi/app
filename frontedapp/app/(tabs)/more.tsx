@@ -8,7 +8,6 @@ import {
   Modal,
   FlatList,
   TextInput,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,14 +16,6 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { format } from 'date-fns';
 import Toast from 'react-native-toast-message';
-import {
-  getStockAlerts,
-  getPendingTransfers,
-  createStockTransfer,
-  confirmStockTransfer,
-  createStockAdjustment,
-} from '../../src/api/stock';
-import { getProducts } from '../../src/api/products';
 import { getMessages, sendMessage } from '../../src/api/messages';
 import { getNotifications, markAllNotificationsRead, markNotificationRead } from '../../src/api/notifications';
 import { getCustomers } from '../../src/api/customers';
@@ -39,11 +30,10 @@ import { Input } from '../../src/components/ui/Input';
 import { LoadingSpinner } from '../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../src/components/ui/EmptyState';
 import { Colors, FontSize, Spacing, BorderRadius } from '../../src/constants/colors';
-import type { StoreLocation, FeedbackType } from '../../src/types';
+import type { FeedbackType } from '../../src/types';
 
-type Section = 'menu' | 'stock' | 'messages' | 'notifications' | 'profile' | 'feedback';
+type Section = 'menu' | 'messages' | 'notifications' | 'profile' | 'feedback';
 
-const STORES: StoreLocation[] = ['mcdave', 'kisii', 'offshore'];
 const FEEDBACK_TYPES: { label: string; value: FeedbackType }[] = [
   { label: 'Quality', value: 'quality' },
   { label: 'Pricing', value: 'pricing' },
@@ -58,23 +48,6 @@ export default function MoreScreen() {
   const queryClient = useQueryClient();
   const [section, setSection] = useState<Section>('menu');
   const [messageText, setMessageText] = useState('');
-
-  // Stock transfer state
-  const [transferModal, setTransferModal] = useState(false);
-  const [fromStore, setFromStore] = useState<StoreLocation>('mcdave');
-  const [toStore, setToStore] = useState<StoreLocation>('kisii');
-  const [transferItems, setTransferItems] = useState<{ product: number; product_name: string; quantity: string }[]>([]);
-  const [productSearch, setProductSearch] = useState('');
-  const [showProductDrop, setShowProductDrop] = useState(false);
-
-  // Stock adjustment state
-  const [adjModal, setAdjModal] = useState(false);
-  const [adjProduct, setAdjProduct] = useState<{ id: number; name: string } | null>(null);
-  const [adjStore, setAdjStore] = useState<StoreLocation>('mcdave');
-  const [adjQty, setAdjQty] = useState('');
-  const [adjReason, setAdjReason] = useState('');
-  const [adjSearch, setAdjSearch] = useState('');
-  const [showAdjDrop, setShowAdjDrop] = useState(false);
 
   // Feedback state
   const [feedbackCustomerSearch, setFeedbackCustomerSearch] = useState('');
@@ -92,26 +65,6 @@ export default function MoreScreen() {
   const [feedbackErrors, setFeedbackErrors] = useState<Record<string, string>>({});
 
   // ==================== QUERIES ====================
-  const { data: stockAlerts, isLoading: stockLoading } = useQuery({
-    queryKey: ['stock-alerts'],
-    queryFn: getStockAlerts,
-    enabled: section === 'stock',
-  });
-
-  const { data: pendingTransfers, refetch: refetchTransfers } = useQuery({
-    queryKey: ['pending-transfers'],
-    queryFn: getPendingTransfers,
-    enabled: section === 'stock',
-  });
-
-  // Single product search query — uses whichever search term is active
-  const activeProductSearch = showAdjDrop ? adjSearch : productSearch;
-  const { data: productsData } = useQuery({
-    queryKey: ['products-search', activeProductSearch],
-    queryFn: () => getProducts({ search: activeProductSearch }),
-    enabled: (showProductDrop || showAdjDrop) && activeProductSearch.length > 1,
-  });
-
   const { data: customersData } = useQuery({
     queryKey: ['customers-search', feedbackCustomerSearch],
     queryFn: () => getCustomers({ search: feedbackCustomerSearch }),
@@ -158,44 +111,6 @@ export default function MoreScreen() {
     },
   });
 
-  const { mutate: createTransfer, isPending: transferPending } = useMutation({
-    mutationFn: createStockTransfer,
-    onSuccess: () => {
-      Toast.show({ type: 'success', text1: 'Stock transfer created!' });
-      queryClient.invalidateQueries({ queryKey: ['pending-transfers'] });
-      setTransferModal(false);
-      setTransferItems([]);
-      setProductSearch('');
-    },
-    onError: (err: Error) =>
-      Toast.show({ type: 'error', text1: 'Transfer failed', text2: err.message }),
-  });
-
-  const { mutate: confirmTransfer } = useMutation({
-    mutationFn: confirmStockTransfer,
-    onSuccess: () => {
-      Toast.show({ type: 'success', text1: 'Transfer confirmed!' });
-      queryClient.invalidateQueries({ queryKey: ['pending-transfers'] });
-      queryClient.invalidateQueries({ queryKey: ['stock-alerts'] });
-    },
-    onError: (err: Error) =>
-      Toast.show({ type: 'error', text1: 'Confirm failed', text2: err.message }),
-  });
-
-  const { mutate: doAdjustment, isPending: adjPending } = useMutation({
-    mutationFn: createStockAdjustment,
-    onSuccess: () => {
-      Toast.show({ type: 'success', text1: 'Stock adjusted!' });
-      queryClient.invalidateQueries({ queryKey: ['stock-alerts'] });
-      setAdjModal(false);
-      setAdjProduct(null);
-      setAdjQty('');
-      setAdjReason('');
-    },
-    onError: (err: Error) =>
-      Toast.show({ type: 'error', text1: 'Adjustment failed', text2: err.message }),
-  });
-
   const { mutate: doSubmitFeedback, isPending: feedbackPending } = useMutation({
     mutationFn: submitFeedback,
     onSuccess: () => {
@@ -226,48 +141,6 @@ export default function MoreScreen() {
   // Unread counts
   const unreadMessages = messagesData?.results?.filter((m) => !m.is_read).length ?? 0;
   const unreadNotifications = notificationsData?.results?.filter((n) => !n.is_read).length ?? 0;
-
-  // ==================== TRANSFER HELPERS ====================
-  const addTransferItem = (productId: number, productName: string) => {
-    if (transferItems.find((i) => i.product === productId)) {
-      Toast.show({ type: 'info', text1: 'Product already added' });
-    } else {
-      setTransferItems([...transferItems, { product: productId, product_name: productName, quantity: '1' }]);
-    }
-    setProductSearch('');
-    setShowProductDrop(false);
-  };
-
-  const updateTransferQty = (idx: number, qty: string) => {
-    const updated = [...transferItems];
-    updated[idx] = { ...updated[idx], quantity: qty };
-    setTransferItems(updated);
-  };
-
-  const removeTransferItem = (idx: number) => {
-    setTransferItems(transferItems.filter((_, i) => i !== idx));
-  };
-
-  const handleCreateTransfer = () => {
-    if (fromStore === toStore) {
-      Toast.show({ type: 'error', text1: 'Source and destination must be different' });
-      return;
-    }
-    if (transferItems.length === 0) {
-      Toast.show({ type: 'error', text1: 'Add at least one product' });
-      return;
-    }
-    const invalid = transferItems.find((i) => !i.quantity || Number(i.quantity) < 1);
-    if (invalid) {
-      Toast.show({ type: 'error', text1: 'All quantities must be ≥ 1' });
-      return;
-    }
-    createTransfer({
-      from_store: fromStore,
-      to_store: toStore,
-      items: transferItems.map((i) => ({ product_id: i.product, quantity: Number(i.quantity) })),
-    });
-  };
 
   // ==================== FEEDBACK HELPERS ====================
   const validateFeedback = () => {
@@ -336,7 +209,6 @@ export default function MoreScreen() {
           </Card>
 
           {[
-            { icon: 'layers-outline', label: 'Stock Management', section: 'stock' as Section, count: null, color: Colors.info },
             { icon: 'chatbubbles-outline', label: 'Internal Messages', section: 'messages' as Section, count: unreadMessages || null, color: Colors.primary },
             { icon: 'notifications-outline', label: 'Notifications', section: 'notifications' as Section, count: unreadNotifications || null, color: Colors.warning },
             { icon: 'star-outline', label: 'Customer Feedback', section: 'feedback' as Section, count: null, color: Colors.secondary },
@@ -371,255 +243,6 @@ export default function MoreScreen() {
             <Ionicons name="chevron-forward" size={18} color={Colors.error} />
           </TouchableOpacity>
         </ScrollView>
-      </SafeAreaView>
-    );
-  }
-
-  // ==================== STOCK ====================
-  if (section === 'stock') {
-    return (
-      <SafeAreaView style={styles.safe}>
-        <SectionHeader title="Stock Management" onBack={() => setSection('menu')} />
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Action Buttons — admin only */}
-          {user?.is_admin ? (
-            <View style={styles.stockActions}>
-              <Button
-                label="New Transfer"
-                variant="primary"
-                onPress={() => setTransferModal(true)}
-                style={{ flex: 1 }}
-              />
-              <Button
-                label="Adjustment"
-                variant="outline"
-                onPress={() => setAdjModal(true)}
-                style={{ flex: 1 }}
-              />
-            </View>
-          ) : (
-            <View style={styles.roleNotice}>
-              <Ionicons name="information-circle-outline" size={18} color={Colors.info} />
-              <Text style={styles.roleNoticeText}>
-                Stock transfers and adjustments are restricted to administrators.
-              </Text>
-            </View>
-          )}
-
-          {stockLoading ? (
-            <LoadingSpinner message="Loading stock data..." />
-          ) : (
-            <>
-              <Text style={styles.sectionTitle}>Stock Alerts</Text>
-              {stockAlerts && stockAlerts.length > 0 ? (
-                stockAlerts.map((alert) => (
-                  <Card key={alert.id} style={styles.alertCard}>
-                    <View style={styles.alertRow}>
-                      <Ionicons
-                        name={alert.alert_type === 'out_of_stock' ? 'close-circle' : 'warning'}
-                        size={20}
-                        color={alert.alert_type === 'out_of_stock' ? Colors.error : Colors.warning}
-                      />
-                      <View style={styles.alertInfo}>
-                        <Text style={styles.alertProduct}>{alert.product_name ?? `Product #${alert.product}`}</Text>
-                        <Text style={styles.alertStore}>{alert.store} · {alert.alert_type.replace('_', ' ')}</Text>
-                      </View>
-                      <Badge
-                        label={alert.alert_type === 'out_of_stock' ? 'Out of Stock' : 'Low Stock'}
-                        variant={alert.alert_type === 'out_of_stock' ? 'error' : 'warning'}
-                      />
-                    </View>
-                  </Card>
-                ))
-              ) : (
-                <EmptyState icon="checkmark-circle-outline" title="No Stock Alerts" description="All stock levels are healthy!" />
-              )}
-
-              <Text style={styles.sectionTitle}>Pending Transfers</Text>
-              {pendingTransfers && pendingTransfers.length > 0 ? (
-                pendingTransfers.map((t) => (
-                  <Card key={t.id} style={styles.alertCard}>
-                    <View style={styles.alertRow}>
-                      <Ionicons name="swap-horizontal-outline" size={20} color={Colors.info} />
-                      <View style={styles.alertInfo}>
-                        <Text style={styles.alertProduct}>{t.from_store} → {t.to_store}</Text>
-                        <Text style={styles.alertStore}>{format(new Date(t.transfer_date), 'dd MMM yyyy')}</Text>
-                      </View>
-                      <TouchableOpacity
-                        style={styles.confirmBtn}
-                        onPress={() =>
-                          Alert.alert('Confirm Receipt', `Mark transfer from ${t.from_store} to ${t.to_store} as received?`, [
-                            { text: 'Cancel', style: 'cancel' },
-                            { text: 'Confirm', onPress: () => confirmTransfer(t.id) },
-                          ])
-                        }
-                      >
-                        <Ionicons name="checkmark-circle-outline" size={22} color={Colors.success} />
-                      </TouchableOpacity>
-                    </View>
-                  </Card>
-                ))
-              ) : (
-                <Text style={styles.emptyText}>No pending transfers</Text>
-              )}
-            </>
-          )}
-        </ScrollView>
-
-        {/* Create Transfer Modal */}
-        <Modal visible={transferModal} animationType="slide" transparent>
-          <View style={styles.modalOverlay}>
-            <View style={[styles.modal, { maxHeight: '90%' }]}>
-              <Text style={styles.modalTitle}>New Stock Transfer</Text>
-
-              <Text style={styles.modalLabel}>From Store</Text>
-              <View style={styles.pillRow}>
-                {STORES.map((s) => (
-                  <TouchableOpacity
-                    key={s}
-                    style={[styles.pill, fromStore === s && styles.pillActive]}
-                    onPress={() => setFromStore(s)}
-                  >
-                    <Text style={[styles.pillText, fromStore === s && styles.pillTextActive]}>{s}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={styles.modalLabel}>To Store</Text>
-              <View style={styles.pillRow}>
-                {STORES.map((s) => (
-                  <TouchableOpacity
-                    key={s}
-                    style={[styles.pill, toStore === s && styles.pillActive]}
-                    onPress={() => setToStore(s)}
-                  >
-                    <Text style={[styles.pillText, toStore === s && styles.pillTextActive]}>{s}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={styles.modalLabel}>Add Products</Text>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search product..."
-                value={productSearch}
-                onChangeText={(v) => { setProductSearch(v); setShowProductDrop(true); }}
-              />
-              {showProductDrop && productsData?.results && productsData.results.length > 0 && (
-                <View style={styles.dropdown}>
-                  {productsData.results.slice(0, 5).map((p) => (
-                    <TouchableOpacity
-                      key={p.id}
-                      style={styles.dropItem}
-                      onPress={() => addTransferItem(p.id, p.name)}
-                    >
-                      <Text style={styles.dropItemText}>{p.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              <ScrollView style={{ maxHeight: 160 }}>
-                {transferItems.map((item, idx) => (
-                  <View key={idx} style={styles.transferItemRow}>
-                    <Text style={styles.transferItemName} numberOfLines={1}>{item.product_name}</Text>
-                    <TextInput
-                      style={styles.qtyInput}
-                      keyboardType="numeric"
-                      value={item.quantity}
-                      onChangeText={(v) => updateTransferQty(idx, v)}
-                    />
-                    <TouchableOpacity onPress={() => removeTransferItem(idx)}>
-                      <Ionicons name="trash-outline" size={18} color={Colors.error} />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </ScrollView>
-
-              <View style={styles.modalActions}>
-                <Button onPress={() => setTransferModal(false)} label="Cancel" variant="outline" style={{ flex: 1 }} />
-                <Button onPress={handleCreateTransfer} label="Create" variant="primary" loading={transferPending} style={{ flex: 1 }} />
-              </View>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Stock Adjustment Modal */}
-        <Modal visible={adjModal} animationType="slide" transparent>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modal}>
-              <Text style={styles.modalTitle}>Stock Adjustment</Text>
-
-              <Text style={styles.modalLabel}>Product</Text>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search product..."
-                value={adjProduct ? adjProduct.name : adjSearch}
-                onChangeText={(v) => { setAdjSearch(v); setAdjProduct(null); setShowAdjDrop(true); }}
-              />
-              {showAdjDrop && !adjProduct && productsData?.results && productsData.results.length > 0 && (
-                <View style={styles.dropdown}>
-                  {productsData.results.slice(0, 5).map((p) => (
-                    <TouchableOpacity
-                      key={p.id}
-                      style={styles.dropItem}
-                      onPress={() => { setAdjProduct({ id: p.id, name: p.name }); setAdjSearch(p.name); setShowAdjDrop(false); }}
-                    >
-                      <Text style={styles.dropItemText}>{p.name}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-
-              <Text style={styles.modalLabel}>Store</Text>
-              <View style={styles.pillRow}>
-                {STORES.map((s) => (
-                  <TouchableOpacity
-                    key={s}
-                    style={[styles.pill, adjStore === s && styles.pillActive]}
-                    onPress={() => setAdjStore(s)}
-                  >
-                    <Text style={[styles.pillText, adjStore === s && styles.pillTextActive]}>{s}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              <Text style={styles.modalLabel}>New Total Quantity</Text>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="e.g. 50"
-                keyboardType="number-pad"
-                value={adjQty}
-                onChangeText={setAdjQty}
-              />
-
-              <Text style={styles.modalLabel}>Reason</Text>
-              <TextInput
-                style={[styles.searchInput, { minHeight: 60 }]}
-                placeholder="Reason for adjustment"
-                value={adjReason}
-                onChangeText={setAdjReason}
-                multiline
-              />
-
-              <View style={styles.modalActions}>
-                <Button onPress={() => setAdjModal(false)} label="Cancel" variant="outline" style={{ flex: 1 }} />
-                <Button
-                  onPress={() => {
-                    if (!adjProduct) { Toast.show({ type: 'error', text1: 'Select a product' }); return; }
-                    if (!adjQty || isNaN(Number(adjQty))) { Toast.show({ type: 'error', text1: 'Enter a valid quantity' }); return; }
-                    if (!adjReason.trim()) { Toast.show({ type: 'error', text1: 'Enter a reason' }); return; }
-                    doAdjustment({ product_id: adjProduct.id, store: adjStore, new_quantity: Number(adjQty), reason: adjReason.trim() });
-                  }}
-                  label="Adjust"
-                  variant="primary"
-                  loading={adjPending}
-                  style={{ flex: 1 }}
-                />
-              </View>
-            </View>
-          </View>
-        </Modal>
       </SafeAreaView>
     );
   }
@@ -1117,35 +740,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.sm,
     marginTop: Spacing.md,
   },
-  stockActions: {
-    flexDirection: 'row',
-    gap: Spacing.sm,
-    marginBottom: Spacing.md,
-    marginTop: Spacing.xs,
-  },
-  roleNotice: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    backgroundColor: Colors.infoSurface,
-    padding: Spacing.md,
-    borderRadius: BorderRadius.md,
-    marginBottom: Spacing.md,
-  },
-  roleNoticeText: {
-    flex: 1,
-    fontSize: FontSize.sm,
-    color: Colors.info,
-    lineHeight: 18,
-  },
-  alertCard: { marginBottom: Spacing.sm },
-  alertRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  alertInfo: { flex: 1 },
-  alertProduct: { fontSize: FontSize.md, fontWeight: '600', color: Colors.textPrimary },
-  alertStore: { fontSize: FontSize.xs, color: Colors.textSecondary },
-  confirmBtn: { padding: Spacing.xs },
-  emptyText: { fontSize: FontSize.sm, color: Colors.textSecondary, textAlign: 'center', paddingVertical: Spacing.md },
-
   msgBubble: {
     maxWidth: '80%',
     padding: Spacing.md,
@@ -1290,26 +884,6 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.gray100,
   },
   dropItemText: { fontSize: FontSize.sm, color: Colors.textPrimary },
-  transferItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-    paddingVertical: Spacing.xs,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.gray100,
-  },
-  transferItemName: { flex: 1, fontSize: FontSize.sm, color: Colors.textPrimary },
-  qtyInput: {
-    width: 56,
-    borderWidth: 1.5,
-    borderColor: Colors.gray300,
-    borderRadius: BorderRadius.sm,
-    textAlign: 'center',
-    paddingVertical: 4,
-    fontSize: FontSize.sm,
-    color: Colors.textPrimary,
-  },
-
   // Feedback
   starsRow: {
     flexDirection: 'row',

@@ -328,10 +328,14 @@ PASSWORD_RESET_TIMEOUT = 3600
 # =====================================================
 # Buni enables direct bank payment processing through KCB and other banks.
 # Update these with your actual Buni merchant credentials.
-BUNI_API_KEY = 'your_buni_api_key_here'
-BUNI_MERCHANT_ID = 'your_buni_merchant_id_here'
-BUNI_BASE_URL = 'https://api.sandbox.buni.io'  # or https://api.buni.io for production
-BUNI_CALLBACK_URL = 'https://zeliaoms.mcdave.co.ke/buni/callback/'
+BUNI_API_KEY = 'eyJ4NXQiOiJaREEzWldJeU1UTTVabUptTnpNeU5UTXlabU13TVRZMU4ySTJORGhsT1dSaFpEWmpNakUwTkE9PSIsImtpZCI6ImdhdGV3YXlfY2VydGlmaWNhdGVfYWxpYXMiLCJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJzdWIiOiJNY2RhdmVjb0BjYXJib24uc3VwZXIiLCJhcHBsaWNhdGlvbiI6eyJvd25lciI6Ik1jZGF2ZWNvIiwidGllclF1b3RhVHlwZSI6bnVsbCwidGllciI6IlVubGltaXRlZCIsIm5hbWUiOiJ6ZWxpYSIsImlkIjo0NTI4MywidXVpZCI6IjUxODRiMDkwLTEzNmMtNDRlNi04MDBlLTQwZjViNDdhNDlhMSJ9LCJpc3MiOiJodHRwczpcL1wvc2FuZGJveC5idW5pLmtjYmdyb3VwLmNvbVwvb2F1dGgyXC90b2tlbiIsInRpZXJJbmZvIjp7fSwia2V5dHlwZSI6IlBST0RVQ1RJT04iLCJwZXJtaXR0ZWRSZWZlcmVyIjoiIiwic3Vic2NyaWJlZEFQSXMiOltdLCJ0b2tlbl90eXBlIjoiYXBpS2V5IiwicGVybWl0dGVkSVAiOiIiLCJpYXQiOjE3NzM2ODIwODUsImp0aSI6IjM0OThlZjRkLWY5ZWMtNDhhNi05OGQ0LWM0YTI1NzhlODdlOSJ9.m6OH76ukeVHY2bv86C2ECfPsJLWLHs0Xyaf-x-eGRGRLA-PVykJ-QXt52v14vRwWshblTOQYa8bYuniKnQlkg6cjUUhiGIg3dnnZJtPuxmXMjwS3dvH2qp7Ao2Cc54WWYutOSZ0ZhntwZHXr10A4gGDg1w_DAYBHP33Iba8m_nwXs_vTr-ukf6Zir7stfx-quU3hCfxw8_Xcjp6Xl8IW85FXn26xXzEUnVEy-SUtCWg1EURLOfHweGt11XY1cDc-QEwx4S5tw-Dg42hJWauE_63JaEGOWqsZgZsXaTnfGFNT9hdOnE4BGKtUtQyLdNSED4vJdVHCJZ0mKs2k3OCfqw=='
+BUNI_MERCHANT_ID = 'your_buni_merchant_id_here'  # TODO: update when received
+BUNI_CONSUMER_KEY = 'SOouL1Pq3aPqCUwzgdcCcLQzLwUa'
+BUNI_CONSUMER_SECRET = 'hEXigw7jEY4YIO934zJrZTBABcsa'
+BUNI_BASE_URL = 'https://sandbox.buni.kcbgroup.com'  # or https://api.buni.kcbgroup.com for production
+# Callback URL — must be a public HTTPS URL.
+# Points to the mobile API handler so BuniTransaction records are updated.
+BUNI_CALLBACK_URL = 'https://zeliaoms.mcdave.co.ke/api/buni-transactions/callback/'
 # =====================================================
 # M-PESA DARAJA API SETTINGS (hardcoded)
 # =====================================================
@@ -340,8 +344,9 @@ MPESA_CONSUMER_KEY = 'FnWrsxhzxLeTAb2GDAoowJiD2kQ0SIq1Oodk3ZM3ebcfZuDX'
 MPESA_CONSUMER_SECRET = 'jSitnfZOmj0DtereT12eW8I4Wbls0QOH9nUyeeUAvuNKCeIHBFLdIatPR621Y2XG'
 MPESA_SHORTCODE = '174379'
 MPESA_PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
-# Callback URL must be accessible over HTTPS
-MPESA_CALLBACK_URL = 'https://zeliaoms.mcdave.co.ke/mpesa/callback/'
+# Callback URL — must be a public HTTPS URL.
+# Points to the mobile API handler so MPesaTransaction records are updated.
+MPESA_CALLBACK_URL = 'https://zeliaoms.mcdave.co.ke/api/mpesa-transactions/callback/'
 MPESA_TRANSACTION_TYPE = 'CustomerPayBillOnline'
 
 if MPESA_ENV == 'sandbox':

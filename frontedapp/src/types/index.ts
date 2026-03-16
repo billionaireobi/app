@@ -206,8 +206,24 @@ export interface MPesaTransaction {
   phone_number: string;
   amount: string;
   checkout_request_id: string;
-  status: 'initiated' | 'completed' | 'failed' | 'pending';
+  status: 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
+  result_code: string;
+  result_description: string;
   mpesa_receipt_number: string;
+  created_at: string;
+}
+
+// ==================== Buni (KCB) ====================
+export interface BuniTransaction {
+  id: number;
+  order: number;
+  phone_number: string;
+  amount: string;
+  transaction_id: string;
+  payment_url: string;
+  status: 'pending' | 'success' | 'failed' | 'cancelled' | 'timeout';
+  result_code: string;
+  result_description: string;
   created_at: string;
 }
 

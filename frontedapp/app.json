@@ -23,6 +23,7 @@
       },
       "package": "ke.co.mcdave.zeliaoms",
       "newArchEnabled": true,
+      "usesCleartextTraffic": true,
       "permissions": [
         "CAMERA",
         "ACCESS_FINE_LOCATION",

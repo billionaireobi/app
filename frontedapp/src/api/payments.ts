@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { Payment, AddPaymentPayload, MPesaTransaction } from '../types';
+import type { Payment, AddPaymentPayload, MPesaTransaction, BuniTransaction } from '../types';
 
 export interface AddPaymentResponse {
   payment: Payment;
@@ -23,13 +23,18 @@ export async function getOrderPayments(orderId: number): Promise<Payment[]> {
   return data;
 }
 
+// ── M-Pesa ────────────────────────────────────────────────────────────────────
+
 // POST /api/mpesa-transactions/stk_push/
 export async function initiateSTKPush(payload: {
-  order: number;
+  order_id: number;
   phone_number: string;
   amount: number;
 }): Promise<MPesaTransaction> {
-  const { data } = await apiClient.post<MPesaTransaction>('mpesa-transactions/stk_push/', payload);
+  const { data } = await apiClient.post<MPesaTransaction>(
+    'mpesa-transactions/stk_push/',
+    payload,
+  );
   return data;
 }
 
@@ -37,6 +42,29 @@ export async function initiateSTKPush(payload: {
 export async function checkMPesaStatus(transactionId: number): Promise<MPesaTransaction> {
   const { data } = await apiClient.get<MPesaTransaction>(
     `mpesa-transactions/${transactionId}/check_status/`,
+  );
+  return data;
+}
+
+// ── KCB Buni ──────────────────────────────────────────────────────────────────
+
+// POST /api/buni-transactions/initiate/
+export async function initiateBuniPayment(payload: {
+  order_id: number;
+  phone_number: string;
+  amount: number;
+}): Promise<BuniTransaction> {
+  const { data } = await apiClient.post<BuniTransaction>(
+    'buni-transactions/initiate/',
+    payload,
+  );
+  return data;
+}
+
+// GET /api/buni-transactions/{id}/check_status/
+export async function checkBuniStatus(transactionId: number): Promise<BuniTransaction> {
+  const { data } = await apiClient.get<BuniTransaction>(
+    `buni-transactions/${transactionId}/check_status/`,
   );
   return data;
 }

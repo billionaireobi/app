@@ -1176,217 +1176,6 @@ class ChatbotKnowledgeViewSet(viewsets.ReadOnlyModelViewSet):
 
 # ==================== Stock Management ====================
 
-class StockMovementViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for Stock Movements (Audit Trail)"""
-    queryset = StockMovement.objects.all()
-    serializer_class = StockMovementSerializer
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-    pagination_class = MobileAppPagination
-    filterset_fields = ['product', 'store', 'movement_type']
-    search_fields = ['product__name', 'reference_number']
-    ordering_fields = ['created_at']
-    ordering = ['-created_at']
-    
-    @action(detail=False, methods=['get'])
-    def by_product(self, request):
-        """Get stock movements for specific product"""
-        product_id = request.query_params.get('product_id')
-        if product_id:
-            movements = StockMovement.objects.filter(product_id=product_id).order_by('-created_at')
-            serializer = self.get_serializer(movements, many=True)
-            return Response(serializer.data)
-        return Response({'error': 'product_id required'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=False, methods=['get'])
-    def by_store(self, request):
-        """Get stock movements for specific store"""
-        store = request.query_params.get('store')
-        if store:
-            movements = StockMovement.objects.filter(store=store).order_by('-created_at')
-            serializer = self.get_serializer(movements, many=True)
-            return Response(serializer.data)
-        return Response({'error': 'store parameter required'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class StockTransferItemViewSet(viewsets.ModelViewSet):
-    """ViewSet for Stock Transfer Items"""
-    queryset = StockTransferItem.objects.all()
-    serializer_class = StockTransferItemSerializer
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-
-class StockTransferViewSet(viewsets.ModelViewSet):
-    """ViewSet for Stock Transfers between stores"""
-    queryset = StockTransfer.objects.all()
-    serializer_class = StockTransferSerializer
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-    filterset_fields = ['from_store', 'to_store', 'status']
-    search_fields = ['reference_number', 'from_store', 'to_store']
-    ordering_fields = ['transfer_date', 'created_at']
-    ordering = ['-created_at']
-    
-    @action(detail=False, methods=['post'])
-    def initiate_transfer(self, request):
-        """Initiate new stock transfer"""
-        try:
-            transfer = StockTransfer.objects.create(
-                from_store=request.data['from_store'],
-                to_store=request.data['to_store'],
-                initiated_by=request.user,
-                notes=request.data.get('notes', '')
-            )
-            
-            # Add items to transfer
-            for item in request.data.get('items', []):
-                StockTransferItem.objects.create(
-                    transfer=transfer,
-                    product_id=item['product_id'],
-                    quantity=item['quantity']
-                )
-            
-            serializer = self.get_serializer(transfer)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except Exception as e:
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=True, methods=['post'])
-    def confirm_receipt(self, request, pk=None):
-        """Confirm transfer receipt"""
-        transfer = self.get_object()
-        
-        if transfer.status != 'in_transit':
-            return Response(
-                {'error': 'Transfer must be in transit to confirm receipt'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        transfer.status = 'completed'
-        transfer.received_by = request.user
-        transfer.received_date = timezone.now()
-        transfer.save()
-        
-        serializer = self.get_serializer(transfer)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def pending(self, request):
-        """Get pending transfers for current user's store"""
-        store = request.query_params.get('store')
-        if store:
-            transfers = StockTransfer.objects.filter(to_store=store, status='in_transit')
-            serializer = self.get_serializer(transfers, many=True)
-            return Response(serializer.data)
-        return Response({'error': 'store parameter required'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class StockAdjustmentViewSet(viewsets.ModelViewSet):
-    """ViewSet for Stock Adjustments"""
-    queryset = StockAdjustment.objects.all()
-    serializer_class = StockAdjustmentSerializer
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-    filterset_fields = ['product', 'store', 'adjustment_type']
-    search_fields = ['product__name', 'reason']
-    ordering_fields = ['created_at']
-    ordering = ['-created_at']
-    
-    @action(detail=False, methods=['post'])
-    def adjust_stock(self, request):
-        """Create stock adjustment"""
-        try:
-            product_id = request.data.get('product_id')
-            store = request.data.get('store')
-            new_quantity = request.data.get('new_quantity')
-            reason = request.data.get('reason', 'other')
-            notes = request.data.get('notes', '')
-            
-            if not product_id or not store or new_quantity is None:
-                return Response(
-                    {'error': 'product_id, store, and new_quantity are required'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            product = Product.objects.get(id=product_id)
-            
-            # Get current stock
-            stock_field = f'{store}_stock'
-            previous_quantity = getattr(product, stock_field, 0)
-            adjustment_quantity = int(new_quantity) - int(previous_quantity)
-            
-            # Create adjustment record
-            adjustment = StockAdjustment.objects.create(
-                product=product,
-                store=store,
-                previous_quantity=previous_quantity,
-                new_quantity=int(new_quantity),
-                adjustment_quantity=adjustment_quantity,
-                reason=reason,
-                notes=notes,
-                adjusted_by=request.user
-            )
-            
-            # Update product stock
-            setattr(product, stock_field, int(new_quantity))
-            product.save()
-            
-            # Create stock movement record
-            StockMovement.objects.create(
-                product=product,
-                store=store,
-                movement_type='adjustment',
-                quantity=abs(adjustment_quantity),
-                previous_stock=previous_quantity,
-                new_stock=int(new_quantity),
-                reference_number=f"ADJ-{adjustment.id}",
-                notes=f"Stock adjustment: {reason} - {notes}",
-                recorded_by=request.user
-            )
-            
-            serializer = self.get_serializer(adjustment)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        except Product.DoesNotExist:
-            return Response(
-                {'error': f'Product with id {product_id} not found'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class StockAlertViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for Stock Alerts"""
-    queryset = StockAlert.objects.all()
-    serializer_class = StockAlertSerializer
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-    filterset_fields = ['product', 'alert_type', 'is_resolved']
-    ordering_fields = ['created_at']
-    ordering = ['-created_at']
-    
-    @action(detail=False, methods=['get'])
-    def unresolved(self, request):
-        """Get unresolved alerts"""
-        alerts = StockAlert.objects.filter(is_resolved=False).order_by('-created_at')
-        serializer = self.get_serializer(alerts, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=True, methods=['post'])
-    def mark_resolved(self, request, pk=None):
-        """Mark alert as resolved"""
-        alert = self.get_object()
-        alert.is_resolved = True
-        alert.resolved_date = timezone.now()
-        alert.save()
-        
-        serializer = self.get_serializer(alert)
-        return Response(serializer.data)
-
-
 # ==================== Purchase Order Management ====================
 
 class PurchaseOrderItemViewSet(viewsets.ModelViewSet):
@@ -1753,99 +1542,167 @@ class MPesaTransactionViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     filterset_fields = ['status']
-    search_fields = ['transaction_id', 'phone_number']
+    search_fields = ['checkout_request_id', 'phone_number']
     ordering_fields = ['created_at']
     ordering = ['-created_at']
-    
+
     @action(detail=False, methods=['get'])
     def by_phone(self, request):
-        """Get transactions for specific phone"""
         phone = request.query_params.get('phone')
         if phone:
-            transactions = MPesaTransaction.objects.filter(phone_number=phone)
-            serializer = self.get_serializer(transactions, many=True)
+            serializer = self.get_serializer(
+                MPesaTransaction.objects.filter(phone_number=phone), many=True)
             return Response(serializer.data)
         return Response({'error': 'phone parameter required'}, status=status.HTTP_400_BAD_REQUEST)
-    
-    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+
+    @action(detail=False, methods=['post'])
     def stk_push(self, request):
-        """Initiate STK push for given order/payment"""
-        # minimal implementation, replicating store.views.mpesa_stk_push logic
-        # expects order_id and phone_number
-        data = request.data
-        order_id = data.get('order_id')
-        phone = data.get('phone_number')
-        amount = data.get('amount')
-        callback_url = data.get('callback_url')
-        
-        if not all([order_id, phone, amount, callback_url]):
-            return Response({'error': 'order_id, phone_number, amount, callback_url are required'}, status=status.HTTP_400_BAD_REQUEST)
-        
+        """Initiate M-Pesa STK Push for an order."""
+        from store.mpesa import initiate_stk_push
+        order_id = request.data.get('order_id')
+        phone = request.data.get('phone_number')
+        amount = request.data.get('amount')
+
+        if not all([order_id, phone, amount]):
+            return Response(
+                {'error': 'order_id, phone_number, and amount are required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         try:
-            # create pending transaction record
+            amt = int(Decimal(str(amount)))
+            if amt < 1:
+                return Response({'error': 'Amount must be at least KSh 1'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            order = Order.objects.get(pk=order_id)
+            result = initiate_stk_push(phone, amt, order_id,
+                                        account_reference=f'ORD-{order_id}')
+
             txn = MPesaTransaction.objects.create(
-                order_id=order_id,
+                order=order,
                 phone_number=phone,
                 amount=Decimal(str(amount)),
-                status='pending'
+                checkout_request_id=result.get('CheckoutRequestID', ''),
+                merchant_request_id=result.get('MerchantRequestID', ''),
+                status='pending',
+                initiated_by=request.user,
             )
-            
-            # Here we would call mpesa API (omitted) and update txn.checkout_request_id
-            # For now just return txn data
-            serializer = self.get_serializer(txn)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(self.get_serializer(txn).data, status=status.HTTP_201_CREATED)
+        except Order.DoesNotExist:
+            return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
+            logger.error(f'STK Push error: {e}')
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-    
+
+    @action(detail=True, methods=['get'])
+    def check_status(self, request, pk=None):
+        """Poll Safaricom for the current status of an STK Push transaction."""
+        from store.mpesa import query_stk_status
+        txn = self.get_object()
+
+        if txn.status in ['success', 'failed', 'cancelled']:
+            return Response(self.get_serializer(txn).data)
+
+        if not txn.checkout_request_id:
+            return Response({'error': 'Transaction has no checkout request ID'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            result = query_stk_status(txn.checkout_request_id)
+            code = str(result.get('ResultCode', ''))
+
+            if code == '0':
+                # Daraja STK Query does NOT return CallbackMetadata — that only arrives
+                # via the webhook callback.  Preserve any receipt already written by it.
+                txn.status = 'success'
+                txn.result_code = code
+                txn.result_description = result.get('ResultDesc', 'Payment successful')
+                txn.save()
+
+                if not Payment.objects.filter(
+                    order=txn.order,
+                    reference_number=txn.checkout_request_id,
+                ).exists():
+                    Payment.objects.create(
+                        order=txn.order,
+                        amount=txn.amount,
+                        payment_method='mpesa',
+                        reference_number=txn.checkout_request_id,
+                        notes=f'M-Pesa receipt: {txn.mpesa_receipt_number or ""}',
+                        recorded_by=txn.initiated_by,
+                    )
+                    txn.order.amount_paid = (txn.order.amount_paid or Decimal('0')) + txn.amount
+                    txn.order.update_paid_status()  # already saves the order
+
+            elif code == '1032':
+                txn.status = 'cancelled'
+                txn.result_code = code
+                txn.result_description = 'Request cancelled by user'
+                txn.save()
+            elif code and code != '0':
+                txn.status = 'failed'
+                txn.result_code = code
+                txn.result_description = result.get('ResultDesc', 'Payment failed')
+                txn.save()
+            # Empty code → Safaricom hasn't processed yet — stay pending
+
+        except Exception as e:
+            logger.error(f'check_status error for txn {txn.id}: {e}')
+
+        return Response(self.get_serializer(txn).data)
+
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def callback(self, request):
-        """Endpoint for MPesa callback from Safaricom"""
-        # replicate store.views.mpesa_callback logic
-        body = request.data
-        # parse JSON for CheckoutRequestID and ResultCode
+        """Webhook endpoint for Safaricom Daraja STK Push callback."""
         try:
-            result_code = body['Body']['stkCallback']['ResultCode']
-            checkout_request_id = body['Body']['stkCallback']['CheckoutRequestID']
-        except KeyError:
-            return Response({'error': 'Malformed callback data'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        txn = MPesaTransaction.objects.filter(checkout_request_id=checkout_request_id).first()
+            stk_cb = request.data['Body']['stkCallback']
+            checkout_request_id = stk_cb['CheckoutRequestID']
+            result_code = stk_cb['ResultCode']
+        except (KeyError, TypeError):
+            return Response({'ResultCode': 0, 'ResultDesc': 'Accepted'})
+
+        txn = MPesaTransaction.objects.filter(
+            checkout_request_id=checkout_request_id).first()
         if not txn:
-            return Response({'error': 'Transaction not found'}, status=status.HTTP_404_NOT_FOUND)
-        
-        txn.result_code = result_code
-        if result_code == 0:
-            # successful
-            txn.status = 'completed'
-            # extract receipt number if available
-            metadata = body['Body']['stkCallback'].get('CallbackMetadata', {}).get('Item', [])
-            for item in metadata:
+            return Response({'ResultCode': 0, 'ResultDesc': 'Accepted'})
+
+        code = str(result_code)
+        txn.result_code = code
+        txn.result_description = stk_cb.get('ResultDesc', '')
+
+        if code == '0':
+            txn.status = 'success'
+            for item in stk_cb.get('CallbackMetadata', {}).get('Item', []):
                 if item.get('Name') == 'MpesaReceiptNumber':
-                    txn.mpesa_receipt_number = item.get('Value')
+                    txn.mpesa_receipt_number = str(item.get('Value', ''))
+            txn.save()
+            try:
+                if not Payment.objects.filter(order=txn.order,
+                                               reference_number=txn.checkout_request_id).exists():
+                    Payment.objects.create(
+                        order=txn.order,
+                        amount=txn.amount,
+                        payment_method='mpesa',
+                        reference_number=txn.checkout_request_id,
+                        notes=f'M-Pesa receipt: {txn.mpesa_receipt_number}',
+                        recorded_by=txn.initiated_by,
+                    )
+                    txn.order.amount_paid = (
+                        txn.order.amount_paid or Decimal('0')) + txn.amount
+                    txn.order.update_paid_status()  # already saves the order
+            except Exception as e:
+                logger.error(f'callback payment creation error: {e}')
+        elif code == '1032':
+            txn.status = 'cancelled'
+            txn.save()
         else:
             txn.status = 'failed'
-        txn.save()
-        
-        # if order exists, create a Payment object similar to store.views
-        try:
-            order = txn.order
-            if txn.status == 'completed':
-                Payment.objects.create(
-                    order=order,
-                    amount=txn.amount,
-                    payment_method='mpesa',
-                    reference_number=txn.mpesa_receipt_number or ''
-                )
-                order.amount_paid += txn.amount
-                order.update_paid_status()
-        except Exception:
-            pass
-        
-        return Response({'message': 'Callback processed'})
+            txn.save()
+
+        return Response({'ResultCode': 0, 'ResultDesc': 'Accepted'})
 
 
-class BuniTransactionViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet for Buni Payment Transactions"""
+class BuniTransactionViewSet(viewsets.ModelViewSet):
+    """ViewSet for KCB Buni Payment Transactions"""
     queryset = BuniTransaction.objects.all()
     serializer_class = BuniTransactionSerializer
     authentication_classes = [TokenAuthentication]
@@ -1854,16 +1711,141 @@ class BuniTransactionViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['transaction_id', 'phone_number']
     ordering_fields = ['created_at']
     ordering = ['-created_at']
-    
+
     @action(detail=False, methods=['get'])
     def by_phone(self, request):
-        """Get transactions for specific phone"""
         phone = request.query_params.get('phone')
         if phone:
-            transactions = BuniTransaction.objects.filter(phone_number=phone)
-            serializer = self.get_serializer(transactions, many=True)
+            serializer = self.get_serializer(
+                BuniTransaction.objects.filter(phone_number=phone), many=True)
             return Response(serializer.data)
         return Response({'error': 'phone parameter required'}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['post'])
+    def initiate(self, request):
+        """Initiate a KCB Buni STK Push for an order."""
+        from store.buni import initiate_buni_payment
+        order_id = request.data.get('order_id')
+        phone = request.data.get('phone_number')
+        amount = request.data.get('amount')
+
+        if not all([order_id, phone, amount]):
+            return Response(
+                {'error': 'order_id, phone_number, and amount are required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            amt = int(Decimal(str(amount)))
+            if amt < 1:
+                return Response({'error': 'Amount must be at least KSh 1'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            order = Order.objects.get(pk=order_id)
+            result = initiate_buni_payment(phone, amt, order_id,
+                                            account_reference=f'ORD-{order_id}')
+
+            txn = BuniTransaction.objects.create(
+                order=order,
+                phone_number=phone,
+                amount=Decimal(str(amount)),
+                transaction_id=result.get('transactionId', ''),
+                payment_url=result.get('paymentUrl', ''),
+                status='pending',
+                initiated_by=request.user,
+            )
+            return Response(self.get_serializer(txn).data, status=status.HTTP_201_CREATED)
+        except Order.DoesNotExist:
+            return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            logger.error(f'Buni initiate error: {e}')
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def check_status(self, request, pk=None):
+        """Poll KCB Buni for the current status of a payment transaction."""
+        from store.buni import query_buni_transaction
+        txn = self.get_object()
+
+        if txn.status in ['success', 'failed', 'cancelled']:
+            return Response(self.get_serializer(txn).data)
+
+        if not txn.transaction_id:
+            return Response({'error': 'Transaction has no Buni transaction ID'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        try:
+            result = query_buni_transaction(txn.transaction_id)
+            buni_status = str(result.get('status', '')).lower()
+
+            if buni_status == 'success':
+                txn.status = 'success'
+                txn.result_code = '0'
+                txn.result_description = result.get('message', 'Payment successful')
+                txn.save()
+
+                if not Payment.objects.filter(order=txn.order,
+                                               reference_number=txn.transaction_id).exists():
+                    Payment.objects.create(
+                        order=txn.order,
+                        amount=txn.amount,
+                        payment_method='buni',
+                        reference_number=txn.transaction_id,
+                        notes='KCB Buni payment',
+                        recorded_by=txn.initiated_by,
+                    )
+                    txn.order.amount_paid = (txn.order.amount_paid or Decimal('0')) + txn.amount
+                    txn.order.update_paid_status()  # already saves the order
+
+            elif buni_status in ['failed', 'cancelled']:
+                txn.status = buni_status
+                txn.result_code = result.get('code', '-1')
+                txn.result_description = result.get('message', 'Payment failed')
+                txn.save()
+
+        except Exception as e:
+            logger.error(f'Buni check_status error for txn {txn.id}: {e}')
+
+        return Response(self.get_serializer(txn).data)
+
+    @action(detail=False, methods=['post'], permission_classes=[AllowAny])
+    def callback(self, request):
+        """Webhook endpoint for KCB Buni payment callback."""
+        try:
+            transaction_id = request.data.get('transactionId') or request.data.get('transaction_id')
+            buni_status = str(request.data.get('status', '')).lower()
+        except Exception:
+            return Response({'status': 'ok'})
+
+        txn = BuniTransaction.objects.filter(transaction_id=transaction_id).first()
+        if not txn:
+            return Response({'status': 'ok'})
+
+        txn.result_code = str(request.data.get('code', ''))
+        txn.result_description = request.data.get('message', '')
+
+        if buni_status == 'success':
+            txn.status = 'success'
+            txn.save()
+            try:
+                if not Payment.objects.filter(order=txn.order,
+                                               reference_number=txn.transaction_id).exists():
+                    Payment.objects.create(
+                        order=txn.order,
+                        amount=txn.amount,
+                        payment_method='buni',
+                        reference_number=txn.transaction_id,
+                        notes='KCB Buni payment',
+                        recorded_by=txn.initiated_by,
+                    )
+                    txn.order.amount_paid = (
+                        txn.order.amount_paid or Decimal('0')) + txn.amount
+                    txn.order.update_paid_status()  # already saves the order
+            except Exception as e:
+                logger.error(f'Buni callback payment creation error: {e}')
+        elif buni_status in ['failed', 'cancelled']:
+            txn.status = buni_status
+            txn.save()
+
+        return Response({'status': 'ok'})
 
 
 # ==================== Territory/Beat Management ====================

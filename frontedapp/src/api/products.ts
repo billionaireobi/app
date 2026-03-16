@@ -18,9 +18,9 @@ export async function getProducts(params?: {
   return data;
 }
 
-// GET /api/products/{id}/
+// GET /api/product/{id}/  (singular — avoids conflict with store's api/products/<pk>/)
 export async function getProduct(id: number): Promise<Product> {
-  const { data } = await apiClient.get<Product>(`products/${id}/`);
+  const { data } = await apiClient.get<Product>(`product/${id}/`);
   return data;
 }
 
@@ -59,9 +59,9 @@ export async function createProduct(payload: Partial<Product>): Promise<Product>
   return data;
 }
 
-// PUT /api/products/{id}/
+// PATCH /api/product/{id}/  (singular — avoids conflict with store's api/products/<pk>/)
 export async function updateProduct(id: number, payload: Partial<Product>): Promise<Product> {
-  const { data } = await apiClient.patch<Product>(`products/${id}/`, payload);
+  const { data } = await apiClient.patch<Product>(`product/${id}/`, payload);
   return data;
 }
 

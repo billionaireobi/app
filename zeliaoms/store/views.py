@@ -934,6 +934,8 @@ def create_order(request):
         formset = OrderItemFormSet(instance=Order())
 
     return render(request, 'addrecords/addorder.html', {'form': form, 'formset': formset})
+
+
 # store/views.py
 @login_required
 def order_detail(request, order_id):

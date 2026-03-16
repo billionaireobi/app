@@ -152,13 +152,6 @@ export default function DashboardScreen() {
                 iconColor={Colors.info}
                 iconBg={Colors.infoSurface}
               />
-              <StatsCard
-                label="Low Stock Alerts"
-                value={stats?.low_stock_alerts ?? 0}
-                icon="alert-circle-outline"
-                iconColor={Colors.error}
-                iconBg={Colors.errorSurface}
-              />
             </View>
 
             {/* Quick Actions */}
@@ -188,40 +181,6 @@ export default function DashboardScreen() {
               <Text style={styles.sectionTitle}>Detailed Analytics</Text>
             </View>
             <DashboardStatsComponent stats={stats ?? null} loading={isLoading} />
-            {/* Admin-only: Additional stats */}
-            {user?.is_admin && (
-              <>
-                <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Admin Overview</Text>
-                  <View style={styles.adminPill}>
-                    <Ionicons name="shield-checkmark" size={12} color={Colors.gold} />
-                    <Text style={styles.adminPillText}>Admin only</Text>
-                  </View>
-                </View>
-                <View style={styles.statsGrid}>
-                  <TouchableOpacity
-                    style={styles.adminStatCard}
-                    onPress={() => router.push('/(tabs)/more' as any)}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="swap-horizontal-outline" size={22} color={Colors.primary} />
-                    <Text style={styles.adminStatLabel}>Stock Transfers</Text>
-                    <Text style={styles.adminStatSub}>Manage inter-store stock</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.adminStatCard}
-                    onPress={() => router.push('/(tabs)/more' as any)}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons name="alert-circle-outline" size={22} color={Colors.warning} />
-                    <Text style={styles.adminStatLabel}>Low Stock</Text>
-                    <Text style={styles.adminStatSub}>
-                      {stats?.low_stock_alerts ?? 0} alert{(stats?.low_stock_alerts ?? 0) !== 1 ? 's' : ''}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
 
             {/* Recent Orders */}
             {stats?.recent_orders && stats.recent_orders.length > 0 && (
@@ -381,37 +340,5 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontWeight: '500',
     textAlign: 'center',
-  },
-  adminPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: Colors.goldSurface,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: BorderRadius.full,
-  },
-  adminPillText: {
-    fontSize: FontSize.xs,
-    fontWeight: '700',
-    color: Colors.warning,
-  },
-  adminStatCard: {
-    flex: 1,
-    backgroundColor: Colors.white,
-    borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    gap: Spacing.xs,
-    ...Shadow.sm,
-  },
-  adminStatLabel: {
-    fontSize: FontSize.sm,
-    fontWeight: '700',
-    color: Colors.textPrimary,
-    marginTop: Spacing.xs,
-  },
-  adminStatSub: {
-    fontSize: FontSize.xs,
-    color: Colors.textSecondary,
   },
 });

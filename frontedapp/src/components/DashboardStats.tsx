@@ -143,12 +143,6 @@ export const DashboardStatsComponent: React.FC<DashboardStatsProps> = ({ stats, 
             label="Total Products"
             value={stats.total_products.toString()}
           />
-          <StatCard
-            icon="warning"
-            label="Low Stock Alerts"
-            value={stats.low_stock_alerts.toString()}
-            valueColor={stats.low_stock_alerts > 0 ? '#f59e0b' : '#10b981'}
-          />
         </View>
       </View>
 

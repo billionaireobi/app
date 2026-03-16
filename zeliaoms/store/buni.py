@@ -32,8 +32,8 @@ def initiate_buni_payment(phone_number, amount, order_id, account_reference=None
     base_url = settings.BUNI_BASE_URL
     
     # Validate credentials
-    if api_key == 'your_buni_api_key_here' or merchant_id == 'your_buni_merchant_id_here':
-        raise ValueError('Buni API credentials not configured. Update BUNI_API_KEY and BUNI_MERCHANT_ID in settings.')
+    if api_key == 'your_buni_api_key_here':
+        raise ValueError('Buni API key not configured. Update BUNI_API_KEY in settings.')
     
     # Format phone number
     phone = str(phone_number).strip().replace(' ', '').replace('-', '')

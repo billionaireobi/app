@@ -30,6 +30,13 @@
 - [x] Event types: order_created, order_updated, order_deleted, etc.
 - [x] All syntax verified - NO ERRORS
 
+### Serializer Fixes (March 15, 2026)
+- [x] InternalMessageSerializer - Fixed null reference in sender_name and recipient_name
+  - Changed from `CharField(source='obj.method')` to `SerializerMethodField` with safe null checking
+  - Now handles broadcast messages (recipient=None) correctly
+  - Now handles system messages (sender=None) correctly
+- [x] All syntax verified - NO ERRORS
+
 ### Requirements
 - [x] reportlab==4.4.1 already in requirements.txt
 - [x] django-cors-headers (for mobile app CORS - check if needed)
@@ -133,6 +140,15 @@
 - [ ] Salesperson can see admin-created customers (where sales_person is null)
 - [ ] Admin sees all customers
 - [ ] Salesperson cannot create orders for other salesperson's customers
+
+### Message Center Tests (NEW - March 15, 2026):
+- [ ] Send direct message - verify recipient_name displays sender name
+- [ ] Send broadcast message (recipient = null) - verify recipient_name shows null without crashing
+- [ ] Receive message - verify sender_name displays correctly
+- [ ] Message list displays without errors
+- [ ] Can read conversation thread with another user
+- [ ] Mark messages as read works
+- [ ] Unread message count updates correctly
 
 ### Notification Tests:
 - [ ] Create an order → Admin receives "order_created" notification
@@ -292,6 +308,9 @@ If any issues arise:
 - [ ] Notifications display for key events
 - [ ] Customer creation works from mobile app
 - [ ] Access control working (salesperson sees only their customers)
+- [ ] Message center displays messages without errors
+- [ ] Direct messages display sender/recipient names correctly
+- [ ] Broadcast messages (recipient=null) serialize without crashing
 - [ ] All API endpoints responding correctly
 - [ ] Mobile app UI looks professional with McDave branding
 

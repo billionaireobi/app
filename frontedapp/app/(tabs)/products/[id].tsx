@@ -107,12 +107,20 @@ function StockBar({ value, max }: { value: number; max: number }) {
   );
 }
 
-// Resolve image URLs safely: DRF ImageField already returns absolute URLs with request context,
-// so we must not prepend the domain again. Fall back to relative-only path if needed.
+// Resolve image URLs safely.
+// Production: cPanel/Passenger terminates SSL at the proxy level, so
+// request.build_absolute_uri() returns http:// even for HTTPS sites — force https://.
+// Development: local dev server has no SSL cert, so keep http:// as-is.
 function resolveImageUri(url: string | null | undefined): string | null {
   if (!url) return null;
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  return `https://zeliaoms.mcdave.co.ke${url}`;
+  if (url.startsWith('https://')) return url;
+  if (url.startsWith('http://')) {
+    // Dev server uses plain HTTP — converting to https:// breaks the request (no cert).
+    // Production proxy returns http:// internally but serves over https:// externally.
+    return __DEV__ ? url : 'https://' + url.slice(7);
+  }
+  // Relative path — prepend base domain
+  return `https://zeliaoms.mcdave.co.ke${url.startsWith('/') ? '' : '/'}${url}`;
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
@@ -126,13 +134,31 @@ export default function ProductDetailScreen() {
 
   const { data: product, isLoading, isRefetching, refetch } = useQuery({
     queryKey: ['product', productId],
-    queryFn: () => getProduct(productId),
+    queryFn: async () => {
+      const data = await getProduct(productId);
+      if (__DEV__) {
+        // Log full raw structure to diagnose field mapping issues
+        console.log('[ProductDetail] productId:', productId, 'typeof:', typeof productId);
+        console.log('[ProductDetail] raw keys:', Object.keys(data as any));
+        console.log('[ProductDetail] raw data:', JSON.stringify(data, null, 2));
+      }
+      return data;
+    },
     ...getCacheConfig('products'),
+    // Stock changes frequently — always refetch on mount so values are never stale
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const { data: stats, refetch: refetchStats } = useQuery({
     queryKey: ['product-stats', productId],
-    queryFn: () => getProductStats(productId),
+    queryFn: async () => {
+      const data = await getProductStats(productId);
+      if (__DEV__) {
+        console.log('[ProductDetail] Stats response:', data);
+      }
+      return data;
+    },
     enabled: !!product,
     ...getCacheConfig('stats'),
   });

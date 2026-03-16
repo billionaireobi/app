@@ -46,12 +46,6 @@ router.register(r'activity-logs', views.ActivityLogViewSet, basename='activitylo
 # ==================== Chat & Support ====================
 router.register(r'chatbot-knowledge', views.ChatbotKnowledgeViewSet, basename='chatbotknowledge')
 
-# ==================== Stock Management ====================
-router.register(r'stock/movements', views.StockMovementViewSet, basename='stockmovement')
-router.register(r'stock/transfers', views.StockTransferViewSet, basename='stocktransfer')
-router.register(r'stock/transfer-items', views.StockTransferItemViewSet, basename='stocktransferitem')
-router.register(r'stock/adjustments', views.StockAdjustmentViewSet, basename='stockadjustment')
-router.register(r'stock/alerts', views.StockAlertViewSet, basename='stockalert')
 
 # ==================== Purchase Orders ====================
 router.register(r'purchase-orders', views.PurchaseOrderViewSet, basename='purchaseorder')
@@ -71,4 +65,12 @@ router.register(r'beat-visits', views.BeatVisitViewSet, basename='beatvisit')
 # URL patterns
 urlpatterns = [
     path('', include(router.urls)),
+    # Explicit product detail route — avoids conflict with store's api/products/<pk>/
+    # which is included earlier in zelia/urls.py and intercepts the router's generated URL.
+    path('product/<int:pk>/', views.ProductViewSet.as_view({
+        'get': 'retrieve',
+        'put': 'update',
+        'patch': 'partial_update',
+        'delete': 'destroy',
+    }), name='api-product-detail'),
 ]

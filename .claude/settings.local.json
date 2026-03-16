@@ -107,7 +107,27 @@
       "Bash(ls -lh /c/Users/eugin/Desktop/zeliaoms/zeliaoms/androidapk/*.py /c/Users/eugin/Desktop/zeliaoms/zeliaoms/store/views.py)",
       "Bash(npx tsc --noEmit --skipLibCheck)",
       "Bash(xargs grep -l \"receipt\\\\|pdf\\\\|print\\\\|notification\")",
-      "Bash(xargs wc:*)"
+      "Bash(xargs wc:*)",
+      "Bash(npx expo:*)",
+      "Bash(python -c \"import django_filters; print\\(''django-filter version:'', django_filters.__version__\\)\")",
+      "Bash(ls \"C:\\\\Users\\\\eugin\\\\Desktop\\\\zeliaoms\\\\frontedapp\\\\app\\\\\\(tabs\\)\\\\customers\"\")",
+      "Bash(ls C:/Users/eugin/Desktop/zeliaoms/frontedapp/app/\\\\\\(tabs\\\\\\)/customers/)",
+      "Bash(grep -n \"first_name\\\\|last_name\\\\|First Name\\\\|Last Name\" C:/Users/eugin/Desktop/zeliaoms/frontedapp/app/\\\\\\(tabs\\\\\\)/customers/edit/[id].tsx)",
+      "Bash(grep -n \"first_name\\\\|last_name\\\\|First Name\\\\|Last Name\\\\|name\\\\|Shop\\\\|Contact\" C:/Users/eugin/Desktop/zeliaoms/frontedapp/app/\\\\\\(tabs\\\\\\)/customers/[id].tsx)",
+      "Bash(grep -n \"invalidateQueries\\\\|dashboard\\\\|paid_status\\\\|delivery_status\\\\|updateOrder\\\\|mutate\" C:/Users/eugin/Desktop/zeliaoms/frontedapp/app/\\\\\\(tabs\\\\\\)/orders/[id].tsx)",
+      "Bash(grep -n \"sectionTitle\\\\|Personal Details\\\\|First Name\\\\|Last Name\\\\|placeholder.*John\\\\|placeholder.*Doe\" C:/Users/eugin/Desktop/zeliaoms/frontedapp/app/\\\\\\(tabs\\\\\\)/customers/edit/[id].tsx)",
+      "Bash(grep -n \"profileName\\\\|profileInfo\\\\|profileCard\" C:/Users/eugin/Desktop/zeliaoms/frontedapp/app/\\\\\\(tabs\\\\\\)/customers/[id].tsx)",
+      "Bash(python manage.py shell -c \":*)",
+      "Bash(pip install:*)",
+      "Bash(Select-String \"IPv4\")",
+      "Bash(find C:UserseuginDesktopzeliaomsfrontedappapp -type d -name *product*)",
+      "Bash(find \"C:\\\\Users\\\\eugin\\\\Desktop\\\\zeliaoms\\\\frontedapp\\\\app/\\(tabs\\)/products\" -type f)",
+      "Bash(find C:UserseuginDesktopzeliaomszeliaomsandroidapk -type f -name *.py)",
+      "Bash(find C:UserseuginDesktopzeliaomsfrontedappsrchooks -name *.ts)",
+      "Bash(wc -l 'C:\\\\Users\\\\eugin\\\\Desktop\\\\zeliaoms\\\\frontedapp\\\\app\\\\\\(tabs\\)\\\\more.tsx')",
+      "Bash(wc -l \"C:\\\\Users\\\\eugin\\\\Desktop\\\\zeliaoms\\\\frontedapp\\\\app\\\\\\(tabs\\)\\\\orders\\\\create.tsx\")",
+      "Bash(ls zeliaoms/*.txt)",
+      "Bash(ls zeliaoms/requirements*)"
     ]
   }
 }
