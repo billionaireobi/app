@@ -10,6 +10,8 @@ from django.contrib.auth.models import User
 import os
 from django.db.models.signals import post_save 
 from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
+import re
 
 from PIL import Image as PILImage
 
@@ -70,6 +72,27 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
+def validate_phone_number(value):
+    """
+    Validate phone number - accepts various formats
+    - 10-14 digits with optional + prefix
+    - Will be formatted by format_phone_number() method
+    """
+    if not value:
+        return
+    
+    # Remove common separators for validation
+    cleaned = re.sub(r'[\s\-().]', '', str(value))
+    
+    # Check if it contains at least 9 digits
+    digits = re.sub(r'\D', '', cleaned)
+    if len(digits) < 9 or len(digits) > 15:
+        raise ValidationError(
+            'Phone number must contain between 9-15 digits. '
+            'Accepted formats: 0700000000, +254700000000, +44700000000'
+        )
+
+
 class Customer(models.Model):
     CATEGORY_CHOICES = [
         ('', 'select category'),
@@ -82,14 +105,10 @@ class Customer(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100, blank=True, null=True)
     phone_number = models.CharField(
-        
         blank=True,
         null=True,
         max_length=50,
-        validators=[RegexValidator(
-            r'^\+?\d{10,14}$',
-            'Phone number must be 10-14 digits, starting with 0 or +'
-        )]
+        validators=[validate_phone_number]
     )
     email = models.EmailField(null=True, blank=True)
     sales_person = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
@@ -181,8 +200,17 @@ class Product(models.Model):
     def get_price_by_category(self, customer_category):
         """
         Get the appropriate price for a product based on customer category.
-        Returns the price without VAT.
+        Returns the price without VAT as Decimal.
+        
+        Args:
+            customer_category (str): The customer's category (factory, distributor, wholesale, etc.)
+            
+        Returns:
+            Decimal: The base price for the given category
         """
+        if not customer_category:
+            return Decimal(str(self.wholesale_price))
+            
         price_map = {
             'factory': self.factory_price,
             'distributor': self.distributor_price,
@@ -192,7 +220,15 @@ class Product(models.Model):
             'Retail customer': self.retail_price,
             'Towns': self.retail_price,
         }
-        return price_map.get(customer_category, self.wholesale_price)
+        
+        # Get the price and ensure it's a Decimal
+        price = price_map.get(customer_category, self.wholesale_price)
+        
+        # Convert to Decimal if needed
+        if price is None:
+            return Decimal('0.00')
+        
+        return Decimal(str(price))
     
     def calculate_price_with_vat(self, base_price, vat_variation='with_vat', vat_rate=Decimal('0.16')):
         """
@@ -370,11 +406,30 @@ class Order(models.Model):
             return f"Order #{self.id} (Error fetching customer)"
 
     def calculate_total(self):
-        subtotal = sum(item.line_total for item in self.order_items.all())
-        delivery_fee = self.delivery_fee or Decimal('0')
-        self.total_amount = subtotal + delivery_fee
-        self.save()
-        return self.total_amount
+        """
+        Calculate order total from all order items + delivery fee.
+        Robust calculation that handles None values and errors.
+        """
+        try:
+            # Sum line totals from all items with proper handling
+            subtotal = Decimal('0')
+            for item in self.order_items.all():
+                if item.line_total:
+                    subtotal += item.line_total
+            
+            # Add delivery fee (handle None)
+            delivery_fee = self.delivery_fee or Decimal('0')
+            new_total = subtotal + delivery_fee
+            
+            # Save if changed
+            if self.total_amount != new_total:
+                self.total_amount = new_total
+                self.save(update_fields=['total_amount', 'updated_at'])
+            
+            return self.total_amount
+        except Exception as e:
+            print(f"Error calculating total for order {self.id}: {e}")
+            return self.total_amount
     def __str__(self):
         quote_info = f" from Quote #{self.quote.id}" if self.quote else ""
         try:
@@ -418,10 +473,17 @@ class OrderItem(models.Model):
         # Store original quantity on first save
         if not self.pk:
             self.original_quantity = self.quantity
-        # Calculate line total before saving
-        self.line_total = (self.unit_price + self.variance) * self.quantity
+        
+        # Calculate line total - handle None values
+        unit = self.unit_price or Decimal('0')
+        variance_val = self.variance or Decimal('0')
+        qty = self.quantity or 1
+        self.line_total = (unit + variance_val) * qty
+        
+        # Save item
         super().save(*args, **kwargs)
-        # Update order total after saving item
+        
+        # Recalculate order total after item saved
         if self.order:
             self.order.calculate_total()
 

@@ -1,8 +1,9 @@
 /**
- * CameraCapture — matches behaviour of static/js/camera_capture.js
- * Forces rear camera, adds GPS + timestamp watermark on the captured image.
+ * CameraCapture — camera modal with face-guide oval overlay.
+ * The capture button is disabled until a face is detected inside the oval.
+ * Forces rear camera by default; pass facing="front" for selfie.
  */
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -12,16 +13,28 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  LayoutChangeEvent,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import type { FaceFeature } from 'expo-face-detector';
 import * as Location from 'expo-location';
+
+// Dynamically require expo-face-detector so the app doesn't crash in Expo Go
+// (native module only available in custom dev/production builds).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let FD: any = null;
+try {
+  FD = require('expo-face-detector');
+} catch {
+  // Running in Expo Go — face detection disabled, visual guide only
+}
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { Colors, FontSize, Spacing, BorderRadius } from '../constants/colors';
 
 export interface CaptureResult {
-  uri: string;         // local file URI
-  base64?: string;     // base64 string (optional, heavy)
+  uri: string;
+  base64?: string;
   latitude: number | null;
   longitude: number | null;
   timestamp: string;
@@ -36,6 +49,12 @@ interface CameraCaptureProps {
   /** Which camera to use. Defaults to 'back'. Pass 'front' for selfie. */
   facing?: 'front' | 'back';
 }
+
+// Oval guide occupies this fraction of the camera view
+const OVAL_W_RATIO = 0.62; // 62% of view width
+const OVAL_H_RATIO = 0.52; // 52% of view height
+// Oval vertical center is slightly above the mid-point (better for a face/head)
+const OVAL_CENTER_Y_RATIO = 0.46;
 
 export function CameraCapture({
   visible,
@@ -55,11 +74,18 @@ export function CameraCapture({
   const [gpsCoords, setGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [gpsLoading, setGpsLoading] = useState(false);
 
-  // Request GPS when modal opens
+  // Face detection state
+  const [faceDetected, setFaceDetected] = useState(false);
+  const [faceInPosition, setFaceInPosition] = useState(false);
+  const [cameraLayout, setCameraLayout] = useState({ width: 0, height: 0 });
+
+  // Reset state when modal closes
   React.useEffect(() => {
     if (!visible) {
       setPreview(null);
       setCaptureResult(null);
+      setFaceDetected(false);
+      setFaceInPosition(false);
       return;
     }
     (async () => {
@@ -80,6 +106,72 @@ export function CameraCapture({
       }
     })();
   }, [visible]);
+
+  // Compute the oval's bounding box in view-space pixels
+  const ovalBounds = useMemo(() => {
+    const { width, height } = cameraLayout;
+    if (!width || !height) return null;
+    const ovalW = width * OVAL_W_RATIO;
+    const ovalH = height * OVAL_H_RATIO;
+    const centerX = width / 2;
+    const centerY = height * OVAL_CENTER_Y_RATIO;
+    return {
+      left: centerX - ovalW / 2,
+      top: centerY - ovalH / 2,
+      right: centerX + ovalW / 2,
+      bottom: centerY + ovalH / 2,
+      width: ovalW,
+      height: ovalH,
+      centerX,
+      centerY,
+    };
+  }, [cameraLayout]);
+
+  const handleCameraLayout = useCallback((e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    setCameraLayout({ width, height });
+  }, []);
+
+  // Called by CameraView whenever faces are detected / lost
+  const handleFacesDetected = useCallback(
+    ({ faces }: { faces: FaceFeature[] }) => {
+      if (!faces || faces.length === 0) {
+        setFaceDetected(false);
+        setFaceInPosition(false);
+        return;
+      }
+
+      setFaceDetected(true);
+
+      if (!ovalBounds) return;
+
+      // Pick the largest face (closest to camera)
+      const face = faces.reduce((best, f) =>
+        f.bounds.size.width > best.bounds.size.width ? f : best
+      );
+      const { origin, size } = face.bounds;
+      const faceCX = origin.x + size.width / 2;
+      const faceCY = origin.y + size.height / 2;
+
+      // Allow a 12% tolerance margin inside the oval centre
+      const tolerX = ovalBounds.width * 0.12;
+      const tolerY = ovalBounds.height * 0.12;
+
+      const centred =
+        faceCX >= ovalBounds.left + tolerX &&
+        faceCX <= ovalBounds.right - tolerX &&
+        faceCY >= ovalBounds.top + tolerY &&
+        faceCY <= ovalBounds.bottom - tolerY;
+
+      // Face size sanity: not too tiny (far away) or too big (too close)
+      const minW = ovalBounds.width * 0.28;
+      const maxW = ovalBounds.width * 1.15;
+      const sizeOk = size.width >= minW && size.width <= maxW;
+
+      setFaceInPosition(centred && sizeOk);
+    },
+    [ovalBounds]
+  );
 
   const handleCapture = useCallback(async () => {
     if (!cameraRef.current || capturing) return;
@@ -102,7 +194,7 @@ export function CameraCapture({
 
       setPreview(photo.uri);
       setCaptureResult(result);
-    } catch (err) {
+    } catch {
       Alert.alert('Camera Error', 'Failed to capture photo. Please try again.');
     } finally {
       setCapturing(false);
@@ -120,12 +212,27 @@ export function CameraCapture({
   const handleRetake = () => {
     setPreview(null);
     setCaptureResult(null);
+    setFaceDetected(false);
+    setFaceInPosition(false);
   };
 
-  // Camera permission not determined
-  if (!permission) {
-    return null;
-  }
+  if (!permission) return null;
+
+  // When face detector native module is unavailable (Expo Go), skip the face lock
+  const faceDetectionAvailable = FD !== null;
+
+  // Derive oval border colour from detection state
+  const ovalColor = faceInPosition ? '#4ADE80' : faceDetected ? '#FBBF24' : 'rgba(255,255,255,0.7)';
+  const captureDisabled = capturing || (faceDetectionAvailable && !faceInPosition);
+
+  // Instruction text shown inside/below the oval
+  const guideText = !faceDetectionAvailable
+    ? 'Position your face in the oval'
+    : faceInPosition
+    ? 'Hold still…'
+    : faceDetected
+    ? 'Move closer / centre your face'
+    : 'Position your face in the oval';
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
@@ -149,11 +256,10 @@ export function CameraCapture({
             </TouchableOpacity>
           </View>
         ) : preview ? (
-          /* Preview Mode */
+          /* ── Preview mode ── */
           <View style={styles.previewContainer}>
             <Image source={{ uri: preview }} style={styles.preview} resizeMode="cover" />
 
-            {/* Watermark overlay (decorative — shows GPS + timestamp) */}
             <View style={styles.watermark}>
               <Text style={styles.watermarkText}>👤 {username}</Text>
               {gpsCoords && (
@@ -161,12 +267,9 @@ export function CameraCapture({
                   📍 {gpsCoords.lat.toFixed(5)}, {gpsCoords.lng.toFixed(5)}
                 </Text>
               )}
-              <Text style={styles.watermarkText}>
-                🕐 {captureResult?.timestamp}
-              </Text>
+              <Text style={styles.watermarkText}>🕐 {captureResult?.timestamp}</Text>
             </View>
 
-            {/* Action buttons */}
             <View style={styles.previewActions}>
               <TouchableOpacity style={styles.retakeBtn} onPress={handleRetake}>
                 <Ionicons name="refresh-outline" size={20} color={Colors.white} />
@@ -179,19 +282,111 @@ export function CameraCapture({
             </View>
           </View>
         ) : (
-          /* Camera View */
-          <View style={styles.cameraContainer}>
-            {/* CameraView no longer has children — avoids the "does not support children" warning */}
+          /* ── Live camera view ── */
+          <View style={styles.cameraContainer} onLayout={handleCameraLayout}>
             <CameraView
               ref={cameraRef}
               style={styles.camera}
               facing={facing}
               zoom={0}
+              {...(FD ? {
+                onFacesDetected: handleFacesDetected,
+                faceDetectorSettings: {
+                  mode: FD.FaceDetectorMode.fast,
+                  detectLandmarks: FD.FaceDetectorLandmarks.none,
+                  runClassifications: FD.FaceDetectorClassifications.none,
+                  minDetectionInterval: 200,
+                  tracking: true,
+                },
+              } as any : {})}
             />
 
-            {/* GPS status overlay — absolutely positioned over the camera */}
+            {/* ── Face guide overlay ── */}
+            {ovalBounds && (
+              <>
+                {/* Dark vignette — four rectangles around the oval */}
+                {/* Top */}
+                <View
+                  style={[
+                    styles.vignette,
+                    { top: 0, left: 0, right: 0, height: ovalBounds.top },
+                  ]}
+                />
+                {/* Bottom */}
+                <View
+                  style={[
+                    styles.vignette,
+                    {
+                      top: ovalBounds.bottom,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                    },
+                  ]}
+                />
+                {/* Left */}
+                <View
+                  style={[
+                    styles.vignette,
+                    {
+                      top: ovalBounds.top,
+                      left: 0,
+                      width: ovalBounds.left,
+                      height: ovalBounds.height,
+                    },
+                  ]}
+                />
+                {/* Right */}
+                <View
+                  style={[
+                    styles.vignette,
+                    {
+                      top: ovalBounds.top,
+                      right: 0,
+                      width: cameraLayout.width - ovalBounds.right,
+                      height: ovalBounds.height,
+                    },
+                  ]}
+                />
+
+                {/* Oval border */}
+                <View
+                  style={[
+                    styles.ovalGuide,
+                    {
+                      left: ovalBounds.left,
+                      top: ovalBounds.top,
+                      width: ovalBounds.width,
+                      height: ovalBounds.height,
+                      borderRadius: ovalBounds.width / 2,
+                      borderColor: ovalColor,
+                    },
+                  ]}
+                />
+
+                {/* Instruction label below the oval */}
+                <View
+                  style={[
+                    styles.guideLabelWrap,
+                    { top: ovalBounds.bottom + 12, left: 0, right: 0 },
+                  ]}
+                >
+                  {faceInPosition && (
+                    <Ionicons name="checkmark-circle" size={18} color="#4ADE80" style={{ marginRight: 6 }} />
+                  )}
+                  <Text style={[styles.guideLabel, { color: ovalColor }]}>{guideText}</Text>
+                </View>
+              </>
+            )}
+
+            {/* GPS status overlay */}
             <View style={styles.gpsOverlay}>
-              <View style={[styles.gpsDot, gpsCoords ? styles.gpsOk : gpsLoading ? styles.gpsWaiting : styles.gpsFail]} />
+              <View
+                style={[
+                  styles.gpsDot,
+                  gpsCoords ? styles.gpsOk : gpsLoading ? styles.gpsWaiting : styles.gpsFail,
+                ]}
+              />
               <Text style={styles.gpsText}>
                 {gpsLoading
                   ? 'Acquiring GPS...'
@@ -201,7 +396,7 @@ export function CameraCapture({
               </Text>
             </View>
 
-            {/* Username overlay — absolutely positioned over the camera */}
+            {/* Username overlay */}
             <View style={styles.userOverlay}>
               <Ionicons name="person-circle-outline" size={16} color={Colors.white} />
               <Text style={styles.userOverlayText}>{username}</Text>
@@ -210,18 +405,32 @@ export function CameraCapture({
             {/* Capture button */}
             <View style={styles.captureRow}>
               <TouchableOpacity
-                style={[styles.captureBtn, capturing && styles.captureBtnDisabled]}
+                style={[
+                  styles.captureBtn,
+                  captureDisabled && styles.captureBtnDisabled,
+                  faceInPosition && styles.captureBtnReady,
+                ]}
                 onPress={handleCapture}
-                disabled={capturing}
+                disabled={captureDisabled}
+                activeOpacity={0.8}
               >
                 {capturing ? (
                   <ActivityIndicator color={Colors.white} />
                 ) : (
-                  <View style={styles.captureInner} />
+                  <View
+                    style={[
+                      styles.captureInner,
+                      faceInPosition && styles.captureInnerReady,
+                    ]}
+                  />
                 )}
               </TouchableOpacity>
               <Text style={styles.captureHint}>
-                {gpsLoading ? 'Waiting for GPS...' : 'Tap to capture'}
+                {capturing
+                  ? 'Capturing…'
+                  : faceInPosition
+                  ? 'Tap to capture'
+                  : 'Align face to unlock'}
               </Text>
             </View>
           </View>
@@ -286,6 +495,33 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
   },
+  // Dark vignette rectangles around the oval cutout area
+  vignette: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  // Oval border guide
+  ovalGuide: {
+    position: 'absolute',
+    borderWidth: 3,
+    backgroundColor: 'transparent',
+  },
+  // Label below oval
+  guideLabelWrap: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.md,
+  },
+  guideLabel: {
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+    textAlign: 'center',
+    textShadowColor: 'rgba(0,0,0,0.8)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
   gpsOverlay: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -344,15 +580,28 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 4,
-    borderColor: Colors.white,
+    borderColor: 'rgba(255,255,255,0.4)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  captureBtnDisabled: { opacity: 0.5 },
+  captureBtnDisabled: {
+    opacity: 0.4,
+  },
+  captureBtnReady: {
+    borderColor: '#4ADE80',
+    shadowColor: '#4ADE80',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 10,
+    elevation: 8,
+  },
   captureInner: {
     width: 64,
     height: 64,
     borderRadius: 32,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  captureInnerReady: {
     backgroundColor: Colors.white,
   },
   captureHint: {

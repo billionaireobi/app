@@ -30,13 +30,13 @@ export async function getPendingTransfers(): Promise<StockTransfer[]> {
   return data;
 }
 
-// POST /api/stock/transfers/
+// POST /api/stock/transfers/initiate_transfer/
 export async function createStockTransfer(payload: {
   from_store: StoreLocation;
   to_store: StoreLocation;
-  items: { product: number; quantity: number }[];
+  items: { product_id: number; quantity: number }[];
 }): Promise<StockTransfer> {
-  const { data } = await apiClient.post<StockTransfer>('stock/transfers/', payload);
+  const { data } = await apiClient.post<StockTransfer>('stock/transfers/initiate_transfer/', payload);
   return data;
 }
 
@@ -48,9 +48,9 @@ export async function confirmStockTransfer(id: number): Promise<StockTransfer> {
 
 // POST /api/stock/adjustments/
 export async function createStockAdjustment(payload: {
-  product: number;
+  product_id: number;
   store: StoreLocation;
-  quantity_change: number;
+  new_quantity: number;
   reason: string;
 }): Promise<StockAdjustment> {
   const { data } = await apiClient.post<StockAdjustment>('stock/adjustments/', payload);

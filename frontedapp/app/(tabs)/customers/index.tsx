@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { getCustomers } from '../../../src/api/customers';
+import { useDebounce } from '../../../src/hooks/useDebounce';
 import { CustomerCard } from '../../../src/components/CustomerCard';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
@@ -31,13 +32,14 @@ export default function CustomersScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const debouncedSearch = useDebounce(search);
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ['customers', search, categoryFilter],
+    queryKey: ['customers', debouncedSearch, categoryFilter],
     queryFn: () =>
       getCustomers({
-        search: search || undefined,
-        category: categoryFilter || undefined,
+        search: debouncedSearch || undefined,
+        default_category: categoryFilter || undefined,
       }),
   });
 

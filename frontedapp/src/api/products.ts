@@ -1,5 +1,5 @@
 import apiClient from './client';
-import type { Category, Product, ProductListItem, PaginatedResponse, CustomerCategory } from '../types';
+import type { Category, Product, ProductListItem, ProductStats, PaginatedResponse, CustomerCategory } from '../types';
 
 // GET /api/categories/
 export async function getCategories(): Promise<Category[]> {
@@ -62,5 +62,11 @@ export async function createProduct(payload: Partial<Product>): Promise<Product>
 // PUT /api/products/{id}/
 export async function updateProduct(id: number, payload: Partial<Product>): Promise<Product> {
   const { data } = await apiClient.patch<Product>(`products/${id}/`, payload);
+  return data;
+}
+
+// GET /api/products/{id}/stats/
+export async function getProductStats(id: number): Promise<ProductStats> {
+  const { data } = await apiClient.get<ProductStats>(`products/${id}/stats/`);
   return data;
 }

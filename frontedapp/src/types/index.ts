@@ -53,8 +53,9 @@ export interface Product {
   barcode: string;
   category: number;
   category_name?: string;
-  status: 'active' | 'inactive';
+  status: 'available' | 'not_available' | 'limited' | 'offer' | string;
   image: string | null;
+  image_url?: string;
   factory_price: string;
   distributor_price: string;
   wholesale_price: string;
@@ -63,8 +64,15 @@ export interface Product {
   mcdave_stock: number;
   kisii_stock: number;
   offshore_stock: number;
+  total_stock?: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProductStats {
+  total_orders: number;
+  total_units_sold: number;
+  total_revenue: number;
 }
 
 export interface ProductListItem {
@@ -288,15 +296,17 @@ export interface InternalMessage {
 }
 
 // ==================== Notifications ====================
-export type NotificationType = 'feedback' | 'message' | 'order' | 'payment' | 'stock';
+export type NotificationEventType = 'feedback_new' | 'message_new' | 'order_created' | 'order_updated' | 'order_deleted' | 'beat_visit' | 'beat_plan_new' | 'stock_change' | 'payment_new' | 'login_new' | 'general';
 
 export interface Notification {
   id: number;
   user: number;
-  notification_type: NotificationType;
-  message: string;
-  related_object_id: number | null;
+  event_type: NotificationEventType;
+  title: string;
+  body: string;
+  url: string;
   is_read: boolean;
+  icon: string;
   created_at: string;
 }
 

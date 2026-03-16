@@ -71,8 +71,8 @@ export default function EditCustomerScreen() {
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!firstName.trim()) e.firstName = 'First name is required';
-    if (!lastName.trim()) e.lastName = 'Last name is required';
+    if (!firstName.trim()) e.firstName = 'Shop name is required';
+    if (!lastName.trim()) e.lastName = 'Contact person is required';
     if (!phone.trim()) e.phone = 'Phone number is required';
     if (!address.trim()) e.address = 'Address is required';
     setErrors(e);
@@ -107,22 +107,22 @@ export default function EditCustomerScreen() {
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Details</Text>
+          <Text style={styles.sectionTitle}>Customer Details</Text>
           <Input
-            label="First Name"
+            label="Shop Name"
             value={firstName}
             onChangeText={setFirstName}
-            leftIcon="person-outline"
-            placeholder="John"
+            leftIcon="storefront-outline"
+            placeholder="Shop Name"
             error={errors.firstName}
             required
           />
           <Input
-            label="Last Name"
+            label="Contact Person"
             value={lastName}
             onChangeText={setLastName}
             leftIcon="person-outline"
-            placeholder="Doe"
+            placeholder="Contact Person"
             error={errors.lastName}
             required
           />

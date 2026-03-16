@@ -58,28 +58,37 @@ export async function updateOrderStatus(
 export async function deleteOrder(id: number): Promise<void> {
   await apiClient.delete(`orders/${id}/`);
 }
-// GET /api/orders/{id}/download_receipt/ - Download receipt as PDF
-export async function downloadOrderReceipt(id: number): Promise<Blob> {
-  const { data } = await apiClient.get(`orders/${id}/download_receipt/`, {
-    responseType: 'blob',
-  });
-  return data;
-}
+// GET /api/orders/{id}/download_receipt/ - Download receipt PDF to device and share
+export async function downloadReceiptToDevice(id: number): Promise<void> {
+  const FileSystem = require('expo-file-system/legacy');
+  const Sharing = require('expo-sharing');
 
-// Helper function to trigger receipt download
-export async function downloadAndViewReceipt(id: number, orderId?: string): Promise<void> {
-  try {
-    const blob = await downloadOrderReceipt(id);
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Receipt-ORD-${orderId || id}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error('Failed to download receipt:', error);
-    throw error;
+  // Use apiClient so the auth interceptor handles the token automatically
+  const response = await apiClient.get(`orders/${id}/download_receipt/`, {
+    responseType: 'arraybuffer',
+  });
+
+  // Convert ArrayBuffer to base64
+  const uint8 = new Uint8Array(response.data as ArrayBuffer);
+  let binary = '';
+  for (let i = 0; i < uint8.length; i++) {
+    binary += String.fromCharCode(uint8[i]);
+  }
+  const base64 = btoa(binary);
+
+  const filePath = `${FileSystem.cacheDirectory}order-${id}.pdf`;
+  await FileSystem.writeAsStringAsync(filePath, base64, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+
+  const canShare = await Sharing.isAvailableAsync();
+  if (canShare) {
+    await Sharing.shareAsync(filePath, {
+      mimeType: 'application/pdf',
+      dialogTitle: `Receipt – Order #${id}`,
+      UTI: 'com.adobe.pdf',
+    });
+  } else {
+    throw new Error('Sharing is not available on this device');
   }
 }

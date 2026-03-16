@@ -1,12 +1,43 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
+import Constants from 'expo-constants';
 
-// In development (Expo Go), connect to the local Django dev server running on your PC.
-// In production (APK build), connect to the live server.
-// Run the dev server with: python manage.py runserver 0.0.0.0:8000
-export const BASE_URL = __DEV__
-  ? 'http://192.168.100.147:8000/api/'
-  : 'https://zeliaoms.mcdave.co.ke/api/';
+/**
+ * Resolve the API base URL automatically:
+ *
+ *  • Development (Expo Go / dev build)
+ *      Reads the host from the Expo Metro bundler manifest (e.g. "192.168.8.70:8081"),
+ *      strips the port, then targets Django on port 8000.
+ *      → The IP is detected at runtime so it works on any network without any code change.
+ *      → Override: set EXPO_PUBLIC_API_URL in .env.local if you need a non-standard port.
+ *
+ *  • Production APK (eas build)
+ *      Uses EXPO_PUBLIC_API_URL from .env, which is https://zeliaoms.mcdave.co.ke/api/
+ *      The Metro host is not available in production builds, so the env var is always used.
+ */
+function resolveBaseUrl(): string {
+  if (__DEV__) {
+    // Constants.expoConfig.hostUri  →  "192.168.x.x:8081"  (Expo SDK 49+)
+    // (Constants as any).manifest?.debuggerHost  →  same, legacy Expo Go fallback
+    const hostUri: string | undefined =
+      Constants.expoConfig?.hostUri ??
+      (Constants as any).manifest?.debuggerHost;
+
+    if (hostUri) {
+      const ip = hostUri.split(':')[0]; // strip the Metro port, keep only the IP
+      return `http://${ip}:8000/api/`;
+    }
+
+    // Fallback: env var or localhost (e.g. iOS Simulator on the same machine)
+    return process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8000/api/';
+  }
+
+  // Production build — always the live server
+  return process.env.EXPO_PUBLIC_API_URL ?? 'https://zeliaoms.mcdave.co.ke/api/';
+}
+
+export const BASE_URL = resolveBaseUrl();
+console.log('[API] Base URL:', BASE_URL);
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -39,13 +70,18 @@ apiClient.interceptors.response.use(
 
     if (error.response?.data) {
       const d = error.response.data;
-      const msg =
-        (d.detail as string) ||
-        (d.error as string) ||
-        (d.message as string) ||
-        (Array.isArray(d.non_field_errors) ? (d.non_field_errors as string[])[0] : undefined) ||
-        extractFirstFieldError(d) ||
-        `Server error (${error.response.status})`;
+      // Only extract DRF error fields when the response is a plain object.
+      // If Django returns an HTML debug page (e.g. DisallowedHost, 500),
+      // d will be a string — fall through to the generic status message.
+      const isJsonObject = d !== null && typeof d === 'object' && !Array.isArray(d);
+      const msg = isJsonObject
+        ? ((d.detail as string) ||
+          (d.error as string) ||
+          (d.message as string) ||
+          (Array.isArray(d.non_field_errors) ? (d.non_field_errors as string[])[0] : undefined) ||
+          extractFirstFieldError(d as Record<string, unknown>) ||
+          `Server error (${error.response.status})`)
+        : `Server error (${error.response.status})`;
       const enhanced = new Error(msg) as Error & { status: number; data: unknown };
       enhanced.status = error.response.status;
       enhanced.data = d;
@@ -65,6 +101,8 @@ apiClient.interceptors.response.use(
 );
 
 function extractFirstFieldError(data: Record<string, unknown>): string | undefined {
+  // Guard: only process plain objects (not strings, arrays, etc.)
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return undefined;
   for (const key of Object.keys(data)) {
     const val = data[key];
     if (Array.isArray(val) && typeof val[0] === 'string') {

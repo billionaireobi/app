@@ -13,6 +13,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { getProducts } from '../../../src/api/products';
+import { getCacheConfig } from '../../../src/hooks/useCacheConfig';
+import { usePrefetchSearch } from '../../../src/hooks/usePrefetch';
+import { useDebounce } from '../../../src/hooks/useDebounce';
 import { ProductCard } from '../../../src/components/ProductCard';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
@@ -20,22 +23,29 @@ import { Colors, FontSize, Spacing, BorderRadius } from '../../../src/constants/
 
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
-  { label: 'Active', value: 'active' },
-  { label: 'Inactive', value: 'inactive' },
+  { label: 'Available', value: 'available' },
+  { label: 'Not Available', value: 'not_available' },
+  { label: 'Limited', value: 'limited' },
+  { label: 'Offer', value: 'offer' },
 ];
 
 export default function ProductsScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const debouncedSearch = useDebounce(search);
+
+  // Prefetch search results as user types
+  usePrefetchSearch('products', debouncedSearch);
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ['products', search, statusFilter],
+    queryKey: ['products', debouncedSearch, statusFilter],
     queryFn: () =>
       getProducts({
-        search: search || undefined,
+        search: debouncedSearch || undefined,
         status: statusFilter || undefined,
       }),
+    ...getCacheConfig('products'), // Apply optimized product caching
   });
 
   const products = data?.results ?? [];

@@ -202,13 +202,18 @@ SECRET_KEY = 'django-insecure-6e2g4bbepso41tbfw#2d^va-$5u&+t0$q%mkoul7l%&h=05gbg
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    '192.168.100.147',   # LAN IP — allows Expo Go on phone to reach dev server
+_PRODUCTION_HOSTS = [
     'zeliaoms.mcdave.co.ke',
     'www.zeliaoms.mcdave.co.ke',
 ]
+
+if DEBUG:
+    # In development, allow any host so the dev server is reachable from any
+    # phone/emulator on the LAN regardless of which IP the machine has been assigned.
+    # ALLOWED_HOSTS = ['*'] is safe here because DEBUG=True is dev-only.
+    ALLOWED_HOSTS = ['*']
+else:
+    ALLOWED_HOSTS = _PRODUCTION_HOSTS
 
 # Application definition
 INSTALLED_APPS = [
@@ -226,6 +231,7 @@ INSTALLED_APPS = [
     'store.apps.StoreConfig',
     'rest_framework',
     'rest_framework.authtoken',
+    'django_filters',
     'androidapk.apps.AndroidapkConfig',
 ]
 
@@ -355,27 +361,22 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
     ],
+
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 15,
+
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
+    ],
+
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
-    ],
-    'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.AnonRateThrottle',
-        'rest_framework.throttling.UserRateThrottle'
-    ],
-    'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/hour',
-        'user': '1000/hour'
-    },
-    'EXCEPTION_HANDLER': 'androidapk.exceptions.custom_exception_handler',
-}
 
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 15,
+}

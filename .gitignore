@@ -1,5 +1,42 @@
 node_modules/
-.env
 dist/
 build/
 npm-debug.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.Python
+venv/
+.venv/
+
+# Django
+*.sqlite3
+media/
+staticfiles/
+*.log
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/settings.local.json
+
+# Build artifacts
+androidapk.zip
+*.zip

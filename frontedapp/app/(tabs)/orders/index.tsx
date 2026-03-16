@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { getOrders } from '../../../src/api/orders';
+import { useDebounce } from '../../../src/hooks/useDebounce';
 import { OrderCard } from '../../../src/components/OrderCard';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
@@ -30,13 +31,14 @@ export default function OrdersScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderPaidStatus | ''>('');
+  const debouncedSearch = useDebounce(search);
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ['orders', statusFilter, search],
+    queryKey: ['orders', statusFilter, debouncedSearch],
     queryFn: () =>
       getOrders({
         paid_status: statusFilter || undefined,
-        search: search || undefined,
+        search: debouncedSearch || undefined,
       }),
   });
 

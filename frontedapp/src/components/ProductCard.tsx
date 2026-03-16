@@ -14,9 +14,15 @@ interface ProductCardProps {
   onPress: () => void;
 }
 
+function resolveImageUri(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  return `${API_BASE_IMAGE}${url}`;
+}
+
 export function ProductCard({ product, onPress }: ProductCardProps) {
-  // Use image_url from API (already includes base URL) or fall back to building it
-  const imageUri = product.image_url || (product.image ? `${API_BASE_IMAGE}${product.image}` : null);
+  const [imgError, setImgError] = React.useState(false);
+  const imageUri = imgError ? null : resolveImageUri(product.image_url) || resolveImageUri(product.image);
   // Use total_stock from backend, or calculate from individual stores if not available
   const totalStock = product.total_stock ?? ((product.mcdave_stock || 0) + (product.kisii_stock || 0) + (product.offshore_stock || 0));
   const isLowStock = totalStock <= 10;
@@ -26,7 +32,7 @@ export function ProductCard({ product, onPress }: ProductCardProps) {
       <Card style={styles.card}>
         <View style={styles.row}>
           {imageUri ? (
-            <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
+            <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" onError={() => setImgError(true)} />
           ) : (
             <View style={styles.imagePlaceholder}>
               <Ionicons name="cube-outline" size={28} color={Colors.gray400} />

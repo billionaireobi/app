@@ -4,3 +4,9 @@
 
 expo-env.d.ts
 # @end expo-cli
+
+# ── Environment variable files ──────────────────────────────────────────────
+# .env.local and .env.*.local hold machine-specific overrides (e.g. local IP)
+# and must never be committed.
+.env.local
+.env.*.local

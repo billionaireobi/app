@@ -8,7 +8,6 @@ import {
   Alert,
   Modal,
   TextInput,
-  Share,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,8 +15,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import Toast from 'react-native-toast-message';
-import { getOrder, getOrderItems, updateOrderStatus, downloadOrderReceipt, deleteOrder } from '../../../src/api/orders';
-import { addPayment, getOrderPayments, initiateSTKPush } from '../../../src/api/payments';
+import { getOrder, getOrderItems, updateOrderStatus, downloadReceiptToDevice, deleteOrder } from '../../../src/api/orders';
+import { addPayment, getOrderPayments, initiateSTKPush, type AddPaymentResponse } from '../../../src/api/payments';
+import { getCacheConfig } from '../../../src/hooks/useCacheConfig';
+import { usePrefetchItemDetail } from '../../../src/hooks/usePrefetch';
 import { Card } from '../../../src/components/ui/Card';
 import { Badge, getOrderStatusVariant, formatOrderStatus } from '../../../src/components/ui/Badge';
 import { Button } from '../../../src/components/ui/Button';
@@ -30,6 +31,9 @@ export default function OrderDetailScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const orderId = Number(id);
+
+  // Prefetch order details to reduce loading
+  usePrefetchItemDetail('order', orderId);
 
   const [paymentModal, setPaymentModal] = useState(false);
   const [mpesaModal, setMpesaModal] = useState(false);
@@ -44,33 +48,38 @@ export default function OrderDetailScreen() {
   const { data: order, isLoading } = useQuery({
     queryKey: ['order', orderId],
     queryFn: () => getOrder(orderId),
+    ...getCacheConfig('orders'), // Apply optimized order caching
   });
 
   const { data: items } = useQuery({
     queryKey: ['order-items', orderId],
     queryFn: () => getOrderItems(orderId),
+    ...getCacheConfig('orders'),
   });
 
   const { data: payments } = useQuery({
     queryKey: ['order-payments', orderId],
     queryFn: () => getOrderPayments(orderId),
+    ...getCacheConfig('payments'),
   });
 
   const { mutate: addPay, isPending: payPending } = useMutation({
     mutationFn: addPayment,
-    onSuccess: (response) => {
+    onSuccess: (response: AddPaymentResponse) => {
       Toast.show({ type: 'success', text1: 'Payment recorded!' });
-      
-      // Immediately update the order query with the new payment status
-      if (response.order_update) {
-        queryClient.setQueryData(['order', orderId], (oldData: any) => ({
-          ...oldData,
-          paid_status: response.order_update.paid_status,
-          amount_paid: response.order_update.amount_paid,
-        }));
-      }
-      
+
+      // Immediately patch the cached order with server-returned values
+      queryClient.setQueryData(['order', orderId], (oldData: any) => ({
+        ...oldData,
+        paid_status: response.order_update.paid_status,
+        amount_paid: String(response.order_update.amount_paid),
+      }));
+
+      // Refetch to keep everything in sync
+      queryClient.invalidateQueries({ queryKey: ['order', orderId] });
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
       queryClient.invalidateQueries({ queryKey: ['order-payments', orderId] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       setPaymentModal(false);
       setPayAmount('');
       setPayRef('');
@@ -136,19 +145,22 @@ export default function OrderDetailScreen() {
     stkPush({ order: orderId, phone_number: mpesaPhone, amount: Number(mpesaAmount) });
   };
 
-  const handlePrintReceipt = async () => {
+  const [receiptLoading, setReceiptLoading] = useState(false);
+
+  const handleDownloadReceipt = async () => {
+    setReceiptLoading(true);
     try {
-      Toast.show({ type: 'info', text1: 'Loading receipt...' });
-      await downloadOrderReceipt(orderId);
+      Toast.show({ type: 'info', text1: 'Preparing receipt...', text2: `order-${orderId}.pdf` });
+      await downloadReceiptToDevice(orderId);
+    } catch (error: any) {
       Toast.show({
-        type: 'success',
-        text1: 'Receipt Ready',
-        text2: 'Use your device print or email options',
-        duration: 3000,
+        type: 'error',
+        text1: 'Download failed',
+        text2: error?.message ?? 'Could not download receipt',
+        visibilityTime: 4000,
       });
-    } catch (error) {
-      console.error('Receipt download error:', error);
-      Toast.show({ type: 'error', text1: 'Failed to load receipt' });
+    } finally {
+      setReceiptLoading(false);
     }
   };
 
@@ -156,7 +168,28 @@ export default function OrderDetailScreen() {
     return <LoadingSpinner fullScreen message="Loading order..." />;
   }
 
-  const balance = parseFloat(order.total_amount) - parseFloat(order.amount_paid);
+  /**
+   * Calculate totals with fallback logic to handle potential zero values
+   * If items exist but totals show as zero, we can reconstruct them client-side
+   */
+  const getTotalAmount = () => {
+    const total = parseFloat(order.total_amount || '0');
+    
+    // If total is 0 but we have items, calculate from items
+    if (total === 0 && items && items.length > 0) {
+      const itemsSum = items.reduce((sum, item) => {
+        const lineTotal = parseFloat(item.line_total || '0');
+        return sum + lineTotal;
+      }, 0);
+      return itemsSum + parseFloat(order.delivery_fee || '0');
+    }
+    
+    return total;
+  };
+
+  const displayTotal = getTotalAmount();
+  const displayDeliveryFee = parseFloat(order.delivery_fee || '0');
+  const balance = displayTotal - parseFloat(order.amount_paid || '0');
 
   const PAYMENT_METHODS: { label: string; value: PaymentMethod }[] = [
     { label: 'Cash', value: 'cash' },
@@ -174,8 +207,8 @@ export default function OrderDetailScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Order #{order.id}</Text>
         <View style={styles.headerActions}>
-          <TouchableOpacity onPress={handlePrintReceipt} style={styles.backBtn}>
-            <Ionicons name="print" size={22} color={Colors.white} />
+          <TouchableOpacity onPress={handleDownloadReceipt} style={styles.backBtn} disabled={receiptLoading}>
+            <Ionicons name={receiptLoading ? 'hourglass-outline' : 'download-outline'} size={22} color={Colors.white} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setDeliveryModal(true)} style={styles.backBtn}>
             <Ionicons name="bicycle-outline" size={22} color={Colors.white} />
@@ -234,11 +267,11 @@ export default function OrderDetailScreen() {
         <Card style={styles.section}>
           <Text style={styles.sectionTitle}>Financial Summary</Text>
           <View style={styles.financialTable}>
-            <FinRow label="Subtotal" value={`KSh ${parseFloat(order.total_amount).toLocaleString()}`} />
-            <FinRow label="Delivery Fee" value={`KSh ${parseFloat(order.delivery_fee ?? '0').toLocaleString()}`} />
+            <FinRow label="Subtotal" value={`KSh ${displayTotal.toLocaleString()}`} />
+            <FinRow label="Delivery Fee" value={`KSh ${displayDeliveryFee.toLocaleString()}`} />
             <FinRow
               label="Amount Paid"
-              value={`KSh ${parseFloat(order.amount_paid).toLocaleString()}`}
+              value={`KSh ${parseFloat(order.amount_paid || '0').toLocaleString()}`}
               color={Colors.success}
             />
             <View style={styles.divider} />

@@ -70,14 +70,14 @@ const stockKey = (p: ProductListItem, store: StoreLocation): number => {
 };
 
 const priceFromList = (p: ProductListItem, cat: CustomerCategory): number => {
-  const map: Record<CustomerCategory, string | undefined> = {
+  const map: Record<CustomerCategory, string | number | undefined> = {
     factory: p.factory_price,
     distributor: p.distributor_price,
     wholesale: p.wholesale_price,
     Towns: p.offshore_price,
     'Retail customer': p.retail_price,
   };
-  return parseFloat(map[cat] ?? '0') || 0;
+  return parseFloat(String(map[cat] ?? '0')) || 0;
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -737,7 +737,7 @@ export default function CreateOrderScreen() {
       // Fetch exact price from API
       try {
         const priceData = await getProductPriceByCategory(p.id, category);
-        const exactPrice = parseFloat(priceData.price) || listPrice;
+        const exactPrice = priceData.selected_price || listPrice;
         setLines((prev) =>
           prev.map((l) =>
             l.product_id === p.id && l.unit_price === listPrice

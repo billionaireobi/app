@@ -7,7 +7,7 @@ const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes in milliseconds
 export function useIdleLogout() {
   const { logout, isAuthenticated } = useAuthStore();
   const appState = useRef(AppState.currentState);
-  const inactivityTimer = useRef<NodeJS.Timeout | null>(null);
+  const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const backgroundTime = useRef<number | null>(null);
 
   const resetInactivityTimer = () => {

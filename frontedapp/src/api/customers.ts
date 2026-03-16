@@ -1,10 +1,10 @@
 import apiClient from './client';
 import type { Customer, Order, PaginatedResponse } from '../types';
 
-// GET /api/customers/?search=&category=
+// GET /api/customers/?search=&default_category=
 export async function getCustomers(params?: {
   search?: string;
-  category?: string;
+  default_category?: string;
   page?: number;
 }): Promise<PaginatedResponse<Customer>> {
   const { data } = await apiClient.get<PaginatedResponse<Customer>>('customers/', { params });

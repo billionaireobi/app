@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { Notification } from '../types';
 
 interface AppStore {
   // Network
@@ -14,6 +15,13 @@ interface AppStore {
   isGlobalLoading: boolean;
   globalLoadingMessage: string;
   setGlobalLoading: (loading: boolean, message?: string) => void;
+
+  // Notifications
+  unreadNotifications: Notification[];
+  unreadCount: number;
+  setUnreadNotifications: (notifications: Notification[]) => void;
+  setUnreadCount: (count: number) => void;
+  markNotificationAsRead: (id: number) => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -28,4 +36,14 @@ export const useAppStore = create<AppStore>((set) => ({
   globalLoadingMessage: 'Loading...',
   setGlobalLoading: (loading, message = 'Loading...') =>
     set({ isGlobalLoading: loading, globalLoadingMessage: message }),
+
+  unreadNotifications: [],
+  unreadCount: 0,
+  setUnreadNotifications: (notifications) => set({ unreadNotifications: notifications, unreadCount: notifications.length }),
+  setUnreadCount: (count) => set({ unreadCount: count }),
+  markNotificationAsRead: (id) =>
+    set((state) => ({
+      unreadNotifications: state.unreadNotifications.filter((n) => n.id !== id),
+      unreadCount: Math.max(0, state.unreadCount - 1),
+    })),
 }));

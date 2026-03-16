@@ -9,23 +9,45 @@ import { useAuthStore } from '../src/store/authStore';
 import { useAppStore } from '../src/store/appStore';
 import { useNetworkStatus } from '../src/hooks/useNetworkStatus';
 import { useIdleLogout } from '../src/hooks/useIdleLogout';
+import { useNotifications } from '../src/hooks/useNotifications';
+import { usePrefetchCommonQueries } from '../src/hooks/usePrefetch';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { SplashScreen } from '../src/components/SplashScreen';
 import { Colors } from '../src/constants/colors';
 
+/**
+ * Smart retry strategy:
+ * - Don't retry auth/permission/not-found errors
+ * - Retry timeout/network errors up to 2 times
+ * - Exponential backoff: 1s, 2s
+ */
+function shouldRetry(failureCount: number, error: unknown): boolean {
+  const status = (error as { response?: { status?: number } })?.response?.status;
+  const errorMessage = (error as { message?: string })?.message?.toLowerCase() || '';
+
+  // Don't retry these errors
+  if (status === 401 || status === 403 || status === 404) return false;
+
+  // Don't retry after 2 attempts 
+  if (failureCount >= 2) return false;
+
+  // Retry on network/timeout errors
+  return true;
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: (failureCount, error: unknown) => {
-        const status = (error as { response?: { status?: number } })?.response?.status;
-        if (status === 401 || status === 403 || status === 404) return false;
-        return failureCount < 2;
-      },
-      staleTime: 1000 * 60 * 2,
-      gcTime: 1000 * 60 * 10,
+      retry: shouldRetry,
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+      staleTime: 1000 * 60 * 5, // 5 minutes default (overridden per query type)
+      gcTime: 1000 * 60 * 30, // 30 minutes (was cacheTime, renamed in React Query v5)
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      refetchOnMount: true,
     },
     mutations: {
-      retry: false,
+      retry: false, // Don't automatically retry mutations
     },
   },
 });
@@ -42,9 +64,26 @@ function OfflineBanner() {
 
 function AppRoot() {
   const loadStoredAuth = useAuthStore((s) => s.loadStoredAuth);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const setUnreadNotifications = useAppStore((s) => s.setUnreadNotifications);
+  const setUnreadCount = useAppStore((s) => s.setUnreadCount);
   useNetworkStatus();
   useIdleLogout();
   const [showSplash, setShowSplash] = useState(true);
+
+  // Initialize notifications polling
+  const { unreadNotifications, unreadCount } = useNotifications();
+
+  // Prefetch common queries after user authenticates to warm up cache
+  usePrefetchCommonQueries();
+
+  // Update app store when notifications change
+  useEffect(() => {
+    if (isAuthenticated) {
+      setUnreadNotifications(unreadNotifications);
+      setUnreadCount(unreadCount);
+    }
+  }, [unreadNotifications, unreadCount, isAuthenticated, setUnreadNotifications, setUnreadCount]);
 
   useEffect(() => {
     loadStoredAuth();

@@ -66,7 +66,8 @@ export default function CustomerDetailScreen() {
               <Text style={styles.avatarText}>{initials}</Text>
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{customer.first_name} {customer.last_name}</Text>
+              <Text style={styles.profileName}>{customer.first_name}</Text>
+              <Text style={styles.profileContact}>{customer.last_name}</Text>
               <Badge label={customer.default_category} variant="primary" />
               {customer.sales_person_name && (
                 <Text style={styles.salesPerson}>
@@ -189,6 +190,7 @@ const styles = StyleSheet.create({
   avatarText: { fontSize: FontSize.xl, fontWeight: '800', color: Colors.primary },
   profileInfo: { flex: 1, gap: 6 },
   profileName: { fontSize: FontSize.xl, fontWeight: '700', color: Colors.textPrimary },
+  profileContact: { fontSize: FontSize.sm, color: Colors.textSecondary, marginTop: -2 },
   salesPerson: { fontSize: FontSize.xs, color: Colors.textSecondary },
   divider: { height: 1, backgroundColor: Colors.divider, marginBottom: Spacing.md },
   contactRow: { gap: Spacing.sm, marginBottom: Spacing.sm },

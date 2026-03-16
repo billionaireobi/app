@@ -54,13 +54,29 @@ export async function confirmPasswordReset(payload: {
   return data;
 }
 // POST /api/auth/login-session/save/
+// Uses multipart/FormData so the photo is sent as a real file (avoids base64 overhead and nginx body-size limits).
 export async function saveLoginSession(payload: {
   latitude?: number;
   longitude?: number;
-  photo_base64?: string;
   photo_uri?: string;
   timestamp?: string;
 }): Promise<{ message: string }> {
-  const { data } = await apiClient.post<{ message: string }>('auth/login-session/save/', payload);
+  const formData = new FormData();
+  if (payload.latitude != null) formData.append('latitude', String(payload.latitude));
+  if (payload.longitude != null) formData.append('longitude', String(payload.longitude));
+  if (payload.timestamp) formData.append('timestamp', payload.timestamp);
+  if (payload.photo_uri) {
+    (formData as any).append('login_photo', {
+      uri: payload.photo_uri,
+      type: 'image/jpeg',
+      name: `login_${Date.now()}.jpg`,
+    });
+  }
+  console.log('[LoginSession] Saving — photo:', !!payload.photo_uri, 'lat:', payload.latitude);
+  const { data } = await apiClient.post<{ message: string }>('auth/login-session/save/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    transformRequest: (d) => d,
+  });
+  console.log('[LoginSession] Saved:', data);
   return data;
 }

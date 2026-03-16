@@ -26,10 +26,11 @@ import {
 } from '../../src/api/stock';
 import { getProducts } from '../../src/api/products';
 import { getMessages, sendMessage } from '../../src/api/messages';
-import { getNotifications, markAllNotificationsRead } from '../../src/api/notifications';
+import { getNotifications, markAllNotificationsRead, markNotificationRead } from '../../src/api/notifications';
 import { getCustomers } from '../../src/api/customers';
 import { submitFeedback } from '../../src/api/feedback';
 import { useAuthStore } from '../../src/store/authStore';
+import { getCacheConfig } from '../../src/hooks/useCacheConfig';
 import { CameraCapture, type CaptureResult } from '../../src/components/CameraCapture';
 import { Card } from '../../src/components/ui/Card';
 import { Badge } from '../../src/components/ui/Badge';
@@ -121,13 +122,14 @@ export default function MoreScreen() {
     queryKey: ['messages'],
     queryFn: getMessages,
     enabled: section === 'messages',
-    refetchInterval: section === 'messages' ? 10000 : false,
+    ...getCacheConfig('messages'), // Optimized message caching with 30s staleTime (no manual refetch interval)
   });
 
   const { data: notificationsData } = useQuery({
     queryKey: ['notifications'],
-    queryFn: getNotifications,
+    queryFn: () => getNotifications(),
     enabled: section === 'notifications',
+    ...getCacheConfig('notifications'), // Optimized notification caching
   });
 
   // ==================== MUTATIONS ====================
@@ -142,7 +144,18 @@ export default function MoreScreen() {
 
   const { mutate: markAllRead } = useMutation({
     mutationFn: markAllNotificationsRead,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] });
+    },
+  });
+
+  const { mutate: markSingleRead } = useMutation({
+    mutationFn: markNotificationRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread'] });
+    },
   });
 
   const { mutate: createTransfer, isPending: transferPending } = useMutation({
@@ -252,7 +265,7 @@ export default function MoreScreen() {
     createTransfer({
       from_store: fromStore,
       to_store: toStore,
-      items: transferItems.map((i) => ({ product: i.product, quantity: Number(i.quantity) })),
+      items: transferItems.map((i) => ({ product_id: i.product, quantity: Number(i.quantity) })),
     });
   };
 
@@ -271,7 +284,7 @@ export default function MoreScreen() {
   const handleSubmitFeedback = () => {
     if (!validateFeedback()) return;
     doSubmitFeedback({
-      customer: selectedCustomer!.id,
+      customer_id: selectedCustomer!.id,
       shop_name: shopName.trim(),
       contact_person: contactPerson.trim(),
       exact_location: exactLocation.trim(),
@@ -279,7 +292,7 @@ export default function MoreScreen() {
       feedback_type: feedbackType,
       rating: starRating,
       comment: feedbackComment.trim(),
-      photo_base64: capturedPhoto?.base64,
+      photo_uri: capturedPhoto?.uri,
       latitude: capturedPhoto?.latitude ?? undefined,
       longitude: capturedPhoto?.longitude ?? undefined,
     });
@@ -571,11 +584,11 @@ export default function MoreScreen() {
                 ))}
               </View>
 
-              <Text style={styles.modalLabel}>Quantity Change (+ or -)</Text>
+              <Text style={styles.modalLabel}>New Total Quantity</Text>
               <TextInput
                 style={styles.searchInput}
-                placeholder="e.g. 10 or -5"
-                keyboardType="numbers-and-punctuation"
+                placeholder="e.g. 50"
+                keyboardType="number-pad"
                 value={adjQty}
                 onChangeText={setAdjQty}
               />
@@ -596,7 +609,7 @@ export default function MoreScreen() {
                     if (!adjProduct) { Toast.show({ type: 'error', text1: 'Select a product' }); return; }
                     if (!adjQty || isNaN(Number(adjQty))) { Toast.show({ type: 'error', text1: 'Enter a valid quantity' }); return; }
                     if (!adjReason.trim()) { Toast.show({ type: 'error', text1: 'Enter a reason' }); return; }
-                    doAdjustment({ product: adjProduct.id, store: adjStore, quantity_change: Number(adjQty), reason: adjReason.trim() });
+                    doAdjustment({ product_id: adjProduct.id, store: adjStore, new_quantity: Number(adjQty), reason: adjReason.trim() });
                   }}
                   label="Adjust"
                   variant="primary"
@@ -686,18 +699,24 @@ export default function MoreScreen() {
             <EmptyState icon="notifications-outline" title="No Notifications" description="You're all caught up!" />
           }
           renderItem={({ item }) => (
-            <Card style={[styles.notifCard, !item.is_read ? styles.notifUnread : undefined]}>
-              <View style={styles.notifRow}>
-                <View style={[styles.notifIcon, { backgroundColor: getNotifColor(item.notification_type) + '20' }]}>
-                  <Ionicons name={getNotifIcon(item.notification_type) as any} size={18} color={getNotifColor(item.notification_type)} />
+            <TouchableOpacity
+              activeOpacity={item.is_read ? 1 : 0.7}
+              onPress={() => { if (!item.is_read) markSingleRead(item.id); }}
+            >
+              <Card style={[styles.notifCard, !item.is_read ? styles.notifUnread : undefined]}>
+                <View style={styles.notifRow}>
+                  <View style={[styles.notifIcon, { backgroundColor: getNotifColor(item.event_type) + '20' }]}>
+                    <Ionicons name={getNotifIcon(item.event_type) as any} size={18} color={getNotifColor(item.event_type)} />
+                  </View>
+                  <View style={styles.notifBody}>
+                    <Text style={[styles.notifTitle, !item.is_read && styles.notifTitleUnread]}>{item.title}</Text>
+                    <Text style={[styles.notifMsg, !item.is_read && styles.notifMsgUnread]}>{item.body}</Text>
+                    <Text style={styles.notifTime}>{format(new Date(item.created_at), 'dd MMM, HH:mm')}</Text>
+                  </View>
+                  {!item.is_read && <View style={styles.unreadDot} />}
                 </View>
-                <View style={styles.notifBody}>
-                  <Text style={[styles.notifMsg, !item.is_read && styles.notifMsgUnread]}>{item.message}</Text>
-                  <Text style={styles.notifTime}>{format(new Date(item.created_at), 'dd MMM, HH:mm')}</Text>
-                </View>
-                {!item.is_read && <View style={styles.unreadDot} />}
-              </View>
-            </Card>
+              </Card>
+            </TouchableOpacity>
           )}
         />
       </SafeAreaView>
@@ -735,7 +754,7 @@ export default function MoreScreen() {
                       setShowCustomerDrop(false);
                       // Auto-fill fields from customer data
                       setShopName(c.first_name || '');
-                      setContactPerson(c.contact_person || '');
+                      setContactPerson('');
                       setFeedbackPhone(c.phone_number || '');
                       setExactLocation(c.address || '');
                     }}
@@ -987,22 +1006,34 @@ function ProfileRow({ icon, label, value }: { icon: any; label: string; value: s
 
 function getNotifIcon(type: string): string {
   switch (type) {
-    case 'feedback': return 'chatbox-outline';
-    case 'message': return 'chatbubbles-outline';
-    case 'order': return 'receipt-outline';
-    case 'payment': return 'cash-outline';
-    case 'stock': return 'layers-outline';
+    case 'feedback_new': return 'chatbox-outline';
+    case 'message_new': return 'chatbubbles-outline';
+    case 'order_created': return 'cart-outline';
+    case 'order_updated': return 'pencil-outline';
+    case 'order_deleted': return 'trash-outline';
+    case 'beat_visit': return 'location-outline';
+    case 'beat_plan_new': return 'calendar-outline';
+    case 'stock_change': return 'layers-outline';
+    case 'payment_new': return 'cash-outline';
+    case 'login_new': return 'lock-closed-outline';
+    case 'general': return 'notifications-outline';
     default: return 'notifications-outline';
   }
 }
 
 function getNotifColor(type: string): string {
   switch (type) {
-    case 'feedback': return Colors.secondary;
-    case 'message': return Colors.primary;
-    case 'order': return Colors.info;
-    case 'payment': return Colors.success;
-    case 'stock': return Colors.warning;
+    case 'feedback_new': return Colors.secondary;
+    case 'message_new': return Colors.primary;
+    case 'order_created': return Colors.info;
+    case 'order_updated': return Colors.info;
+    case 'order_deleted': return Colors.error;
+    case 'beat_visit': return Colors.primary;
+    case 'beat_plan_new': return Colors.primary;
+    case 'stock_change': return Colors.warning;
+    case 'payment_new': return Colors.success;
+    case 'login_new': return Colors.primary;
+    case 'general': return Colors.gray500;
     default: return Colors.gray500;
   }
 }
@@ -1173,8 +1204,10 @@ const styles = StyleSheet.create({
   notifRow: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md },
   notifIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   notifBody: { flex: 1 },
-  notifMsg: { fontSize: FontSize.sm, color: Colors.textSecondary, lineHeight: 20 },
-  notifMsgUnread: { fontWeight: '600', color: Colors.textPrimary },
+  notifTitle: { fontSize: FontSize.md, fontWeight: '600', color: Colors.textPrimary, marginBottom: Spacing.xs },
+  notifTitleUnread: { fontWeight: '700' },
+  notifMsg: { fontSize: FontSize.sm, color: Colors.textSecondary, lineHeight: 20, marginBottom: Spacing.xs },
+  notifMsgUnread: { fontWeight: '500', color: Colors.textPrimary },
   notifTime: { fontSize: FontSize.xs, color: Colors.textSecondary, marginTop: 4 },
   unreadDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.primary, marginTop: 4 },
 

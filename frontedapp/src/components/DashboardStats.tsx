@@ -184,7 +184,7 @@ export const DashboardStatsComponent: React.FC<DashboardStatsProps> = ({ stats, 
             <View key={order.id} style={styles.orderItem}>
               <View style={styles.orderHeader}>
                 <Text style={styles.orderCustomer}>
-                  {order.customer?.first_name} {order.customer?.last_name}
+                  {order.customer_name ?? `Customer #${order.customer}`}
                 </Text>
                 <Text style={styles.orderAmount}>
                   {formatCurrency(order.total_amount)}

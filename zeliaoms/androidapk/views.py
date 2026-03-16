@@ -177,10 +177,9 @@ class MobileAppPagination(PageNumberPagination):
 
 
 # ==================== Product Management ====================
-
 class ProductViewSet(viewsets.ModelViewSet):
     """ViewSet for Products"""
-    queryset = Product.objects.all()
+    queryset = Product.objects.select_related('category').all()
     serializer_class = ProductSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -189,12 +188,19 @@ class ProductViewSet(viewsets.ModelViewSet):
     search_fields = ['name', 'description', 'barcode']
     ordering_fields = ['name', 'created_at', 'retail_price']
     ordering = ['-created_at']
-    
+
     def get_serializer_class(self):
         """Use lighter serializer for list view"""
         if self.action == 'list':
             return ProductListSerializer
         return ProductSerializer
+
+    def retrieve(self, request, *args, **kwargs):
+        """Return single product — refresh_from_db ensures stock values are never stale."""
+        instance = self.get_object()
+        instance.refresh_from_db()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['get'])
     def by_category(self, request):
@@ -216,35 +222,56 @@ class ProductViewSet(viewsets.ModelViewSet):
             product = self.get_object()
             category = request.query_params.get('category', 'wholesale')
             vat_variation = request.query_params.get('vat_variation', 'with_vat')
-            
+            store = request.query_params.get('store', 'mcdave')
+
             VAT_RATE = Decimal('0.16')
-            base_price = product.get_price_by_category(category)
-            
-            # Handle None or Decimal prices
-            if base_price is None:
-                base_price = Decimal('0')
-            else:
-                base_price = Decimal(str(base_price))
-            
-            price_with_vat = base_price * (1 + VAT_RATE) if base_price else 0
+
+            # Use the model's method to get the base price
+            try:
+                base_price = product.get_price_by_category(category)
+            except (AttributeError, TypeError):
+                # Fallback to direct mapping if method doesn't exist
+                price_map = {
+                    'factory': product.factory_price,
+                    'distributor': product.distributor_price,
+                    'wholesale': product.wholesale_price,
+                    'Towns': product.offshore_price,
+                    'Retail customer': product.retail_price,
+                }
+                base_price = price_map.get(category, product.retail_price)
+
+            if base_price is None or base_price <= 0:
+                return Response(
+                    {'error': f'Invalid price for category {category}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            base_price = Decimal(str(base_price))
+            price_with_vat = base_price * (1 + VAT_RATE)
             price_without_vat = base_price
-            
+
+            stock_field = f"{store}_stock"
+            store_stock = getattr(product, stock_field, 0)
+
             return Response({
                 'product_id': product.id,
                 'product_name': product.name,
                 'customer_category': category,
-                'price_without_vat': float(price_without_vat),
-                'price_with_vat': float(price_with_vat),
+                'price_without_vat': float(round(price_without_vat)),
+                'price_with_vat': float(round(price_with_vat)),
                 'vat_variation': vat_variation,
-                'selected_price': float(price_with_vat) if vat_variation == 'with_vat' else float(price_without_vat),
+                'selected_price': float(round(price_with_vat)) if vat_variation == 'with_vat' else float(round(price_without_vat)),
                 'stock': {
                     'mcdave': product.mcdave_stock,
                     'kisii': product.kisii_stock,
                     'offshore': product.offshore_stock,
+                    'store_stock': store_stock,
                     'total': product.mcdave_stock + product.kisii_stock + product.offshore_stock
                 }
             })
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return Response(
                 {'error': f'Failed to calculate price: {str(e)}'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -263,6 +290,21 @@ class ProductViewSet(viewsets.ModelViewSet):
         serializer = ProductListSerializer(products, many=True, context={'request': request})
         return Response(serializer.data)
 
+    @action(detail=True, methods=['get'])
+    def stats(self, request, pk=None):
+        """Get order/revenue stats for a specific product"""
+        product = self.get_object()
+        from django.db.models import Sum, Count
+        agg = OrderItem.objects.filter(product=product).aggregate(
+            total_orders=Count('order', distinct=True),
+            total_units=Sum('quantity'),
+            total_revenue=Sum('line_total'),
+        )
+        return Response({
+            'total_orders': agg['total_orders'] or 0,
+            'total_units_sold': int(agg['total_units'] or 0),
+            'total_revenue': float(agg['total_revenue'] or 0),
+        })
 
 # ==================== Customer Management ====================
 
@@ -304,10 +346,13 @@ class CustomerViewSet(viewsets.ModelViewSet):
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            # Return detailed validation errors
+            return Response({'error': 'Validation failed', 'details': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
+            import traceback
+            traceback.print_exc()
             return Response(
-                {'error': f'Customer creation failed: {str(e)}'},
+                {'error': f'Customer creation failed: {str(e)}', 'type': type(e).__name__},
                 status=status.HTTP_400_BAD_REQUEST
             )
     
@@ -366,20 +411,40 @@ class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = MobileAppPagination
     filterset_fields = ['customer', 'delivery_status', 'paid_status', 'store']
-    search_fields = ['id', 'customer__first_name', 'customer__phone_number']
+    search_fields = ['customer__first_name', 'customer__last_name', 'customer__phone_number']
     ordering_fields = ['order_date', 'created_at', 'total_amount']
     ordering = ['-created_at']
     
     def get_queryset(self):
         user = self.request.user
         if user.is_superuser or user.groups.filter(name='Admins').exists():
-            return Order.objects.all().prefetch_related('order_items')
-        return Order.objects.filter(sales_person=user).prefetch_related('order_items')
+            queryset = Order.objects.all()
+        else:
+            queryset = Order.objects.filter(sales_person=user)
+        # Prefetch related data to avoid N+1 queries and ensure totals are accessible
+        return queryset.prefetch_related('order_items', 'order_items__product', 'payments')
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return OrderDetailSerializer
         return OrderSerializer
+    
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Retrieve order and recalculate totals if they show as zero but items exist.
+        This ensures displayed totals are always accurate.
+        """
+        from rest_framework.response import Response
+        
+        order_id = kwargs.get('pk')
+        order = self.get_object()
+        
+        # If order has items but zero total, recalculate
+        if order.order_items.exists() and (order.total_amount == 0 or order.total_amount is None):
+            order.calculate_total()
+        
+        serializer = self.get_serializer(order)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['post'])
     def create_order(self, request):
@@ -443,7 +508,21 @@ class OrderViewSet(viewsets.ModelViewSet):
                 product = Product.objects.get(id=item['product_id'])
                 
                 # Get price based on customer category
-                base_price = product.get_price_by_category(customer_category)
+                try:
+                    # Try to use the model method
+                    base_price = product.get_price_by_category(customer_category)
+                except (AttributeError, TypeError):
+                    # Fallback if method doesn't exist
+                    price_map = {
+                        'factory': product.factory_price,
+                        'distributor': product.distributor_price,
+                        'wholesale': product.wholesale_price,
+                        'Wholesale': product.wholesale_price,
+                        'offshore': product.offshore_price,
+                        'Retail customer': product.retail_price,
+                        'Towns': product.retail_price,
+                    }
+                    base_price = price_map.get(customer_category, product.wholesale_price)
                 
                 # Apply VAT if needed
                 if vat_variation == 'with_vat':
@@ -497,7 +576,31 @@ class OrderViewSet(viewsets.ModelViewSet):
                         print(f"StockMovement creation error: {e}")
             
             order.calculate_total()
-            
+
+            # Handle initial payment if provided with the order
+            amount_paid_raw = order_data.get('amount_paid')
+            payment_method = order_data.get('payment_method', 'cash')
+            if amount_paid_raw is not None:
+                try:
+                    paid_amount = Decimal(str(amount_paid_raw))
+                except Exception:
+                    paid_amount = Decimal('0')
+
+                if paid_amount > 0:
+                    order.amount_paid = paid_amount
+                    # Create a Payment record for audit trail
+                    Payment.objects.create(
+                        order=order,
+                        amount=paid_amount,
+                        payment_method=payment_method,
+                        payment_date=timezone.now(),
+                        reference_number=order_data.get('reference_number', ''),
+                        notes='Initial payment recorded at order creation',
+                        recorded_by=request.user,
+                    )
+                    # Derive paid_status from amounts and save
+                    order.update_paid_status()
+
             # Create notifications for admins and the salesperson about new order
             admin_users = User.objects.filter(
                 Q(is_superuser=True) | Q(groups__name='Admins')
@@ -634,6 +737,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         try:
             from store.receipt_generator import generate_receipt_pdf
             from django.http import FileResponse
+            import traceback
             
             order = self.get_object()
             pdf_buffer = generate_receipt_pdf(order)
@@ -648,8 +752,15 @@ class OrderViewSet(viewsets.ModelViewSet):
                 content_type='application/pdf'
             )
         except Exception as e:
+            import traceback
+            error_trace = traceback.format_exc()
+            print(f"Receipt generation error: {error_trace}")
             return Response(
-                {'error': f'Receipt generation failed: {str(e)}'},
+                {
+                    'error': f'Receipt generation failed: {str(e)}',
+                    'type': type(e).__name__,
+                    'details': str(error_trace) if __debug__ else None
+                },
                 status=status.HTTP_400_BAD_REQUEST
             )
     
@@ -815,7 +926,7 @@ class QuoteViewSet(viewsets.ModelViewSet):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     filterset_fields = ['customer', 'status']
-    search_fields = ['customer__first_name', 'id']
+    search_fields = ['customer__first_name', 'customer__last_name']
     ordering_fields = ['quote_date', 'created_at']
     ordering = ['-created_at']
     
@@ -913,9 +1024,22 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     {'error': 'order_id is required'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            
+
+            # Validate payment amount before touching the DB
+            try:
+                payment_amount = Decimal(str(request.data.get('amount', 0)))
+            except Exception:
+                return Response(
+                    {'error': 'Invalid payment amount'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if payment_amount <= 0:
+                return Response(
+                    {'error': 'Payment amount must be greater than zero'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             # Verify order exists
-            from store.models import Order
             try:
                 order = Order.objects.get(id=order_id)
             except Order.DoesNotExist:
@@ -923,10 +1047,10 @@ class PaymentViewSet(viewsets.ModelViewSet):
                     {'error': f'Order {order_id} not found'},
                     status=status.HTTP_404_NOT_FOUND
                 )
-            
+
             payment = Payment.objects.create(
                 order=order,
-                amount=Decimal(str(request.data.get('amount', 0))),
+                amount=payment_amount,
                 payment_method=request.data.get('payment_method', 'cash'),
                 payment_date=request.data.get('payment_date') or timezone.now(),
                 reference_number=request.data.get('reference_number', ''),
@@ -1390,7 +1514,7 @@ class CustomerFeedbackViewSet(viewsets.ModelViewSet):
                 customer=customer,
                 salesperson=request.user,
                 shop_name=request.data.get('shop_name') or customer.first_name or '',
-                contact_person=request.data.get('contact_person') or customer.contact_person or '',
+                contact_person=request.data.get('contact_person') or '',
                 exact_location=request.data.get('exact_location') or customer.address or '',
                 phone_number=request.data.get('phone_number') or customer.phone_number or '',
                 feedback_type=request.data.get('feedback_type', 'quality'),
@@ -1401,28 +1525,30 @@ class CustomerFeedbackViewSet(viewsets.ModelViewSet):
             )
             
             # Handle photo upload (either from FILES or base64 from data)
+            photo_b64 = request.data.get('photo_base64')
+            print(f"[Feedback] id={feedback.id} photo_provided={bool(photo_b64)} base64_len={len(photo_b64) if photo_b64 else 0}")
+
             if 'photo' in request.FILES:
                 feedback.photo = request.FILES['photo']
                 feedback.save()
-            elif 'photo_base64' in request.data:
-                import base64
+                print(f"[Feedback] Photo saved from FILES: {feedback.photo.name}")
+            elif photo_b64:
+                import base64 as b64lib
                 import uuid
                 from django.core.files.base import ContentFile
-                
-                photo_base64 = request.data.get('photo_base64')
-                if photo_base64:
-                    try:
-                        # Remove data URI prefix if present
-                        if ',' in photo_base64:
-                            photo_base64 = photo_base64.split(',')[1]
-                        
-                        # Decode base64
-                        image_data = base64.b64decode(photo_base64)
-                        filename = f'feedback_{uuid.uuid4()}.jpg'
-                        feedback.photo.save(filename, ContentFile(image_data), save=True)
-                    except Exception as e:
-                        # Log but don't fail if photo processing fails
-                        print(f"Photo upload error: {e}")
+                try:
+                    if ',' in photo_b64:
+                        photo_b64 = photo_b64.split(',')[1]
+                    image_data = b64lib.b64decode(photo_b64)
+                    filename = f'feedback_{uuid.uuid4()}.jpg'
+                    feedback.photo.save(filename, ContentFile(image_data), save=True)
+                    print(f"[Feedback] Photo saved from base64: {filename} ({len(image_data)} bytes)")
+                except Exception as e:
+                    import traceback
+                    print(f"[Feedback] ERROR saving photo: {e}")
+                    traceback.print_exc()
+            else:
+                print(f"[Feedback] No photo in request")
             
             # Create notification for admins
             admin_users = User.objects.filter(
@@ -1981,33 +2107,37 @@ class LoginSessionViewSet(viewsets.ViewSet):
                 ip_address=request.META.get('REMOTE_ADDR', ''),
                 device_info=request.META.get('HTTP_USER_AGENT', ''),
             )
-            
-            # Handle login photo (either from FILES or base64 from data)
+
+            photo_b64 = request.data.get('photo_base64')
+            print(f"[LoginSession] user={request.user.username} photo_provided={bool(photo_b64)} base64_len={len(photo_b64) if photo_b64 else 0}")
+
+            # Handle login photo — FILES (multipart) or base64 JSON
             if 'login_photo' in request.FILES:
                 login_session.login_photo = request.FILES['login_photo']
                 login_session.save()
-            elif 'photo_uri' in request.data or 'photo_base64' in request.data:
-                import base64
+                print(f"[LoginSession] Photo saved from FILES: {login_session.login_photo.name}")
+            elif photo_b64:
+                import base64 as b64lib
                 import uuid
                 from django.core.files.base import ContentFile
-                
-                photo_base64 = request.data.get('photo_base64') or request.data.get('photo_uri')
-                if photo_base64:
-                    try:
-                        # Remove data URI prefix if present
-                        if ',' in photo_base64:
-                            photo_base64 = photo_base64.split(',')[1]
-                        
-                        # Decode base64
-                        image_data = base64.b64decode(photo_base64)
-                        filename = f'login_{uuid.uuid4()}.jpg'
-                        login_session.login_photo.save(filename, ContentFile(image_data), save=True)
-                    except Exception as e:
-                        # Log but don't fail if photo processing fails
-                        print(f"Login photo error: {e}")
-            
+                try:
+                    if ',' in photo_b64:
+                        photo_b64 = photo_b64.split(',')[1]
+                    image_data = b64lib.b64decode(photo_b64)
+                    filename = f'login_{uuid.uuid4()}.jpg'
+                    login_session.login_photo.save(filename, ContentFile(image_data), save=True)
+                    print(f"[LoginSession] Photo saved from base64: {filename} ({len(image_data)} bytes)")
+                except Exception as e:
+                    import traceback
+                    print(f"[LoginSession] ERROR saving photo: {e}")
+                    traceback.print_exc()
+            else:
+                print(f"[LoginSession] No photo in request")
+
             return Response({'message': 'Login session saved'})
         except Exception as exc:
+            import traceback
+            traceback.print_exc()
             return Response({'error': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
 
 

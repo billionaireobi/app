@@ -18,7 +18,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import * as FileSystem from 'expo-file-system';
 import { useAuthStore } from '../src/store/authStore';
 import { Input } from '../src/components/ui/Input';
 import { Button } from '../src/components/ui/Button';
@@ -65,25 +64,14 @@ export default function LoginScreen() {
   const saveLoginSessionData = async () => {
     if (!photoResult) return;
     try {
-      // Convert image URI to base64
-      let photoBase64: string | undefined;
-      try {
-        const base64 = await FileSystem.readAsStringAsync(photoResult.uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-        photoBase64 = base64;
-      } catch {
-        // If conversion fails, still continue without the photo
-      }
-      
       await saveLoginSession({
         latitude: photoResult.latitude ?? gpsCoords?.lat ?? undefined,
         longitude: photoResult.longitude ?? gpsCoords?.lng ?? undefined,
-        photo_base64: photoBase64,
+        photo_uri: photoResult.uri,
         timestamp: photoResult.timestamp,
       });
-    } catch {
-      // Non-fatal — session save failure should not block login
+    } catch (e) {
+      console.warn('[Login] Session save failed (non-fatal):', e);
     }
   };
 

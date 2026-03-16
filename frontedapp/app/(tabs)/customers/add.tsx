@@ -33,14 +33,32 @@ export default function AddCustomerScreen() {
       queryClient.invalidateQueries({ queryKey: ['customers'] });
       router.replace(`/(tabs)/customers/${customer.id}` as any);
     },
-    onError: () => Toast.show({ type: 'error', text1: 'Failed to add customer' }),
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.details 
+        ? JSON.stringify(error.response.data.details)
+        : error?.response?.data?.error || 'Failed to add customer';
+      Toast.show({ 
+        type: 'error', 
+        text1: 'Failed to add customer',
+        text2: errorMessage,
+        visibilityTime: 5000
+      });
+    },
   });
 
   const validate = () => {
     const e: Record<string, string> = {};
-    if (!firstName.trim()) e.firstName = 'First name is required';
-    if (!lastName.trim()) e.lastName = 'Last name is required';
-    if (!phone.trim()) e.phone = 'Phone number is required';
+    if (!firstName.trim()) e.firstName = 'Shop name is required';
+    if (!lastName.trim()) e.lastName = 'Contact person is required';
+    
+    // Phone validation - at least 9 digits
+    const phoneDigits = phone.replace(/\D/g, '');
+    if (!phone.trim()) {
+      e.phone = 'Phone number is required';
+    } else if (phoneDigits.length < 9 || phoneDigits.length > 15) {
+      e.phone = 'Phone must have 9-15 digits (e.g., 0700000000 or +254700000000)';
+    }
+    
     if (!address.trim()) e.address = 'Address is required';
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -71,22 +89,22 @@ export default function AddCustomerScreen() {
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Card style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Details</Text>
+          <Text style={styles.sectionTitle}>Customer Details</Text>
           <Input
-            label="First Name"
+            label="Shop Name"
             value={firstName}
             onChangeText={setFirstName}
-            leftIcon="person-outline"
-            placeholder="John"
+            leftIcon="storefront-outline"
+            placeholder="Shop Name"
             error={errors.firstName}
             required
           />
           <Input
-            label="Last Name"
+            label="Contact Person"
             value={lastName}
             onChangeText={setLastName}
             leftIcon="person-outline"
-            placeholder="Doe"
+            placeholder="Contact Person"
             error={errors.lastName}
             required
           />

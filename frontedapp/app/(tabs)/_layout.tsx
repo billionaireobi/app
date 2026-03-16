@@ -1,12 +1,26 @@
 import { Tabs, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/store/authStore';
+import { useAppStore } from '../../src/store/appStore';
+import { NotificationBadge } from '../../src/components/NotificationBadge';
 import { Colors } from '../../src/constants/colors';
+
+/** Height of the visible tab bar above the system navigation area */
+const TAB_CONTENT_HEIGHT = 68;
+/** Larger icon for easier tapping */
+const TAB_ICON_SIZE = 26;
 
 export default function TabLayout() {
   const { isAuthenticated } = useAuthStore();
+  const { unreadCount } = useAppStore();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+
+  // Total tab bar height = visible content + phone's system navigation area
+  const tabBarHeight = TAB_CONTENT_HEIGHT + insets.bottom;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -24,15 +38,29 @@ export default function TabLayout() {
           backgroundColor: Colors.white,
           borderTopWidth: 1,
           borderTopColor: Colors.gray200,
-          height: 60,
-          paddingBottom: 8,
+          // Height includes system nav area so the bar sits above it
+          height: tabBarHeight,
+          // Push label/icon up out of the system nav area
+          paddingBottom: insets.bottom + 6,
+          paddingTop: 10,
+          // Raise bar above any floating system gesture pill
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 4,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
+          fontSize: 12,
+          fontWeight: '700',
+          marginTop: 2,
         },
-        sceneContainerStyle: {
-          paddingBottom: 60,
+        tabBarIconStyle: {
+          marginBottom: 0,
+        },
+        // Scene content should not be hidden behind the tab bar
+        sceneStyle: {
+          paddingBottom: tabBarHeight,
         },
       }}
     >
@@ -40,8 +68,8 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Dashboard',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="grid-outline" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="grid-outline" size={TAB_ICON_SIZE} color={color} />
           ),
         }}
       />
@@ -49,8 +77,8 @@ export default function TabLayout() {
         name="orders"
         options={{
           title: 'Orders',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="receipt-outline" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="receipt-outline" size={TAB_ICON_SIZE} color={color} />
           ),
         }}
       />
@@ -58,8 +86,8 @@ export default function TabLayout() {
         name="customers"
         options={{
           title: 'Customers',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="people-outline" size={TAB_ICON_SIZE} color={color} />
           ),
         }}
       />
@@ -67,8 +95,8 @@ export default function TabLayout() {
         name="products"
         options={{
           title: 'Products',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="cube-outline" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="cube-outline" size={TAB_ICON_SIZE} color={color} />
           ),
         }}
       />
@@ -76,8 +104,11 @@ export default function TabLayout() {
         name="more"
         options={{
           title: 'More',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="menu-outline" size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <View>
+              <Ionicons name="menu-outline" size={TAB_ICON_SIZE} color={color} />
+              <NotificationBadge count={unreadCount} size="small" />
+            </View>
           ),
         }}
       />

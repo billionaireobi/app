@@ -14,6 +14,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { getDashboardStats } from '../../src/api/orders';
 import { useAuthStore } from '../../src/store/authStore';
+import { useAppStore } from '../../src/store/appStore';
+import { getCacheConfig } from '../../src/hooks/useCacheConfig';
+import { NotificationBadge } from '../../src/components/NotificationBadge';
 import { StatsCard } from '../../src/components/StatsCard';
 import { OrderCard } from '../../src/components/OrderCard';
 import { DashboardStatsComponent } from '../../src/components/DashboardStats';
@@ -23,10 +26,12 @@ import { Colors, FontSize, Spacing, BorderRadius, Shadow } from '../../src/const
 export default function DashboardScreen() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const unreadCount = useAppStore((s) => s.unreadCount);
 
   const { data: stats, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: getDashboardStats,
+    ...getCacheConfig('stats'), // Apply optimized dashboard caching
   });
 
   const greeting = () => {
@@ -68,7 +73,10 @@ export default function DashboardScreen() {
             onPress={() => router.push('/(tabs)/more')}
             style={styles.headerBtn}
           >
-            <Ionicons name="notifications-outline" size={22} color={Colors.white} />
+            <View>
+              <Ionicons name="notifications-outline" size={22} color={Colors.white} />
+              <NotificationBadge count={unreadCount} size="small" />
+            </View>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push('/(tabs)/more')}
@@ -123,7 +131,7 @@ export default function DashboardScreen() {
             <View style={styles.statsGrid}>
               <StatsCard
                 label="Revenue"
-                value={`KSh ${parseFloat(stats?.total_revenue ?? '0').toLocaleString()}`}
+                value={parseFloat(stats?.total_revenue ?? '0').toLocaleString()}
                 icon="cash-outline"
                 iconColor={Colors.success}
                 iconBg={Colors.successSurface}

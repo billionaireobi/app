@@ -22,8 +22,9 @@ export function CustomerCard({ customer, onPress }: CustomerCardProps) {
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <View style={styles.info}>
-            <Text style={styles.name}>
-              {customer.first_name} {customer.last_name}
+            <Text style={styles.name}>{customer.first_name}</Text>
+            <Text style={styles.contactPerson} numberOfLines={1}>
+              {customer.last_name}
             </Text>
             <View style={styles.phoneRow}>
               <Ionicons name="call-outline" size={12} color={Colors.textSecondary} />
@@ -78,6 +79,11 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     fontWeight: '600',
     color: Colors.textPrimary,
+  },
+  contactPerson: {
+    fontSize: FontSize.sm,
+    color: Colors.textSecondary,
+    marginBottom: 2,
   },
   phoneRow: {
     flexDirection: 'row',

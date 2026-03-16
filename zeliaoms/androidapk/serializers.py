@@ -78,7 +78,7 @@ class ProductSerializer(serializers.ModelSerializer):
     
     def get_total_stock(self, obj):
         """Calculate total stock across all stores"""
-        return obj.mcdave_stock + obj.kisii_stock + obj.offshore_stock
+        return (obj.mcdave_stock or 0) + (obj.kisii_stock or 0) + (obj.offshore_stock or 0)
 
 
 class ProductListSerializer(serializers.ModelSerializer):
@@ -86,12 +86,12 @@ class ProductListSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
     image_url = serializers.SerializerMethodField()
     total_stock = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = Product
         fields = [
-            'id', 'name', 'category_name', 'status', 'image_url', 'retail_price',
-            'factory_price', 'distributor_price', 'wholesale_price',
+            'id', 'name', 'barcode', 'category_name', 'status', 'image', 'image_url',
+            'retail_price', 'factory_price', 'distributor_price', 'wholesale_price', 'offshore_price',
             'mcdave_stock', 'kisii_stock', 'offshore_stock', 'total_stock'
         ]
     
@@ -108,7 +108,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
 class CustomerSerializer(serializers.ModelSerializer):
     """Serialize Customers"""
-    sales_person_name = serializers.CharField(source='sales_person.get_full_name', read_only=True)
+    sales_person_name = serializers.SerializerMethodField()
     formatted_phone = serializers.SerializerMethodField()
     
     class Meta:
@@ -118,10 +118,43 @@ class CustomerSerializer(serializers.ModelSerializer):
             'email', 'sales_person', 'sales_person_name', 'address', 
             'default_category', 'updated_at', 'created_at'
         ]
-        read_only_fields = ['id', 'updated_at', 'created_at']
+        read_only_fields = ['id', 'updated_at', 'created_at', 'formatted_phone', 'sales_person_name']
     
     def get_formatted_phone(self, obj):
         return obj.format_phone_number()
+    
+    def get_sales_person_name(self, obj):
+        """Get sales person name safely, handling None values"""
+        if obj.sales_person:
+            return obj.sales_person.get_full_name()
+        return None
+    
+    def validate_phone_number(self, value):
+        """Validate phone number format"""
+        if not value:
+            return value
+        
+        # Remove common separators
+        import re
+        cleaned = re.sub(r'[\s\-().]', '', str(value))
+        digits = re.sub(r'\D', '', cleaned)
+        
+        if len(digits) < 9:
+            raise serializers.ValidationError(
+                'Phone number must contain at least 9 digits. Example: 0700000000'
+            )
+        if len(digits) > 15:
+            raise serializers.ValidationError(
+                'Phone number cannot have more than 15 digits'
+            )
+        
+        return value
+    
+    def validate_first_name(self, value):
+        """Validate first name is not empty"""
+        if not value or not value.strip():
+            raise serializers.ValidationError('First name is required')
+        return value.strip()
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -487,8 +520,8 @@ class CustomerFeedbackSerializer(serializers.ModelSerializer):
 
 class InternalMessageSerializer(serializers.ModelSerializer):
     """Serialize internal messages"""
-    sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
-    recipient_name = serializers.CharField(source='recipient.get_full_name', read_only=True, allow_null=True)
+    sender_name = serializers.SerializerMethodField()
+    recipient_name = serializers.SerializerMethodField()
     
     class Meta:
         model = InternalMessage
@@ -499,7 +532,19 @@ class InternalMessageSerializer(serializers.ModelSerializer):
             'latitude', 'longitude', 'location_label',
             'contact_name', 'contact_phone', 'created_at'
         ]
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ['id', 'created_at', 'sender_name', 'recipient_name']
+    
+    def get_sender_name(self, obj):
+        """Safely handle None sender (for system messages)"""
+        if obj.sender:
+            return obj.sender.get_full_name()
+        return None
+    
+    def get_recipient_name(self, obj):
+        """Safely handle None recipient (for broadcast messages)"""
+        if obj.recipient:
+            return obj.recipient.get_full_name()
+        return None
 
 
 # ==================== Notification Serializer ====================
