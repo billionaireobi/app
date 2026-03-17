@@ -221,15 +221,20 @@ export function CameraCapture({
   // When face detector native module is unavailable (Expo Go), skip the face lock
   const faceDetectionAvailable = FD !== null;
 
-  // Derive oval border colour from detection state
+  // Derive oval border colour from detection state (visual guide only — does NOT block capture)
   const ovalColor = faceInPosition ? '#4ADE80' : faceDetected ? '#FBBF24' : 'rgba(255,255,255,0.7)';
-  const captureDisabled = capturing || (faceDetectionAvailable && !faceInPosition);
+
+  // Capture is NEVER blocked by face detection — the oval is a guide, not a gate.
+  // Requiring a perfect face lock causes the button to appear disabled on devices
+  // where the face detector is slow, uses New Architecture, or the user's face
+  // is partially outside the oval region.
+  const captureDisabled = capturing;
 
   // Instruction text shown inside/below the oval
   const guideText = !faceDetectionAvailable
     ? 'Position your face in the oval'
     : faceInPosition
-    ? 'Hold still…'
+    ? 'Hold still — ready!'
     : faceDetected
     ? 'Move closer / centre your face'
     : 'Position your face in the oval';

@@ -33,7 +33,7 @@ function resolveBaseUrl(): string {
   }
 
   // Production build — always the live server
-  return process.env.EXPO_PUBLIC_API_URL ?? 'https://zeliaoms.mcdave.co.ke/api/';
+  return process.env.EXPO_PUBLIC_API_URL ?? 'https://backup.mcdave.co.ke/api/';
 }
 
 export const BASE_URL = resolveBaseUrl();

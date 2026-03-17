@@ -5,6 +5,11 @@
 expo-env.d.ts
 # @end expo-cli
 
+# ── Expo generated native directories (managed workflow — EAS rebuilds these) ─
+android/
+ios/
+.expo/
+
 # ── Environment variable files ──────────────────────────────────────────────
 # .env.local and .env.*.local hold machine-specific overrides (e.g. local IP)
 # and must never be committed.
