@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,15 +7,27 @@ import {
   TextInput,
   TouchableOpacity,
   RefreshControl,
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { getProducts } from '../../../src/api/products';
 import { getCacheConfig } from '../../../src/hooks/useCacheConfig';
-import { usePrefetchSearch } from '../../../src/hooks/usePrefetch';
 import { useDebounce } from '../../../src/hooks/useDebounce';
+
+function getNextPage(nextUrl: string | null | undefined): number | undefined {
+  if (!nextUrl) return undefined;
+  try {
+    const url = new URL(nextUrl);
+    const p = parseInt(url.searchParams.get('page') || '2', 10);
+    return isNaN(p) ? undefined : p;
+  } catch {
+    return undefined;
+  }
+}
 import { ProductCard } from '../../../src/components/ProductCard';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
@@ -35,20 +47,38 @@ export default function ProductsScreen() {
   const [statusFilter, setStatusFilter] = useState('');
   const debouncedSearch = useDebounce(search);
 
-  // Prefetch search results as user types
-  usePrefetchSearch('products', debouncedSearch);
+  const isFiltered = Boolean(debouncedSearch || statusFilter);
 
-  const { data, isLoading, refetch, isRefetching } = useQuery({
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    refetch,
+    isRefetching,
+  } = useInfiniteQuery({
     queryKey: ['products', debouncedSearch, statusFilter],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       getProducts({
         search: debouncedSearch || undefined,
         status: statusFilter || undefined,
+        page: pageParam as number,
       }),
-    ...getCacheConfig('products'), // Apply optimized product caching
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => getNextPage(lastPage.next),
+    staleTime: isFiltered ? 0 : getCacheConfig('products').staleTime,
+    gcTime: getCacheConfig('products').gcTime,
   });
 
-  const products = data?.results ?? [];
+  const products = data?.pages.flatMap((p) => p.results) ?? [];
+  const totalCount = data?.pages[0]?.count ?? 0;
+
+  const onEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -73,7 +103,12 @@ export default function ProductsScreen() {
         )}
       </View>
 
-      <View style={styles.filters}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filters}
+        style={styles.filtersScroll}
+      >
         {STATUS_FILTERS.map((f) => (
           <TouchableOpacity
             key={f.value}
@@ -85,10 +120,12 @@ export default function ProductsScreen() {
             </Text>
           </TouchableOpacity>
         ))}
-      </View>
+      </ScrollView>
 
       {!isLoading && data && (
-        <Text style={styles.count}>{data.count} product{data.count !== 1 ? 's' : ''}</Text>
+        <Text style={styles.count}>
+          {products.length} / {totalCount} product{totalCount !== 1 ? 's' : ''}
+        </Text>
       )}
 
       {isLoading ? (
@@ -111,6 +148,13 @@ export default function ProductsScreen() {
               description={search ? 'Try a different search.' : 'No products available.'}
             />
           }
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <ActivityIndicator size="small" color={Colors.primary} style={styles.footerLoader} />
+            ) : null
+          }
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.4}
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[Colors.primary]} />
           }
@@ -147,11 +191,14 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   search: { flex: 1, fontSize: FontSize.md, color: Colors.textPrimary },
+  filtersScroll: {
+    marginTop: Spacing.md,
+  },
   filters: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.md,
-    marginTop: Spacing.md,
     gap: Spacing.sm,
+    paddingRight: Spacing.md,
   },
   filterPill: {
     paddingHorizontal: Spacing.md,
@@ -172,4 +219,5 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   list: { padding: Spacing.md, paddingBottom: Spacing.xxl },
+  footerLoader: { marginVertical: Spacing.lg },
 });

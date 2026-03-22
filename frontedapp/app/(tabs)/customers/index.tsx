@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,23 @@ import {
   TouchableOpacity,
   TextInput,
   RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+
+function getNextPage(nextUrl: string | null | undefined): number | undefined {
+  if (!nextUrl) return undefined;
+  try {
+    const url = new URL(nextUrl);
+    const p = parseInt(url.searchParams.get('page') || '2', 10);
+    return isNaN(p) ? undefined : p;
+  } catch {
+    return undefined;
+  }
+}
 import { getCustomers } from '../../../src/api/customers';
 import { useDebounce } from '../../../src/hooks/useDebounce';
 import { CustomerCard } from '../../../src/components/CustomerCard';
@@ -34,16 +46,35 @@ export default function CustomersScreen() {
   const [categoryFilter, setCategoryFilter] = useState('');
   const debouncedSearch = useDebounce(search);
 
-  const { data, isLoading, refetch, isRefetching } = useQuery({
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    refetch,
+    isRefetching,
+  } = useInfiniteQuery({
     queryKey: ['customers', debouncedSearch, categoryFilter],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       getCustomers({
         search: debouncedSearch || undefined,
         default_category: categoryFilter || undefined,
+        page: pageParam as number,
       }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => getNextPage(lastPage.next),
+    staleTime: 0, // Always fresh so search/filter are immediately responsive
   });
 
-  const customers = data?.results ?? [];
+  const customers = data?.pages.flatMap((p) => p.results) ?? [];
+  const totalCount = data?.pages[0]?.count ?? 0;
+
+  const onEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -97,7 +128,9 @@ export default function CustomersScreen() {
       </View>
 
       {!isLoading && data && (
-        <Text style={styles.count}>{data.count} customer{data.count !== 1 ? 's' : ''}</Text>
+        <Text style={styles.count}>
+          {customers.length} / {totalCount} customer{totalCount !== 1 ? 's' : ''}
+        </Text>
       )}
 
       {isLoading ? (
@@ -122,6 +155,13 @@ export default function CustomersScreen() {
               onAction={() => router.push('/(tabs)/customers/add' as any)}
             />
           }
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <ActivityIndicator size="small" color={Colors.primary} style={styles.footerLoader} />
+            ) : null
+          }
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.4}
           refreshControl={
             <RefreshControl refreshing={isRefetching} onRefresh={refetch} colors={[Colors.primary]} />
           }
@@ -222,4 +262,5 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xs,
   },
   list: { padding: Spacing.md, paddingBottom: Spacing.xxl },
+  footerLoader: { marginVertical: Spacing.lg },
 });

@@ -2,7 +2,7 @@
   "expo": {
     "name": "ZeliaOMS",
     "slug": "zeliaoms",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "zeliaoms",
@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/images/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1565C0"
+      "backgroundColor": "#C9A23F"
     },
     "ios": {
       "supportsTablet": false,
@@ -19,7 +19,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#1565C0"
+        "backgroundColor": "#C9A23F"
       },
       "package": "ke.co.mcdave.zeliaoms",
       "newArchEnabled": true,

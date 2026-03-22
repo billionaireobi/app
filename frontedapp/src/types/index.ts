@@ -113,8 +113,8 @@ export interface Customer {
 }
 
 // ==================== Order ====================
-export type OrderPaidStatus = 'pending' | 'completed' | 'partially_paid';
-export type OrderDeliveryStatus = 'pending' | 'in_transit' | 'delivered' | 'cancelled';
+export type OrderPaidStatus = 'pending' | 'completed' | 'partially_paid' | 'cancelled';
+export type OrderDeliveryStatus = 'pending' | 'completed' | 'returned' | 'cancelled';
 export type VatVariation = 'with_vat' | 'without_vat';
 
 export interface OrderItem {

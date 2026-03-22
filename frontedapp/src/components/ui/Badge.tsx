@@ -33,12 +33,14 @@ export function Badge({ label, variant = 'neutral', dot = false }: BadgeProps) {
 export function getOrderStatusVariant(status: string): BadgeVariant {
   switch (status) {
     case 'completed':
-    case 'delivered':
+    case 'delivered':      // legacy alias
       return 'success';
     case 'partially_paid':
-    case 'in_transit':
+    case 'in_transit':     // legacy alias
       return 'info';
     case 'pending':
+      return 'warning';
+    case 'returned':
       return 'warning';
     case 'cancelled':
       return 'error';

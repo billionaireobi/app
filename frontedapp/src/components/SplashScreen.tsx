@@ -121,10 +121,12 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({
 
 const styles = StyleSheet.create({
   container: {
+    ...StyleSheet.absoluteFillObject,
     flex: 1,
-    backgroundColor: Colors.white,
+    backgroundColor: '#C9A23F',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 9999,
   },
   innerContainer: {
     alignItems: 'center',

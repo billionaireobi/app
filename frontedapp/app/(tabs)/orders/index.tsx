@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,42 +7,85 @@ import {
   TouchableOpacity,
   TextInput,
   RefreshControl,
+  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
+
+function getNextPage(nextUrl: string | null | undefined): number | undefined {
+  if (!nextUrl) return undefined;
+  try {
+    const url = new URL(nextUrl);
+    const p = parseInt(url.searchParams.get('page') || '2', 10);
+    return isNaN(p) ? undefined : p;
+  } catch {
+    return undefined;
+  }
+}
 import { getOrders } from '../../../src/api/orders';
 import { useDebounce } from '../../../src/hooks/useDebounce';
 import { OrderCard } from '../../../src/components/OrderCard';
 import { LoadingSpinner } from '../../../src/components/ui/LoadingSpinner';
 import { EmptyState } from '../../../src/components/ui/EmptyState';
 import { Colors, FontSize, Spacing, BorderRadius } from '../../../src/constants/colors';
-import type { OrderPaidStatus } from '../../../src/types';
+import type { OrderPaidStatus, OrderDeliveryStatus } from '../../../src/types';
 
-const STATUS_FILTERS: { label: string; value: OrderPaidStatus | '' }[] = [
+const PAID_FILTERS: { label: string; value: OrderPaidStatus | '' }[] = [
   { label: 'All', value: '' },
-  { label: 'Pending', value: 'pending' },
+  { label: 'Unpaid', value: 'pending' },
   { label: 'Partial', value: 'partially_paid' },
   { label: 'Paid', value: 'completed' },
+  { label: 'Cancelled', value: 'cancelled' },
+];
+
+const DELIVERY_FILTERS: { label: string; value: OrderDeliveryStatus | '' }[] = [
+  { label: 'All', value: '' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Delivered', value: 'completed' },
+  { label: 'Returned', value: 'returned' },
+  { label: 'Cancelled', value: 'cancelled' },
 ];
 
 export default function OrdersScreen() {
   const router = useRouter();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderPaidStatus | ''>('');
+  const [deliveryFilter, setDeliveryFilter] = useState<OrderDeliveryStatus | ''>('');
   const debouncedSearch = useDebounce(search);
 
-  const { data, isLoading, refetch, isRefetching } = useQuery({
-    queryKey: ['orders', statusFilter, debouncedSearch],
-    queryFn: () =>
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    refetch,
+    isRefetching,
+  } = useInfiniteQuery({
+    queryKey: ['orders', statusFilter, deliveryFilter, debouncedSearch],
+    queryFn: ({ pageParam }) =>
       getOrders({
         paid_status: statusFilter || undefined,
+        delivery_status: deliveryFilter || undefined,
         search: debouncedSearch || undefined,
+        page: pageParam as number,
       }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => getNextPage(lastPage.next),
+    staleTime: 0, // Always fresh for lists so filters/search reflect current data
   });
 
-  const orders = data?.results ?? [];
+  const orders = data?.pages.flatMap((p) => p.results) ?? [];
+  const totalCount = data?.pages[0]?.count ?? 0;
+
+  const onEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -62,10 +105,11 @@ export default function OrdersScreen() {
         <Ionicons name="search-outline" size={18} color={Colors.gray400} style={styles.searchIcon} />
         <TextInput
           style={styles.search}
-          placeholder="Search orders..."
+          placeholder="Search by customer name or phone..."
           placeholderTextColor={Colors.gray400}
           value={search}
           onChangeText={setSearch}
+          returnKeyType="search"
         />
         {search.length > 0 && (
           <TouchableOpacity onPress={() => setSearch('')}>
@@ -74,26 +118,61 @@ export default function OrdersScreen() {
         )}
       </View>
 
-      {/* Status Filter Pills */}
-      <View style={styles.filters}>
-        {STATUS_FILTERS.map((f) => (
-          <TouchableOpacity
-            key={f.value}
-            onPress={() => setStatusFilter(f.value)}
-            style={[styles.filterPill, statusFilter === f.value && styles.filterPillActive]}
-          >
-            <Text
-              style={[styles.filterText, statusFilter === f.value && styles.filterTextActive]}
+      {/* Payment Status Filter Pills */}
+      <View style={styles.filterGroup}>
+        <Text style={styles.filterGroupLabel}>Payment</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filters}
+          style={styles.filtersScroll}
+        >
+          {PAID_FILTERS.map((f) => (
+            <TouchableOpacity
+              key={f.value}
+              onPress={() => setStatusFilter(f.value)}
+              style={[styles.filterPill, statusFilter === f.value && styles.filterPillActive]}
             >
-              {f.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+              <Text
+                style={[styles.filterText, statusFilter === f.value && styles.filterTextActive]}
+              >
+                {f.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* Delivery Status Filter Pills */}
+      <View style={styles.filterGroup}>
+        <Text style={styles.filterGroupLabel}>Delivery</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filters}
+          style={styles.filtersScroll}
+        >
+          {DELIVERY_FILTERS.map((f) => (
+            <TouchableOpacity
+              key={f.value}
+              onPress={() => setDeliveryFilter(f.value)}
+              style={[styles.filterPill, deliveryFilter === f.value && styles.filterPillActive]}
+            >
+              <Text
+                style={[styles.filterText, deliveryFilter === f.value && styles.filterTextActive]}
+              >
+                {f.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {/* Count */}
       {!isLoading && data && (
-        <Text style={styles.count}>{data.count} order{data.count !== 1 ? 's' : ''}</Text>
+        <Text style={styles.count}>
+          {orders.length} / {totalCount} order{totalCount !== 1 ? 's' : ''}
+        </Text>
       )}
 
       {/* List */}
@@ -121,6 +200,13 @@ export default function OrdersScreen() {
               onAction={() => router.push('/(tabs)/orders/create' as any)}
             />
           }
+          ListFooterComponent={
+            isFetchingNextPage ? (
+              <ActivityIndicator size="small" color={Colors.primary} style={styles.footerLoader} />
+            ) : null
+          }
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.4}
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
@@ -181,11 +267,27 @@ const styles = StyleSheet.create({
     fontSize: FontSize.md,
     color: Colors.textPrimary,
   },
+  filterGroup: {
+    marginTop: Spacing.sm,
+  },
+  filterGroupLabel: {
+    fontSize: FontSize.xs,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingHorizontal: Spacing.lg,
+    marginBottom: 2,
+  },
+  filtersScroll: {
+    // intentionally empty — group margin handles spacing
+  },
   filters: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.md,
-    marginTop: Spacing.md,
+    paddingVertical: Spacing.xs,
     gap: Spacing.sm,
+    paddingRight: Spacing.md,
   },
   filterPill: {
     paddingHorizontal: Spacing.md,
@@ -219,4 +321,5 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     paddingBottom: Spacing.xxl,
   },
+  footerLoader: { marginVertical: Spacing.lg },
 });

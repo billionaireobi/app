@@ -22,6 +22,7 @@ import Toast from 'react-native-toast-message';
 import * as Location from 'expo-location';
 import { getCustomers } from '../../../src/api/customers';
 import { getProducts, getProductPriceByCategory } from '../../../src/api/products';
+import { useDebounce } from '../../../src/hooks/useDebounce';
 import { createOrder } from '../../../src/api/orders';
 import { Colors, FontSize, Spacing, BorderRadius, Shadow } from '../../../src/constants/colors';
 import type {
@@ -193,12 +194,13 @@ interface CustomerPickerModalProps {
 function CustomerPickerModal({ visible, onClose, onSelect }: CustomerPickerModalProps) {
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 350);
 
   const { data, isFetching } = useQuery({
-    queryKey: ['customer-search', query],
-    queryFn: () => getCustomers({ search: query }),
-    enabled: query.length >= 1,
-    staleTime: 10_000,
+    queryKey: ['customer-search', debouncedQuery],
+    queryFn: () => getCustomers({ search: debouncedQuery }),
+    enabled: debouncedQuery.length >= 1,
+    staleTime: 0,
   });
 
   const customers = data?.results ?? [];
@@ -226,8 +228,10 @@ function CustomerPickerModal({ visible, onClose, onSelect }: CustomerPickerModal
             autoFocus
             returnKeyType="search"
           />
-          {isFetching && <ActivityIndicator size="small" color={Colors.primary} />}
-          {query.length > 0 && !isFetching && (
+          {(isFetching || query !== debouncedQuery) && (
+            <ActivityIndicator size="small" color={Colors.primary} />
+          )}
+          {query.length > 0 && !isFetching && query === debouncedQuery && (
             <TouchableOpacity onPress={() => setQuery('')}>
               <Ionicons name="close-circle" size={18} color={Colors.gray400} />
             </TouchableOpacity>
@@ -240,7 +244,7 @@ function CustomerPickerModal({ visible, onClose, onSelect }: CustomerPickerModal
             <Ionicons name="people-outline" size={48} color={Colors.gray300} />
             <Text style={cpk.emptyText}>Type to search customers</Text>
           </View>
-        ) : customers.length === 0 && !isFetching ? (
+        ) : customers.length === 0 && !isFetching && query === debouncedQuery ? (
           <View style={cpk.empty}>
             <Ionicons name="search-outline" size={48} color={Colors.gray300} />
             <Text style={cpk.emptyText}>No customers found for "{query}"</Text>
@@ -374,12 +378,13 @@ function ProductPickerModal({
 }: ProductPickerModalProps) {
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 350);
 
   const { data, isFetching } = useQuery({
-    queryKey: ['product-search', query],
-    queryFn: () => getProducts({ search: query }),
-    enabled: query.length >= 1,
-    staleTime: 10_000,
+    queryKey: ['product-search', debouncedQuery],
+    queryFn: () => getProducts({ search: debouncedQuery }),
+    enabled: debouncedQuery.length >= 1,
+    staleTime: 0,
   });
 
   const products = data?.results ?? [];
@@ -418,8 +423,10 @@ function ProductPickerModal({
             autoFocus
             returnKeyType="search"
           />
-          {isFetching && <ActivityIndicator size="small" color={Colors.primary} />}
-          {query.length > 0 && !isFetching && (
+          {(isFetching || query !== debouncedQuery) && (
+            <ActivityIndicator size="small" color={Colors.primary} />
+          )}
+          {query.length > 0 && !isFetching && query === debouncedQuery && (
             <TouchableOpacity onPress={() => setQuery('')}>
               <Ionicons name="close-circle" size={18} color={Colors.gray400} />
             </TouchableOpacity>

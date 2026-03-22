@@ -185,7 +185,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = MobileAppPagination
     filterset_fields = ['category', 'status']
-    search_fields = ['name', 'description', 'barcode']
+    search_fields = ['name', 'description', 'barcode', 'category__name']
     ordering_fields = ['name', 'created_at', 'retail_price']
     ordering = ['-created_at']
 
@@ -324,9 +324,11 @@ class CustomerViewSet(viewsets.ModelViewSet):
         """Filter customers by salesperson if not admin"""
         user = self.request.user
         if user.is_superuser or user.groups.filter(name='Admins').exists():
-            return Customer.objects.all()
+            return Customer.objects.all().order_by('-created_at')
         # Salespersons can see their own customers + admin-created customers (sales_person is null)
-        return Customer.objects.filter(Q(sales_person=user) | Q(sales_person__isnull=True))
+        return Customer.objects.filter(
+            Q(sales_person=user) | Q(sales_person__isnull=True)
+        ).order_by('-created_at')
     
     def create(self, request, *args, **kwargs):
         """Create a new customer"""
@@ -411,18 +413,26 @@ class OrderViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = MobileAppPagination
     filterset_fields = ['customer', 'delivery_status', 'paid_status', 'store']
-    search_fields = ['customer__first_name', 'customer__last_name', 'customer__phone_number']
+    search_fields = [
+        'customer__first_name',
+        'customer__last_name',
+        'customer__phone_number',
+        'phone',   # order's own delivery phone
+    ]
     ordering_fields = ['order_date', 'created_at', 'total_amount']
     ordering = ['-created_at']
-    
+
     def get_queryset(self):
         user = self.request.user
         if user.is_superuser or user.groups.filter(name='Admins').exists():
             queryset = Order.objects.all()
         else:
             queryset = Order.objects.filter(sales_person=user)
-        # Prefetch related data to avoid N+1 queries and ensure totals are accessible
-        return queryset.prefetch_related('order_items', 'order_items__product', 'payments')
+        # Prefetch related data to avoid N+1 queries and ensure totals are accessible.
+        # Explicit order_by('-created_at') guarantees newest-first regardless of DB engine.
+        return queryset.prefetch_related(
+            'order_items', 'order_items__product', 'payments'
+        ).order_by('-created_at')
     
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -852,10 +862,10 @@ class OrderViewSet(viewsets.ModelViewSet):
             if deals_last_month > 0 else 0
         )
         
-        # Recent Orders
+        # Recent Orders — newest first
         recent_orders = orders.select_related('customer').prefetch_related(
             'order_items__product'
-        ).order_by('-order_date')[:5]
+        ).order_by('-created_at')[:5]
         
         # Top Products
         total_units_sold = OrderItem.objects.filter(

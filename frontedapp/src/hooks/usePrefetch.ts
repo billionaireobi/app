@@ -32,39 +32,45 @@ export function usePrefetchCommonQueries() {
       staleTime: getCacheConfig('stats').staleTime,
     });
 
-    // Prefetch products (first page)
-    queryClient.prefetchQuery({
+    // Prefetch products (first page) — uses prefetchInfiniteQuery to match useInfiniteQuery
+    queryClient.prefetchInfiniteQuery({
       queryKey: ['products', '', ''],
-      queryFn: () =>
+      queryFn: ({ pageParam }: { pageParam: unknown }) =>
         getProducts({
           search: undefined,
           status: undefined,
+          page: pageParam as number,
         }),
+      initialPageParam: 1,
       staleTime: getCacheConfig('products').staleTime,
-    });
+    } as any);
 
-    // Prefetch customers (first batch)
-    queryClient.prefetchQuery({
+    // Prefetch customers (first batch) — uses prefetchInfiniteQuery to match useInfiniteQuery
+    queryClient.prefetchInfiniteQuery({
       queryKey: ['customers', '', ''],
-      queryFn: () =>
+      queryFn: ({ pageParam }: { pageParam: unknown }) =>
         getCustomers({
           search: undefined,
+          page: pageParam as number,
         }),
+      initialPageParam: 1,
       staleTime: getCacheConfig('customers').staleTime,
-    });
+    } as any);
 
-    // Prefetch orders list
-    queryClient.prefetchQuery({
-      queryKey: ['orders'],
-      queryFn: () =>
+    // Prefetch orders list — uses prefetchInfiniteQuery to match useInfiniteQuery
+    queryClient.prefetchInfiniteQuery({
+      queryKey: ['orders', '', '', ''],
+      queryFn: ({ pageParam }: { pageParam: unknown }) =>
         getOrders({
           paid_status: undefined,
           delivery_status: undefined,
           store: undefined,
           search: undefined,
+          page: pageParam as number,
         }),
+      initialPageParam: 1,
       staleTime: getCacheConfig('orders').staleTime,
-    });
+    } as any);
 
     // Prefetch notifications
     queryClient.prefetchQuery({

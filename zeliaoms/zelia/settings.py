@@ -205,6 +205,8 @@ DEBUG = True
 _PRODUCTION_HOSTS = [
     'zeliaoms.mcdave.co.ke',
     'www.zeliaoms.mcdave.co.ke',
+    'backup.mcdave.co.ke',
+    'www.backup.mcdave.co.ke',
 ]
 
 if DEBUG:
@@ -335,7 +337,7 @@ BUNI_CONSUMER_SECRET = 'hEXigw7jEY4YIO934zJrZTBABcsa'
 BUNI_BASE_URL = 'https://sandbox.buni.kcbgroup.com'  # or https://api.buni.kcbgroup.com for production
 # Callback URL — must be a public HTTPS URL.
 # Points to the mobile API handler so BuniTransaction records are updated.
-BUNI_CALLBACK_URL = 'https://zeliaoms.mcdave.co.ke/api/buni-transactions/callback/'
+BUNI_CALLBACK_URL = 'https://backup.mcdave.co.ke/api/buni-transactions/callback/'
 # =====================================================
 # M-PESA DARAJA API SETTINGS (hardcoded)
 # =====================================================
@@ -346,7 +348,7 @@ MPESA_SHORTCODE = '174379'
 MPESA_PASSKEY = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919'
 # Callback URL — must be a public HTTPS URL.
 # Points to the mobile API handler so MPesaTransaction records are updated.
-MPESA_CALLBACK_URL = 'https://zeliaoms.mcdave.co.ke/api/mpesa-transactions/callback/'
+MPESA_CALLBACK_URL = 'https://backup.mcdave.co.ke/api/mpesa-transactions/callback/'
 MPESA_TRANSACTION_TYPE = 'CustomerPayBillOnline'
 
 if MPESA_ENV == 'sandbox':

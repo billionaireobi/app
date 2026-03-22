@@ -91,23 +91,21 @@ function AppRoot() {
 
   return (
     <>
+      {/* App content always mounts so data loads during splash */}
+      <OfflineBanner />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+      <StatusBar style="light" backgroundColor={Colors.primary} />
+      <Toast position="top" topOffset={60} />
+      {/* Gold splash screen overlays app; fades out when ready */}
       {showSplash && (
         <SplashScreen
-          duration={2500}
+          duration={2000}
           onFinish={() => setShowSplash(false)}
         />
-      )}
-      {!showSplash && (
-        <>
-          <OfflineBanner />
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="login" />
-            <Stack.Screen name="(tabs)" />
-          </Stack>
-          <StatusBar style="light" backgroundColor={Colors.primary} />
-          <Toast position="top" topOffset={60} />
-        </>
       )}
     </>
   );
